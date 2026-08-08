@@ -120,6 +120,7 @@ class ClipPlayback {
     private text: string,
     private rate: number,
     private state: HandleState,
+    private voice: string,
   ) {}
 
   start(): void {
@@ -140,8 +141,17 @@ class ClipPlayback {
       timers.push(setTimeout(() => finish(this.state), totalMs + 1500));
     });
     audio.addEventListener('ended', () => finish(this.state));
-    audio.addEventListener('error', () => finish(this.state));
-    void audio.play().catch(() => finish(this.state));
+    audio.addEventListener('error', () => this.fallback(timers));
+    // If the browser blocks playback (mobile autoplay policy before the audio
+    // is unlocked), don't go silent — fall back to speech synthesis so the
+    // child always hears the line.
+    void audio.play().catch(() => this.fallback(timers));
+  }
+
+  private fallback(timers: ReturnType<typeof setTimeout>[]): void {
+    if (this.state.ended) return;
+    timers.forEach(clearTimeout);
+    new SynthPlayback(this.text, this.voice, this.rate, this.state).start();
   }
 }
 
@@ -229,8 +239,53 @@ class SynthPlayback {
   }
 }
 
+// ── Mobile audio unlock ─────────────────────────────────────────────────────
+// iOS Safari (and some mobile Chrome) block HTMLAudio/speechSynthesis until a
+// clip is played inside a real user gesture. We prime BOTH engines on the
+// first pointer/touch: a silent clip for HTMLAudio, a muted utterance for
+// synthesis. After this, clips that play later (after awaits) are allowed.
+let audioUnlocked = false;
+const SILENT_WAV =
+  'data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAgLsAAAB3AQACABAAZGF0YQAAAAA=';
+
+export function unlockAudio(): void {
+  if (audioUnlocked || typeof window === 'undefined') return;
+  audioUnlocked = true;
+  try {
+    const a = new Audio(SILENT_WAV);
+    a.volume = 0;
+    void a.play().then(() => a.pause()).catch(() => {});
+  } catch {
+    /* ignore */
+  }
+  try {
+    if ('speechSynthesis' in window) {
+      window.speechSynthesis.resume();
+      const u = new SpeechSynthesisUtterance('');
+      u.volume = 0;
+      window.speechSynthesis.speak(u);
+    }
+  } catch {
+    /* ignore */
+  }
+}
+
+function installUnlockOnFirstGesture(): void {
+  if (typeof window === 'undefined') return;
+  const handler = () => {
+    unlockAudio();
+    window.removeEventListener('pointerdown', handler, true);
+    window.removeEventListener('touchstart', handler, true);
+    window.removeEventListener('click', handler, true);
+  };
+  window.addEventListener('pointerdown', handler, true);
+  window.addEventListener('touchstart', handler, true);
+  window.addEventListener('click', handler, true);
+}
+
 export function createVoiceService(manifest: VoiceManifest): VoiceService {
   initVoices();
+  installUnlockOnFirstGesture();
   return {
     hasClip(id: string): boolean {
       return id in manifest.clips;
@@ -241,7 +296,7 @@ export function createVoiceService(manifest: VoiceManifest): VoiceService {
       const clipUrl = req.lineId ? manifest.clips[req.lineId] : undefined;
       const rate = req.rate ?? 1;
       try {
-        if (clipUrl) new ClipPlayback(clipUrl, req.text, rate, state).start();
+        if (clipUrl) new ClipPlayback(clipUrl, req.text, rate, state, req.voice).start();
         else new SynthPlayback(req.text, req.voice, rate, state).start();
       } catch {
         const ws = words(req.text);
