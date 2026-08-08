@@ -25,6 +25,6 @@ export function wantedClips() {
   return clips;
 }
 
-export function readManifest() {
-  return JSON.parse(fs.readFileSync('apps/game/public/assets/audio/manifest.json', 'utf8'));
+export function readManifest(path = 'apps/game/public/assets/audio/manifest.json') {
+  return JSON.parse(fs.readFileSync(path, 'utf8'));
 }

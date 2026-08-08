@@ -1,7 +1,7 @@
 {
   "$schema": "https://railway.com/railway.schema.json",
   "build": {
-    "buildCommand": "pnpm install --frozen-lockfile && pnpm build"
+    "buildCommand": "pnpm install --frozen-lockfile && pnpm build && node tools/audio/generate-elevenlabs.mjs --into-dist"
   },
   "deploy": {
     "startCommand": "node apps/game/serve.mjs",
