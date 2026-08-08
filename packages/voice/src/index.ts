@@ -53,6 +53,52 @@ function words(text: string): string[] {
   return text.split(/\s+/).filter((w) => /[a-zA-Z]/.test(w));
 }
 
+// ── Synthesis voice selection ───────────────────────────────────────────────
+// Browsers load their voice list asynchronously; asking once (often empty)
+// silently lands on the default robot voice. Cache the list, refresh on
+// voiceschanged, and prefer the natural voices real devices ship with.
+let cachedVoices: SpeechSynthesisVoice[] = [];
+
+function refreshVoices(): void {
+  const list = window.speechSynthesis.getVoices();
+  if (list.length > 0) cachedVoices = list;
+}
+
+function initVoices(): void {
+  if (typeof window === 'undefined' || !('speechSynthesis' in window)) return;
+  try {
+    refreshVoices();
+    window.speechSynthesis.addEventListener?.('voiceschanged', refreshVoices);
+    if (window.speechSynthesis.onvoiceschanged === null) {
+      window.speechSynthesis.onvoiceschanged = refreshVoices;
+    }
+  } catch {
+    /* voiceless environment */
+  }
+}
+
+const PREFERRED_VOICES = [
+  'Samantha', // iOS/macOS — warm, natural
+  'Google US English',
+  'Microsoft Aria',
+  'Microsoft Jenny',
+  'Karen',
+  'Moira',
+  'Tessa',
+  'Daniel',
+  'Alex',
+];
+
+function pickSynthVoice(): SpeechSynthesisVoice | undefined {
+  const en = cachedVoices.filter((v) => v.lang.toLowerCase().startsWith('en'));
+  if (en.length === 0) return undefined;
+  for (const name of PREFERRED_VOICES) {
+    const hit = en.find((v) => v.name.includes(name));
+    if (hit) return hit;
+  }
+  return en.find((v) => v.localService) ?? en[0];
+}
+
 /** Distribute a duration across words proportional to length (+ a floor). */
 export function estimateWordTimings(text: string, totalMs: number): number[] {
   const ws = words(text);
@@ -122,10 +168,10 @@ class SynthPlayback {
     }
 
     const utter = new SpeechSynthesisUtterance(this.text);
-    utter.rate = Math.max(0.5, Math.min(2, this.rate * 0.92)); // slightly slow for kids
-    utter.pitch = this.voice === 'wizard' ? 0.8 : this.voice === 'mayor_hen' ? 1.3 : 1.05;
-    const en = window.speechSynthesis.getVoices().find((v) => v.lang.startsWith('en'));
-    if (en) utter.voice = en;
+    utter.rate = Math.max(0.5, Math.min(2, this.rate * 0.9)); // slightly slow for kids
+    utter.pitch = this.voice === 'wizard' ? 0.75 : this.voice === 'mayor_hen' ? 1.35 : 1.02;
+    const chosen = pickSynthVoice();
+    if (chosen) utter.voice = chosen;
 
     // Word offsets for boundary → word index mapping.
     const offsets: number[] = [];
@@ -184,6 +230,7 @@ class SynthPlayback {
 }
 
 export function createVoiceService(manifest: VoiceManifest): VoiceService {
+  initVoices();
   return {
     hasClip(id: string): boolean {
       return id in manifest.clips;

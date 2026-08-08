@@ -70,7 +70,7 @@ export async function runCharacterSelect(services: Services): Promise<void> {
         [...cards.children].forEach((c) => c.classList.remove('right'));
         card.classList.add('right');
         keep.style.visibility = 'visible';
-        void services.speakText(name).done;
+        void services.speakWord(name).done;
       });
       cards.appendChild(card);
     }

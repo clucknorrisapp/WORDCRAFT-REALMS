@@ -80,7 +80,7 @@ async function slowBlend(services: Services, text: string, spans: HTMLElement[])
     }, i * per);
   });
   setTimeout(() => spans.forEach((x) => x.classList.remove('glow')), spans.length * per + 400);
-  await services.speakText(text, 'narrator', 0.55).done;
+  await services.speakWord(text, 0.55).done;
 }
 
 // ── Narrated dialogue with word-by-word highlighting ────────────────────────
@@ -163,7 +163,7 @@ export async function readWordCard(
   const row = el('div', 'cards');
   const replay = speakerButton(() => {
     audioRequested = true;
-    void services.speakText(w.text).done;
+    void services.speakWord(w.text).done;
   });
   const ok = el('button', 'btn', '✓');
   ok.style.fontSize = '26px';
@@ -174,7 +174,7 @@ export async function readWordCard(
 
   if (opts.autoSpeak !== false) {
     await wait(650); // let them look at the word first
-    await services.speakText(w.text).done;
+    await services.speakWord(w.text).done;
   }
   await new Promise<void>((resolve) => ok.addEventListener('click', () => resolve(), { once: true }));
   layer.close();
@@ -285,7 +285,7 @@ export async function choiceBoard(services: Services, opts: ChoiceOpts): Promise
           void (async () => {
             await services.speakLine('ln_almost').done;
             if (hintsUsed === 1) {
-              await services.speakText(target.text, 'narrator', 0.7).done;
+              await services.speakWord(target.text, 0.7).done;
             } else {
               const correctBtn = buttons.find((b) => b.textContent === target.text.toUpperCase());
               correctBtn?.classList.add('pulse');
@@ -301,7 +301,7 @@ export async function choiceBoard(services: Services, opts: ChoiceOpts): Promise
 }
 
 async function slowBlendInline(services: Services, text: string): Promise<void> {
-  await services.speakText(text, 'narrator', 0.55).done;
+  await services.speakWord(text, 0.55).done;
 }
 
 // ── The magic word door — the product thesis ────────────────────────────────

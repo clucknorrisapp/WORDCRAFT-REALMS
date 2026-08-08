@@ -27,6 +27,8 @@ export interface Services {
   /** Speak an authored line (premium clip when present, synthesis otherwise). */
   speakLine(lineId: string, textOverride?: string): { handle: SpeakHandle; done: Promise<void> };
   speakText(text: string, voice?: string, rate?: number): { handle: SpeakHandle; done: Promise<void> };
+  /** Speak a single word — uses the `w_<word>` premium clip when present. */
+  speakWord(text: string, rate?: number): { handle: SpeakHandle; done: Promise<void> };
   recordEvidence(partial: EvidencePartial): Evidence;
   readingInteractions(): number;
 }
@@ -91,6 +93,15 @@ export async function createServices(save: SaveData): Promise<Services> {
       const handle = voice.speak({
         text,
         voice: voiceName,
+        rate: rate ?? save.settings.narrationRate,
+      });
+      return { handle, done: handleDone(handle) };
+    },
+    speakWord(text, rate) {
+      const handle = voice.speak({
+        lineId: `w_${text.toLowerCase()}`,
+        text,
+        voice: 'narrator',
         rate: rate ?? save.settings.narrationRate,
       });
       return { handle, done: handleDone(handle) };
