@@ -24,7 +24,7 @@ export function freshSave(): SaveData {
     evidence: [],
     events: [],
     firstSessionAt: Date.now(),
-    settings: { micEnabled: true, narrationRate: 1, textScale: 1 },
+    settings: { micEnabled: true, micStrictness: 'gentle', narrationRate: 1, textScale: 1 },
   };
 }
 
@@ -34,7 +34,9 @@ export function loadSave(): SaveData {
     if (!raw) return freshSave();
     const parsed = JSON.parse(raw) as SaveData;
     if (parsed.v !== 1) return freshSave();
-    return { ...freshSave(), ...parsed };
+    const fresh = freshSave();
+    // Deep-merge settings so saves from older builds pick up new keys.
+    return { ...fresh, ...parsed, settings: { ...fresh.settings, ...parsed.settings } };
   } catch {
     return freshSave();
   }

@@ -411,23 +411,28 @@ export async function magicWordDoor(services: Services, wordText: string): Promi
           return;
         }
 
+        const strict = services.save.settings.micStrictness === 'strict';
+
         if (result.status === 'no_speech' || result.status === 'timeout') {
           silentTries += 1;
           status.textContent = 'I did not hear you. Big voice! Try again!';
           await services.speakText('I did not hear you. Big voice! Try again!').done;
-          if (silentTries >= 2) {
+          // Gentle mode bails to the ritual after repeated silence; strict
+          // mode keeps the mic up — the door waits for a voice.
+          if (!strict && silentTries >= 2) {
             mic.remove();
             resolve(await ritual());
           }
           return;
         }
 
-        // no_match — a real miss: warm hint ladder, and never a third demand.
+        // no_match — a real miss: warm hint ladder. Gentle mode never makes a
+        // third demand; strict mode deepens the ladder and keeps listening.
         misses += 1;
         finish(true, false, {
           speech: { expected: w.text, recognized: result.recognized, confidence: result.confidence },
         });
-        if (misses === 1) {
+        if (misses === 1 || strict) {
           hintsUsed += 1;
           const first = spans[0];
           first?.classList.add('glow');
@@ -436,6 +441,10 @@ export async function magicWordDoor(services: Services, wordText: string): Promi
           await services.speakLine('ln_almost').done;
           await services.speakText(hint, 'narrator', 0.7).done;
           await slowBlend(services, w.text, spans);
+          if (strict && misses >= 2) {
+            status.textContent = 'Say it with me!';
+            await services.speakText(`Say it with me! ${w.text}!`, 'narrator', 0.8).done;
+          }
           status.textContent = 'Your turn! Tap the microphone.';
         } else {
           await services.speakLine('ln_almost').done;

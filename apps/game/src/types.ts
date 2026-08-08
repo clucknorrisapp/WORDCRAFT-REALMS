@@ -16,6 +16,9 @@ export type QuestStepId = (typeof QuestStep)[keyof typeof QuestStep];
 
 export interface SettingsData {
   micEnabled: boolean;
+  /** gentle = two misses open the door anyway (roadmap pillar 4, kid default).
+   *  strict = the door holds until the word is verifiably spoken. */
+  micStrictness: 'gentle' | 'strict';
   narrationRate: number; // 0.7–1.3
   textScale: number; // 0.9–1.4
 }

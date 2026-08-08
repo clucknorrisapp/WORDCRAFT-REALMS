@@ -90,6 +90,17 @@ export function openParentScreen(services: Services): void {
   });
   settingsRow.appendChild(micToggle);
 
+  const strictLabel = () =>
+    services.save.settings.micStrictness === 'strict' ? '✨ Door: must say it' : '✨ Door: gentle';
+  const strictToggle = el('button', 'btn ghost', strictLabel());
+  strictToggle.addEventListener('click', () => {
+    services.save.settings.micStrictness =
+      services.save.settings.micStrictness === 'strict' ? 'gentle' : 'strict';
+    strictToggle.textContent = strictLabel();
+    services.persist();
+  });
+  settingsRow.appendChild(strictToggle);
+
   const rateBtn = el('button', 'btn ghost', `🗣 Speed: ${services.save.settings.narrationRate}x`);
   rateBtn.addEventListener('click', () => {
     const rates = [0.8, 1, 1.2];
