@@ -1,0 +1,32 @@
+{
+  "order": [
+    "base",
+    "short_a",
+    "short_i",
+    "short_o",
+    "short_e",
+    "short_u",
+    "heart",
+    "digraph_sh",
+    "digraph_ch",
+    "digraph_th",
+    "blend_st"
+  ],
+  "initialTaught": [
+    "base",
+    "short_a",
+    "short_i",
+    "short_o",
+    "short_e",
+    "short_u",
+    "heart",
+    "digraph_sh",
+    "digraph_ch",
+    "digraph_th"
+  ],
+  "stretch": ["blend_st"],
+  "heartWords": [
+    "the", "a", "i", "is", "to", "my", "said", "was", "you", "we",
+    "me", "see", "go", "no", "so", "do", "for", "he", "she"
+  ]
+}

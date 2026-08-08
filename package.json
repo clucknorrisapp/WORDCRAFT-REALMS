@@ -1,0 +1,17 @@
+{
+  "name": "wordcraft-realms",
+  "private": true,
+  "version": "0.1.0",
+  "scripts": {
+    "dev": "pnpm --filter @readquest/game dev",
+    "build": "pnpm --filter @readquest/game build",
+    "preview": "pnpm --filter @readquest/game preview",
+    "test": "pnpm -r --if-present test",
+    "typecheck": "pnpm -r --if-present typecheck"
+  },
+  "packageManager": "pnpm@10.33.0",
+  "devDependencies": {
+    "playwright-core": "^1.62.1",
+    "pngjs": "^7.0.0"
+  }
+}

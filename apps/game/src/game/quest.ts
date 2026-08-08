@@ -1,0 +1,322 @@
+// The Missing Chickens questline — a data-light state machine that composes
+// Reading Moments. The world scene forwards every interaction here; this file
+// decides what happens. No pedagogy: word choices come from content, mastery
+// from the engine, and all reading UI from the widgets.
+import { word as getWord } from '@readquest/content';
+import type { Services } from '../services';
+import type { Hud } from '../ui/hud';
+import {
+  celebrate,
+  choiceBoard,
+  magicWordDoor,
+  readWordCard,
+  showBlueprint,
+  showDialogue,
+  toast,
+} from '../ui/widgets';
+import { QuestStep } from '../types';
+
+export interface WorldControl {
+  openCaveDoor(): void;
+  buildWall(slot: number): void;
+  setCoopStage(stage: number): void;
+  henFoundAt(spot: string): void;
+  showHensAtCoop(): void;
+  openChest(): void;
+  dragonLevelUp(level: number): void;
+  refreshMarkers(): void;
+  playerPos(): { x: number; y: number };
+}
+
+const OBJECTIVES: Record<number, { icon: string; lineId: string | null }> = {
+  [QuestStep.INTRO_SIGNS]: { icon: '🪧', lineId: 'ln_sign_hint' },
+  [QuestStep.GATHER_BUILD]: { icon: '🪵', lineId: 'ln_gather_hint' },
+  [QuestStep.MEET_MAYOR]: { icon: '🐔❗', lineId: 'ln_mayor_1' },
+  [QuestStep.PATH_CHOICE]: { icon: '🪧➡️', lineId: 'ln_clue_path' },
+  [QuestStep.CAVE_DOOR]: { icon: '🧙✨', lineId: 'ln_wizard_prompt' },
+  [QuestStep.HUNT]: { icon: '🐔🔎', lineId: 'ln_mayor_2' },
+  [QuestStep.RETURN_MAYOR]: { icon: '🐔✅', lineId: 'ln_mayor_2' },
+  [QuestStep.BUILD_COOP]: { icon: '🏠🔨', lineId: 'ln_build_coop' },
+  [QuestStep.CHEST]: { icon: '🗝️✨', lineId: 'ln_chest_tease' },
+  [QuestStep.FREE_PLAY]: { icon: '🎈', lineId: 'ln_free_play' },
+};
+
+const HUNT_SPOTS: Record<string, { clue: string; target: string }> = {
+  shed: { clue: 'ln_clue_1', target: 'shed' },
+  rock: { clue: 'ln_clue_2', target: 'rock' },
+  log: { clue: 'ln_clue_3', target: 'log' },
+};
+const SPOT_WORDS = ['shed', 'rock', 'log'];
+
+const FEED_FOODS = ['egg', 'nut', 'jam'];
+
+export class QuestDirector {
+  private feedIdx = 0;
+  private busy = false;
+
+  constructor(
+    private services: Services,
+    private world: WorldControl,
+    private hud: Hud,
+  ) {}
+
+  get step(): number {
+    return this.services.save.questStep;
+  }
+
+  private setStep(step: number): void {
+    this.services.save.questStep = step as typeof this.services.save.questStep;
+    this.services.persist();
+    this.services.analytics.log('quest_step', { step });
+    this.refresh();
+  }
+
+  refresh(): void {
+    const obj = OBJECTIVES[this.step] ?? { icon: '🎈', lineId: null };
+    this.hud.setObjective(obj.icon, obj.lineId);
+    this.hud.setCounts(this.counts());
+    this.world.refreshMarkers();
+  }
+
+  counts(): { wood: number; stone: number; eggs: number; gems: number; hens: number | null } {
+    const s = this.services.save;
+    return {
+      wood: s.wood,
+      stone: s.stone,
+      eggs: s.eggs,
+      gems: s.gems,
+      hens: this.step === QuestStep.HUNT ? s.hensFound.length : null,
+    };
+  }
+
+  async start(): Promise<void> {
+    this.refresh();
+    if (this.step === QuestStep.INTRO_SIGNS && this.services.save.signsRead.length === 0) {
+      await toast(this.services, 'ln_sign_hint');
+    }
+  }
+
+  /** Serialize interactions — one reading moment at a time. */
+  private async run(fn: () => Promise<void>): Promise<void> {
+    if (this.busy) return;
+    this.busy = true;
+    try {
+      await fn();
+    } finally {
+      this.busy = false;
+      this.refresh();
+    }
+  }
+
+  onSignTapped(word: string): void {
+    void this.run(async () => {
+      await readWordCard(this.services, word);
+      await celebrate(this.services);
+      const s = this.services.save;
+      if (!s.signsRead.includes(word)) {
+        s.signsRead.push(word);
+        this.services.persist();
+      }
+      if (this.step === QuestStep.INTRO_SIGNS && s.signsRead.length >= 2) {
+        this.setStep(QuestStep.GATHER_BUILD);
+        await toast(this.services, 'ln_gather_hint');
+      }
+    });
+  }
+
+  onTreeTapped(giveWood: () => void): void {
+    if (this.busy) return;
+    giveWood();
+    this.services.save.wood += 1;
+    this.services.analytics.log('gathered', { kind: 'wood' });
+    this.services.persist();
+    this.hud.setCounts(this.counts());
+  }
+
+  onRockTapped(giveStone: () => void): void {
+    if (this.busy) return;
+    giveStone();
+    this.services.save.stone += 1;
+    this.services.analytics.log('gathered', { kind: 'stone' });
+    this.services.persist();
+    this.hud.setCounts(this.counts());
+  }
+
+  onPlotSlotTapped(slot: number): void {
+    void this.run(async () => {
+      const s = this.services.save;
+      if (s.wallsBuilt.includes(slot)) return;
+      if (s.wood < 1) {
+        await toast(this.services, 'ln_gather_hint');
+        return;
+      }
+      s.wood -= 1;
+      s.wallsBuilt.push(slot);
+      this.services.persist();
+      this.world.buildWall(slot);
+      this.services.analytics.log('item_built', { kind: 'wall', slot });
+      if (this.step === QuestStep.GATHER_BUILD && s.wallsBuilt.length === 1) {
+        await showDialogue(this.services, 'ln_first_wall');
+        await celebrate(this.services);
+        this.setStep(QuestStep.MEET_MAYOR);
+      }
+    });
+  }
+
+  onMayorTapped(): void {
+    void this.run(async () => {
+      if (this.step === QuestStep.MEET_MAYOR) {
+        await showDialogue(this.services, 'ln_mayor_1');
+        await showDialogue(this.services, 'ln_mayor_2');
+        await showDialogue(this.services, 'ln_mayor_3');
+        this.setStep(QuestStep.PATH_CHOICE);
+      } else if (this.step === QuestStep.HUNT) {
+        await showDialogue(this.services, 'ln_mayor_2');
+      } else if (this.step === QuestStep.RETURN_MAYOR) {
+        await showDialogue(this.services, 'ln_hunt_done');
+        await showBlueprint(this.services);
+        await celebrate(this.services, true);
+        this.setStep(QuestStep.BUILD_COOP);
+        await toast(this.services, 'ln_build_coop');
+      } else {
+        await this.services.speakText('Cluck cluck!', 'mayor_hen').done;
+      }
+    });
+  }
+
+  onPathSignTapped(): void {
+    void this.run(async () => {
+      if (this.step === QuestStep.PATH_CHOICE) {
+        await choiceBoard(this.services, {
+          challengeType: 'path_choice',
+          targetWord: 'shed',
+          distractors: ['shop'],
+          clueLineId: 'ln_clue_path',
+          spokenPrompt: 'Read the clue! Where did the hens run?',
+          emoji: '🐔❓',
+        });
+        await celebrate(this.services);
+        this.setStep(QuestStep.CAVE_DOOR);
+      } else {
+        await readWordCard(this.services, 'path');
+      }
+    });
+  }
+
+  onWizardTapped(): void {
+    void this.run(async () => {
+      if (this.step === QuestStep.CAVE_DOOR) {
+        await showDialogue(this.services, 'ln_wizard_prompt');
+        const result = await magicWordDoor(this.services, 'ship');
+        this.world.openCaveDoor();
+        await showDialogue(this.services, 'ln_door_open');
+        await celebrate(this.services, true);
+        this.services.analytics.log('magic_door_opened', { spoken: result.spoken });
+        this.setStep(QuestStep.HUNT);
+      } else if (this.step >= QuestStep.CHEST) {
+        await showDialogue(this.services, 'ln_chest_tease');
+      } else {
+        await this.services.speakText('Hello, little Wordkeeper!', 'wizard').done;
+      }
+    });
+  }
+
+  onHuntSpotTapped(spot: string): void {
+    void this.run(async () => {
+      if (this.step !== QuestStep.HUNT) return;
+      const s = this.services.save;
+      if (s.hensFound.includes(spot)) return;
+      const conf = HUNT_SPOTS[spot];
+      if (!conf) return;
+      await choiceBoard(this.services, {
+        challengeType: 'word_match',
+        targetWord: conf.target,
+        distractors: SPOT_WORDS.filter((w) => w !== conf.target),
+        clueLineId: conf.clue,
+        spokenPrompt: 'Read the clue! Where is the hen?',
+        emoji: '🐔❓',
+      });
+      s.hensFound.push(spot);
+      this.services.persist();
+      this.world.henFoundAt(spot);
+      await celebrate(this.services);
+      if (s.hensFound.length >= 3) {
+        this.setStep(QuestStep.RETURN_MAYOR);
+      }
+    });
+  }
+
+  onCoopTapped(): void {
+    void this.run(async () => {
+      const s = this.services.save;
+      if (this.step !== QuestStep.BUILD_COOP || s.coopStage >= 3) return;
+      if (s.wood < 2) {
+        await toast(this.services, 'ln_gather_hint');
+        return;
+      }
+      s.wood -= 2;
+      s.coopStage += 1;
+      this.services.persist();
+      this.world.setCoopStage(s.coopStage);
+      this.services.analytics.log('item_built', { kind: 'coop_stage', stage: s.coopStage });
+      if (s.coopStage >= 3) {
+        this.world.showHensAtCoop();
+        await showDialogue(this.services, 'ln_coop_done');
+        await celebrate(this.services, true);
+        this.setStep(QuestStep.CHEST);
+        await toast(this.services, 'ln_chest_tease');
+      }
+    });
+  }
+
+  onChestTapped(): void {
+    void this.run(async () => {
+      if (this.step !== QuestStep.CHEST) return;
+      await showDialogue(this.services, 'ln_chest_prompt');
+      // CHEST is the deliberate stretch word: teach the ST blend at this moment.
+      if (!this.services.save.taught.includes('blend_st')) {
+        this.services.save.taught.push('blend_st');
+        this.services.engine.markTaught('blend_st');
+        this.services.persist();
+      }
+      await magicWordDoor(this.services, 'chest');
+      this.world.openChest();
+      this.services.save.gems += 1;
+      this.services.save.dragonLevel = 2;
+      this.services.persist();
+      await showDialogue(this.services, 'ln_chest_open');
+      this.world.dragonLevelUp(2);
+      await celebrate(this.services, true);
+      this.setStep(QuestStep.FREE_PLAY);
+      await showDialogue(this.services, 'ln_free_play');
+    });
+  }
+
+  onDragonTapped(): void {
+    void this.run(async () => {
+      const target = FEED_FOODS[this.feedIdx % FEED_FOODS.length]!;
+      this.feedIdx += 1;
+      await toast(this.services, 'ln_feed_dragon');
+      await choiceBoard(this.services, {
+        challengeType: 'word_match',
+        targetWord: target,
+        distractors: FEED_FOODS.filter((f) => f !== target),
+        spokenPrompt: `Your dragon wants: ${target}!`,
+        emoji: '🐉🍽️',
+      });
+      const w = getWord(target);
+      this.services.analytics.log('pet_fed', { food: w.id });
+      this.services.save.dragonXp += 1;
+      if (target === 'egg' && this.services.save.eggs > 0) this.services.save.eggs -= 1;
+      this.services.persist();
+      await celebrate(this.services);
+    });
+  }
+
+  onEggCollected(): void {
+    this.services.save.eggs += 1;
+    this.services.analytics.log('egg_collected');
+    this.services.persist();
+    this.hud.setCounts(this.counts());
+  }
+}

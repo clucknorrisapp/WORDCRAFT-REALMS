@@ -1,0 +1,25 @@
+{
+  "name": "@readquest/game",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "typecheck": "tsc --noEmit -p ."
+  },
+  "dependencies": {
+    "@readquest/analytics": "workspace:*",
+    "@readquest/content": "workspace:*",
+    "@readquest/learning-engine": "workspace:*",
+    "@readquest/shared": "workspace:*",
+    "@readquest/speech": "workspace:*",
+    "@readquest/voice": "workspace:*",
+    "phaser": "^3.87.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.6.0",
+    "vite": "^5.4.0"
+  }
+}

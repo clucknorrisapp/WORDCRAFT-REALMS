@@ -4,35 +4,67 @@
 
 A real adventure/building game where becoming a better reader makes you more powerful in the world. The child is a **Wordkeeper** in the Kingdom of Lexia, a land that has lost its words — and their voice is literally magic. Underneath, an invisible mastery engine tracks exactly what they can read and quietly builds the world that teaches them what's next.
 
-## Status
+## Status: playable slice v0 🎮
 
-**Pre-code, docs-first.** The design and plan are locked; the next step is milestone **M0** of the build plan (repo scaffold + the two week-1 spikes).
+The first playable build of the SLICE ("The Magic Door") exists and runs in a browser:
+
+- Character select → **dragon naming from decodable word cards** (REX / ASH / CHIP / DASH, each with audio)
+- Meadow Village + forest edge + the Wizard's cave, tap-to-move + WASD, gathering, plot building
+- The Missing Chickens questline end-to-end: signs → Mayor Hen → clue path-choice → **the mic magic-word door (SHIP)** → hen hunt via decodable clues → coop ("hen den") build → eggs → treasure chest (CHEST, the deliberate stretch word) → dragon level-up → free play
+- 4 Reading Moments: narrated dialogue with word-by-word highlighting, sign reading, word match, magic-word door with the pronunciation hint ladder
+- Warm failure everywhere ("Almost! Listen…"), **two-miss-and-the-door-opens-anyway**, and a no-mic ritual fallback — the mic can never block
+- Evidence + mastery live (production weighted 2×), parent/facilitator screen with gate metrics and JSON export
+- ~180-word decodable corpus enforced by a build-time validator (the iron rule)
+
+## Quickstart
+
+```bash
+pnpm install
+pnpm dev        # game at http://localhost:5173
+pnpm test       # engine + matcher + content/iron-rule suites
+pnpm typecheck
+pnpm build      # production build in apps/game/dist
+```
+
+Smoke tests (need Chromium; used in this repo's verification):
+
+```bash
+pnpm build && pnpm preview &
+node tools/smoke/verify.mjs        # select → naming → world → sign read
+node tools/smoke/verify-door.mjs   # the magic door: stubbed "ship" → evidence
+```
+
+## Repository map
+
+```
+apps/game                  Phaser 3 world + DOM reading UI + parent screen
+packages/shared            Typed contracts — the module seams
+packages/learning-engine   Mastery math, evidence replay, scaffolding policy (pure TS)
+packages/content           Curriculum, 180-word corpus, script lines, decodability validator
+packages/voice             speak(): pre-generated clips (ElevenLabs) + browser-synthesis fallback
+packages/speech            listen(): WebSpeech adapter + forgiving phonetic matcher (no audio ever stored)
+packages/analytics         Local event log + playtest export
+tools/sprites              Sprite-sheet slicer (flood-fill background removal, fragment cleanup)
+tools/smoke                Playwright smoke tests
+docs/                      Roadmap · Technical architecture · Phase 1 build plan
+```
+
+## Asset pipeline (Higgsfield + ElevenLabs)
+
+- **Art:** the entire cast (4 avatars, dragon, Mayor Hen, wizard, hen, and 8 props) was generated as a single 4×4 sprite sheet with Higgsfield `nano_banana`, then sliced locally: `node tools/sprites/slice-sheet.mjs <sheet.png> apps/game/public/assets/sprites`
+- **Voice:** premium lines are generated with Higgsfield `text2speech_v2` (**variant: `elevenlabs`**) and registered in `apps/game/public/assets/audio/manifest.json`; any line without a clip falls back to browser speech synthesis at runtime, so the game is always fully voiced. Two premium clips ship today (the wizard's magic-word prompt and the door-open celebration — the thesis moment); batch-generating the rest requires topping up Higgsfield credits.
+
+## The one rule that outranks the rest
+
+The game world, the reading/mastery engine, the TTS system, and the speech-recognition system stay **separate modules behind typed contracts** (`packages/shared`). Pedagogy never lives in game code; rendering never lives in engine code; `speak()` and `listen()` are the only doors to voice and mic — and `listen()` has no API that stores audio, so *"we never store your child's voice"* is enforced by design.
 
 ## Documents
 
 | Document | What it is |
 |---|---|
-| [docs/GAME-ROADMAP.md](docs/GAME-ROADMAP.md) | **The game.** Canonical design roadmap v2: identity, pillars, systems, 9-biome rollout, release phases (SLICE → MVP → RETENTION → LAUNCH → BEYOND). |
-| [docs/TECHNICAL-ARCHITECTURE.md](docs/TECHNICAL-ARCHITECTURE.md) | How it's built: module boundaries (game client / learning engine / content engine / voice / speech / API), typed contracts, stack decision (TypeScript + Phaser 3, browser-first), data model, content pipeline, privacy architecture, phase map. |
-| [docs/PHASE-1-BUILD-PLAN.md](docs/PHASE-1-BUILD-PLAN.md) | The 3-week vertical slice — **"The Magic Door"**: scope (IN/OUT), the 15-minute playable script as spec, ~155-word content plan, milestones M0–M4 with acceptance criteria, risk register, kid-playtest protocol, and the GO/NO-GO gate. |
-
-## The one rule that outranks the rest
-
-The game world, the reading/mastery engine, the TTS system, and the microphone/speech-recognition system stay **separate modules behind typed contracts** — from the first commit. Pedagogy never lives in game code; rendering never lives in engine code; `speak()` and `listen()` are the only doors to voice and mic. That separation is what lets the voice roadmap (narration → word recognition → sentence read-aloud → phoneme analysis) ship incrementally without ever rebuilding the game.
-
-## Planned repository layout
-
-```
-apps/game            Phaser 3 client + DOM reading UI (+ parent screen)
-apps/api             Backend — MVP phase onward
-packages/shared      Types & contracts (the module seams)
-packages/learning-engine   Mastery, adaptive selection, spaced repetition (pure TS)
-packages/content     Curriculum, words, lines, quests + decodability validator
-packages/voice       TTS abstraction + adapters (Cluck Norris stack, pre-generated audio)
-packages/speech      Mic/ASR abstraction + forgiving matcher + adapters
-packages/analytics   Event taxonomy + local queue
-tools/content-cli    validate · audio-gen · align · pack (runs in CI)
-```
+| [docs/GAME-ROADMAP.md](docs/GAME-ROADMAP.md) | **The game.** Canonical design roadmap v2. |
+| [docs/TECHNICAL-ARCHITECTURE.md](docs/TECHNICAL-ARCHITECTURE.md) | Module boundaries, contracts, stack, data model, pipelines, phase map. |
+| [docs/PHASE-1-BUILD-PLAN.md](docs/PHASE-1-BUILD-PLAN.md) | The 3-week slice plan, playtest protocol, GO/NO-GO gate. |
 
 ## North star
 

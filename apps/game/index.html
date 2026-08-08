@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <link rel="icon" href="data:," />
+  <title>ReadQuest — Wordcraft Realms</title>
+  <style>
+    :root {
+      --ink: #333a4d;
+      --panel: #fffdf7;
+      --accent: #ff9f43;
+      --accent2: #6c5ce7;
+      --good: #2ecc71;
+      --card: #ffffff;
+      --shadow: 0 6px 0 rgba(0, 0, 0, 0.12);
+      --radius: 22px;
+      --font: "Nunito", "Comic Sans MS", "Segoe UI Rounded", -apple-system, system-ui, sans-serif;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    html, body { height: 100%; overflow: hidden; background: #7ec850; font-family: var(--font); }
+    #game { position: fixed; inset: 0; }
+    #game canvas { display: block; }
+    #overlay { position: fixed; inset: 0; pointer-events: none; z-index: 10; }
+    #overlay > * { pointer-events: auto; }
+
+    .scrim {
+      position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+      background: rgba(30, 30, 60, 0.45); animation: fadein 0.25s ease;
+    }
+    .scrim.clear { background: transparent; pointer-events: none; }
+    .scrim.clear > * { pointer-events: auto; }
+    @keyframes fadein { from { opacity: 0; } to { opacity: 1; } }
+
+    .panel {
+      background: var(--panel); border-radius: var(--radius); box-shadow: var(--shadow);
+      padding: 22px; max-width: min(560px, 92vw); text-align: center;
+      animation: pop 0.28s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+    @keyframes pop { from { transform: scale(0.7); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+
+    .title { font-size: 26px; font-weight: 800; color: var(--ink); margin-bottom: 14px; }
+    .subtitle { font-size: 17px; color: #777f95; margin-bottom: 14px; }
+
+    .dialogue {
+      position: absolute; left: 50%; bottom: max(18px, env(safe-area-inset-bottom)); transform: translateX(-50%);
+      width: min(640px, 94vw); background: var(--panel); border-radius: var(--radius);
+      box-shadow: var(--shadow); padding: 16px 18px; display: flex; gap: 14px; align-items: center;
+      animation: pop 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+    .dialogue img.portrait { width: 74px; height: 74px; object-fit: contain; flex: 0 0 auto; }
+    .dialogue .speech { flex: 1; text-align: left; }
+    .dialogue .words { font-size: calc(21px * var(--text-scale, 1)); font-weight: 800; color: var(--ink); line-height: 1.55; }
+    .dialogue .words span { padding: 1px 3px; border-radius: 6px; transition: background 0.12s; }
+    .dialogue .words span.hot { background: #ffe08a; }
+    .drow { display: flex; gap: 10px; margin-top: 10px; align-items: center; }
+
+    .btn {
+      font-family: var(--font); font-size: 19px; font-weight: 800; color: #fff;
+      background: var(--accent); border: none; border-radius: 16px; padding: 12px 22px;
+      box-shadow: 0 4px 0 rgba(0, 0, 0, 0.15); cursor: pointer; touch-action: manipulation;
+    }
+    .btn:active { transform: translateY(2px); box-shadow: 0 2px 0 rgba(0, 0, 0, 0.15); }
+    .btn.alt { background: var(--accent2); }
+    .btn.ghost { background: #e8e6ff; color: var(--accent2); }
+    .btn.round { border-radius: 50%; width: 52px; height: 52px; padding: 0; font-size: 22px; }
+
+    .word-big {
+      font-size: calc(56px * var(--text-scale, 1)); font-weight: 900; letter-spacing: 4px;
+      color: var(--ink); text-transform: uppercase; margin: 10px 0;
+    }
+    .word-big .g { padding: 0 2px; border-radius: 8px; }
+    .word-big .g.glow { color: var(--accent2); background: #efeaff; }
+
+    .cards { display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; margin-top: 14px; }
+    .word-card {
+      background: var(--card); border: 4px solid #e7e3d8; border-radius: 18px; padding: 18px 22px;
+      font-size: calc(34px * var(--text-scale, 1)); font-weight: 900; letter-spacing: 3px; color: var(--ink);
+      text-transform: uppercase; cursor: pointer; box-shadow: var(--shadow); touch-action: manipulation;
+      transition: transform 0.12s;
+    }
+    .word-card:active { transform: scale(0.95); }
+    .word-card.right { border-color: var(--good); background: #eafff2; }
+    .word-card.wiggle { animation: wiggle 0.4s; }
+    .word-card.pulse { animation: pulse 0.9s infinite; border-color: var(--accent); }
+    @keyframes wiggle { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-7px); } 75% { transform: translateX(7px); } }
+    @keyframes pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.07); } }
+
+    .avatar-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-top: 10px; }
+    .avatar-grid img {
+      width: 100%; aspect-ratio: 1; object-fit: contain; background: #f3f0e8; border-radius: 18px;
+      border: 4px solid transparent; cursor: pointer; padding: 8px;
+    }
+    .avatar-grid img.sel { border-color: var(--accent); background: #fff2df; }
+
+    .mic-btn {
+      width: 96px; height: 96px; border-radius: 50%; border: none; cursor: pointer;
+      background: radial-gradient(circle at 35% 30%, #ff7675, #d63031); color: #fff; font-size: 42px;
+      box-shadow: 0 6px 0 rgba(0, 0, 0, 0.2); margin-top: 12px; touch-action: manipulation;
+    }
+    .mic-btn.listening { animation: listen 1s infinite; background: radial-gradient(circle at 35% 30%, #55efc4, #00b894); }
+    @keyframes listen { 0%, 100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(0, 184, 148, 0.5); } 50% { transform: scale(1.08); box-shadow: 0 0 0 22px rgba(0, 184, 148, 0); } }
+
+    .hud {
+      position: absolute; top: max(10px, env(safe-area-inset-top)); left: 12px; display: flex; gap: 8px; align-items: center;
+    }
+    .chip {
+      background: rgba(255, 253, 247, 0.92); border-radius: 14px; padding: 7px 12px; font-weight: 900;
+      font-size: 17px; color: var(--ink); box-shadow: 0 3px 0 rgba(0, 0, 0, 0.12);
+    }
+    .hud-right { position: absolute; top: max(10px, env(safe-area-inset-top)); right: 12px; display: flex; gap: 8px; }
+    .objective {
+      position: absolute; top: max(10px, env(safe-area-inset-top)); left: 50%; transform: translateX(-50%);
+      background: rgba(255, 253, 247, 0.94); border-radius: 16px; padding: 8px 16px; font-weight: 900; font-size: 18px;
+      color: var(--ink); box-shadow: 0 3px 0 rgba(0, 0, 0, 0.12); display: flex; gap: 8px; align-items: center; cursor: pointer;
+      max-width: 60vw;
+    }
+
+    .confetti-bit { position: absolute; width: 12px; height: 12px; border-radius: 3px; pointer-events: none; z-index: 40; }
+    .float-note {
+      position: absolute; font-weight: 900; font-size: 20px; color: #fff; text-shadow: 0 2px 0 rgba(0,0,0,0.25);
+      pointer-events: none; z-index: 30; transition: transform 1s ease-out, opacity 1s;
+    }
+
+    .parent { max-height: 86vh; overflow-y: auto; text-align: left; width: min(620px, 94vw); }
+    .parent h2 { color: var(--ink); font-size: 22px; margin-bottom: 4px; }
+    .parent .privacy { background: #eafff2; border-radius: 12px; padding: 10px 14px; font-weight: 800; color: #1b7943; margin: 10px 0; }
+    .stat-row { display: flex; justify-content: space-between; padding: 7px 4px; border-bottom: 1px dashed #e3e0d6; font-size: 16px; color: var(--ink); }
+    .band { font-weight: 900; padding: 2px 10px; border-radius: 10px; font-size: 14px; }
+    .band.new { background: #f0f0f0; color: #888; }
+    .band.learning { background: #ffe9cc; color: #b3671b; }
+    .band.developing { background: #fff3bf; color: #8d7b1a; }
+    .band.proficient { background: #d6f5e3; color: #1b7943; }
+    .band.mastered { background: #d0ebff; color: #1864ab; }
+  </style>
+</head>
+<body>
+  <div id="game"></div>
+  <div id="overlay"></div>
+  <script type="module" src="/src/main.ts"></script>
+</body>
+</html>

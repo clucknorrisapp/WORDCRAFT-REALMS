@@ -1,0 +1,7 @@
+{
+  "comment": "Pre-generated voice clips (ElevenLabs via Higgsfield text2speech_v2). Lines without a clip fall back to browser speech synthesis at runtime. Regenerate with tools/audio (requires Higgsfield credits).",
+  "clips": {
+    "ln_wizard_prompt": "assets/audio/ln_wizard_prompt.mp3",
+    "ln_door_open": "assets/audio/ln_door_open.mp3"
+  }
+}

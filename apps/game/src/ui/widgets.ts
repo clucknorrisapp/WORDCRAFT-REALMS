@@ -1,0 +1,492 @@
+// The Reading Moments — reusable widgets with a uniform lifecycle
+// (present → attempt(s) → resolve → emit Evidence). Quests compose these.
+// Pillar rules enforced here, in the interaction layer:
+//   - never the word "wrong": warm retry + hint ladder
+//   - the mic can never block: two misses and the door opens anyway
+//   - celebration fires on every success (the dragon's animation is load-bearing)
+
+import { buildChallenge, line as getLine, word as getWord } from '@readquest/content';
+import { seededShuffle } from '@readquest/shared';
+import type { Services } from '../services';
+import { confetti, el, isUiOpen, openLayer, speakerButton, wait } from './dom';
+
+export { isUiOpen };
+
+const PORTRAITS: Record<string, string> = {
+  narrator: 'assets/sprites/dragon.png',
+  mayor_hen: 'assets/sprites/mayor_hen.png',
+  wizard: 'assets/sprites/wizard.png',
+  sign: 'assets/sprites/sign.png',
+};
+
+// The world scene registers the dragon's celebrate animation here.
+let dragonCelebrate: (big: boolean) => void = () => {};
+export function setDragonCelebrate(fn: (big: boolean) => void): void {
+  dragonCelebrate = fn;
+}
+
+const CELEBRATE_LINES = ['ln_celebrate_1', 'ln_celebrate_2', 'ln_celebrate_3'];
+let celebrateIdx = 0;
+
+export async function celebrate(services: Services, big = false, lineId?: string): Promise<void> {
+  confetti(big ? 44 : 22);
+  dragonCelebrate(big);
+  const id = lineId ?? CELEBRATE_LINES[celebrateIdx++ % CELEBRATE_LINES.length]!;
+  await services.speakLine(id).done;
+}
+
+/** Hint sounds for the pronunciation ladder (roadmap §7). */
+const GRAPHEME_HINTS: Record<string, string> = {
+  sh: 'shhh',
+  ch: 'ch, ch',
+  th: 'thhh',
+  st: 'sss, t',
+  ck: 'k',
+  a: 'ah',
+  e: 'eh',
+  i: 'ih',
+  o: 'o',
+  u: 'uh',
+};
+
+function graphemeSpans(text: string): { wrap: HTMLElement; spans: HTMLElement[] } {
+  const w = getWordSafe(text);
+  const wrap = el('div', 'word-big');
+  const spans: HTMLElement[] = [];
+  const parts = w ? w.graphemes : text.split('');
+  for (const g of parts) {
+    const s = el('span', 'g', g.toUpperCase());
+    wrap.appendChild(s);
+    spans.push(s);
+  }
+  return { wrap, spans };
+}
+
+function getWordSafe(text: string) {
+  try {
+    return getWord(text);
+  } catch {
+    return null;
+  }
+}
+
+/** Slow blend: glow graphemes in sequence while speaking slowly. */
+async function slowBlend(services: Services, text: string, spans: HTMLElement[]): Promise<void> {
+  const per = 420;
+  spans.forEach((s, i) => {
+    setTimeout(() => {
+      spans.forEach((x) => x.classList.remove('glow'));
+      s.classList.add('glow');
+    }, i * per);
+  });
+  setTimeout(() => spans.forEach((x) => x.classList.remove('glow')), spans.length * per + 400);
+  await services.speakText(text, 'narrator', 0.55).done;
+}
+
+// ── Narrated dialogue with word-by-word highlighting ────────────────────────
+export async function showDialogue(
+  services: Services,
+  lineId: string,
+  opts: { nameSub?: string } = {},
+): Promise<void> {
+  const l = getLine(lineId);
+  let text = l.text;
+  if (opts.nameSub) text = text.replaceAll('{name}', opts.nameSub);
+
+  const layer = openLayer();
+  layer.root.style.background = 'rgba(20, 20, 50, 0.18)';
+  const box = el('div', 'dialogue');
+  const portrait = el('img', 'portrait') as HTMLImageElement;
+  portrait.src = PORTRAITS[l.speaker] ?? PORTRAITS['narrator']!;
+  const speech = el('div', 'speech');
+  const wordsEl = el('div', 'words');
+  const spans: HTMLElement[] = [];
+  text.split(/\s+/).forEach((wrd, i) => {
+    if (i > 0) wordsEl.appendChild(document.createTextNode(' '));
+    const s = el('span', '', wrd);
+    wordsEl.appendChild(s);
+    spans.push(s);
+  });
+  speech.appendChild(wordsEl);
+  const row = el('div', 'drow');
+  speech.appendChild(row);
+  box.appendChild(portrait);
+  box.appendChild(speech);
+  layer.root.appendChild(box);
+  layer.root.style.alignItems = 'flex-end';
+
+  const speak = () =>
+    new Promise<void>((resolve) => {
+      const { handle } = services.speakLine(lineId, opts.nameSub ? text : undefined);
+      handle.onWordBoundary((i) => {
+        spans.forEach((s) => s.classList.remove('hot'));
+        spans[i]?.classList.add('hot');
+      });
+      handle.onEnd(() => {
+        spans.forEach((s) => s.classList.remove('hot'));
+        resolve();
+      });
+    });
+
+  const replay = speakerButton(() => {
+    services.analytics.log('audio_requested', { lineId });
+    void speak();
+  });
+  const next = el('button', 'btn', '▶');
+  next.style.visibility = 'hidden';
+  row.appendChild(replay);
+  row.appendChild(next);
+
+  const policy = services.engine.scaffolding();
+  if (policy.dialogueAudio === 'auto') await Promise.race([speak(), wait(9000)]);
+  else await wait(300); // reader-led: audio only via the 🔊 button
+  next.style.visibility = 'visible';
+
+  await new Promise<void>((resolve) => next.addEventListener('click', () => resolve(), { once: true }));
+  layer.close();
+}
+
+// ── Sign / word-card reading ────────────────────────────────────────────────
+export async function readWordCard(
+  services: Services,
+  wordText: string,
+  opts: { autoSpeak?: boolean; countType?: 'sign_read' } = {},
+): Promise<void> {
+  const started = Date.now();
+  const w = getWord(wordText);
+  const layer = openLayer();
+  const panel = el('div', 'panel');
+  const { wrap } = graphemeSpans(wordText);
+  panel.appendChild(el('div', 'subtitle', '🪧'));
+  panel.appendChild(wrap);
+  let audioRequested = false;
+  const row = el('div', 'cards');
+  const replay = speakerButton(() => {
+    audioRequested = true;
+    void services.speakText(w.text).done;
+  });
+  const ok = el('button', 'btn', '✓');
+  ok.style.fontSize = '26px';
+  row.appendChild(replay);
+  row.appendChild(ok);
+  panel.appendChild(row);
+  layer.root.appendChild(panel);
+
+  if (opts.autoSpeak !== false) {
+    await wait(650); // let them look at the word first
+    await services.speakText(w.text).done;
+  }
+  await new Promise<void>((resolve) => ok.addEventListener('click', () => resolve(), { once: true }));
+  layer.close();
+
+  services.recordEvidence({
+    challengeType: 'sign_read',
+    skillIds: w.skills,
+    wordId: w.id,
+    channel: 'recognition',
+    correct: true,
+    attemptIndex: 1,
+    hintsUsed: 0,
+    audioRequested,
+    micUsed: false,
+    responseMs: Date.now() - started,
+  });
+}
+
+// ── Word match / path choice ────────────────────────────────────────────────
+export interface ChoiceOpts {
+  challengeType: 'word_match' | 'path_choice';
+  targetWord: string;
+  /** Explicit distractors; defaults to the target's curated confusables. */
+  distractors?: string[];
+  /** Spoken instruction (audio only, not displayed). */
+  spokenPrompt?: string;
+  /** A decodable clue the child reads before choosing (displayed). */
+  clueLineId?: string;
+  emoji?: string;
+}
+
+export async function choiceBoard(services: Services, opts: ChoiceOpts): Promise<void> {
+  const started = Date.now();
+  const target = getWord(opts.targetWord);
+  const seed = Math.floor(Math.random() * 1e6);
+
+  let options: string[];
+  if (opts.distractors) {
+    const all = [opts.targetWord, ...opts.distractors];
+    options = seededShuffle(all.length, seed).map((i) => all[i]!);
+  } else {
+    const ch = buildChallenge(opts.targetWord, seed);
+    const all = [ch.target.text, ...ch.distractors.map((d) => d.text)];
+    options = ch.order.map((i) => all[i]!);
+  }
+
+  const layer = openLayer();
+  const panel = el('div', 'panel');
+  if (opts.emoji) panel.appendChild(el('div', 'title', opts.emoji));
+
+  let audioRequested = false;
+  if (opts.clueLineId) {
+    const clue = getLine(opts.clueLineId);
+    const clueEl = el('div', 'title');
+    clueEl.style.fontSize = '30px';
+    clueEl.style.letterSpacing = '1px';
+    clueEl.textContent = clue.text.toUpperCase();
+    panel.appendChild(clueEl);
+    const hear = speakerButton(() => {
+      audioRequested = true;
+      void services.speakLine(opts.clueLineId!).done;
+    });
+    panel.appendChild(hear);
+  }
+
+  const cards = el('div', 'cards');
+  panel.appendChild(cards);
+  layer.root.appendChild(panel);
+
+  const sayPrompt = async () => {
+    if (opts.spokenPrompt) await services.speakText(opts.spokenPrompt).done;
+  };
+  void sayPrompt();
+
+  let attempt = 0;
+  let hintsUsed = 0;
+
+  await new Promise<void>((resolve) => {
+    const buttons: HTMLButtonElement[] = [];
+    for (const text of options) {
+      const card = el('button', 'word-card', text.toUpperCase());
+      buttons.push(card);
+      card.addEventListener('click', () => {
+        attempt += 1;
+        if (text === target.text) {
+          card.classList.add('right');
+          services.recordEvidence({
+            challengeType: opts.challengeType,
+            skillIds: target.skills,
+            wordId: target.id,
+            lineId: opts.clueLineId,
+            channel: 'recognition',
+            correct: attempt === 1,
+            attemptIndex: attempt,
+            hintsUsed,
+            audioRequested,
+            micUsed: false,
+            responseMs: Date.now() - started,
+            seed,
+          });
+          setTimeout(resolve, 450);
+        } else {
+          // Warm failure: "Almost!" + hint ladder, never "wrong" (pillar 4).
+          card.classList.add('wiggle');
+          card.disabled = true;
+          card.style.opacity = '0.5';
+          hintsUsed += 1;
+          void (async () => {
+            await services.speakLine('ln_almost').done;
+            if (hintsUsed === 1) {
+              await services.speakText(target.text, 'narrator', 0.7).done;
+            } else {
+              const correctBtn = buttons.find((b) => b.textContent === target.text.toUpperCase());
+              correctBtn?.classList.add('pulse');
+              await slowBlendInline(services, target.text);
+            }
+          })();
+        }
+      });
+      cards.appendChild(card);
+    }
+  });
+  layer.close();
+}
+
+async function slowBlendInline(services: Services, text: string): Promise<void> {
+  await services.speakText(text, 'narrator', 0.55).done;
+}
+
+// ── The magic word door — the product thesis ────────────────────────────────
+export interface MagicDoorResult {
+  opened: true;
+  spoken: boolean; // did a verified mic match open it?
+}
+
+export async function magicWordDoor(services: Services, wordText: string): Promise<MagicDoorResult> {
+  const started = Date.now();
+  const w = getWord(wordText);
+  const layer = openLayer();
+  const panel = el('div', 'panel');
+  panel.appendChild(el('div', 'title', '✨ Say the magic word ✨'));
+  const { wrap, spans } = graphemeSpans(wordText);
+  wrap.classList.add('word-big');
+  panel.appendChild(wrap);
+  const status = el('div', 'subtitle', ' ');
+  panel.appendChild(status);
+  layer.root.appendChild(panel);
+
+  const availability = await services.speech.available();
+  const micAllowed = services.save.settings.micEnabled && availability.supported;
+
+  const finish = (spoken: boolean, correct: boolean, extra: Partial<Parameters<Services['recordEvidence']>[0]> = {}) => {
+    services.recordEvidence({
+      challengeType: 'magic_word',
+      skillIds: w.skills,
+      wordId: w.id,
+      channel: 'production',
+      correct,
+      attemptIndex: Math.max(1, misses + 1),
+      hintsUsed,
+      audioRequested: false,
+      micUsed: spoken,
+      responseMs: Date.now() - started,
+      ...extra,
+    });
+  };
+
+  let misses = 0;
+  let hintsUsed = 0;
+  let silentTries = 0;
+
+  const ritual = async (): Promise<MagicDoorResult> => {
+    // No mic (unsupported, denied, or parent-disabled): say-it-out-loud ritual.
+    // Production-flavored, logged as unverified (micUsed: false).
+    status.textContent = 'Say it out loud! Then tap the word.';
+    await services.speakLine('ln_ritual_say').done;
+    wrap.style.cursor = 'pointer';
+    wrap.classList.add('pulse');
+    await new Promise<void>((r) => wrap.addEventListener('click', () => r(), { once: true }));
+    finish(false, true);
+    layer.close();
+    return { opened: true, spoken: false };
+  };
+
+  if (!micAllowed) {
+    services.analytics.log('mic_unavailable', {
+      supported: availability.supported,
+      permission: availability.permission,
+      enabled: services.save.settings.micEnabled,
+    });
+    return ritual();
+  }
+
+  const mic = el('button', 'mic-btn', '🎤');
+  panel.appendChild(mic);
+
+  return new Promise<MagicDoorResult>((resolve) => {
+    const openDoor = async (spoken: boolean, viaAssist: boolean) => {
+      mic.disabled = true;
+      mic.classList.remove('listening');
+      if (viaAssist) {
+        services.analytics.log('mic_assist_open', { word: w.text, misses });
+        status.textContent = 'What a good try! The door opens for you!';
+        await services.speakText('What a good try! The door opens for you!').done;
+      }
+      layer.close();
+      resolve({ opened: true, spoken });
+    };
+
+    mic.addEventListener('click', () => {
+      void (async () => {
+        if (mic.disabled) return;
+        mic.disabled = true;
+        mic.classList.add('listening');
+        status.textContent = '🎤 I am listening...';
+        services.analytics.log('mic_attempted', { word: w.text });
+
+        const result = await services.speech.listen({ expected: w.text, timeoutMs: 6500 });
+        mic.classList.remove('listening');
+        mic.disabled = false;
+
+        if (result.status === 'match') {
+          finish(true, true, {
+            speech: { expected: w.text, recognized: result.recognized, confidence: result.confidence },
+          });
+          await openDoor(true, false);
+          return;
+        }
+
+        if (result.status === 'permission_denied' || result.status === 'unsupported' || result.status === 'error') {
+          services.analytics.log('mic_fallback_ritual', { reason: result.status });
+          mic.remove();
+          resolve(await ritual());
+          return;
+        }
+
+        if (result.status === 'no_speech' || result.status === 'timeout') {
+          silentTries += 1;
+          status.textContent = 'I did not hear you. Big voice! Try again!';
+          await services.speakText('I did not hear you. Big voice! Try again!').done;
+          if (silentTries >= 2) {
+            mic.remove();
+            resolve(await ritual());
+          }
+          return;
+        }
+
+        // no_match — a real miss: warm hint ladder, and never a third demand.
+        misses += 1;
+        finish(true, false, {
+          speech: { expected: w.text, recognized: result.recognized, confidence: result.confidence },
+        });
+        if (misses === 1) {
+          hintsUsed += 1;
+          const first = spans[0];
+          first?.classList.add('glow');
+          const hint = GRAPHEME_HINTS[w.graphemes[0] ?? ''] ?? w.graphemes[0] ?? '';
+          status.textContent = `Almost! Listen: ${hint}…`;
+          await services.speakLine('ln_almost').done;
+          await services.speakText(hint, 'narrator', 0.7).done;
+          await slowBlend(services, w.text, spans);
+          status.textContent = 'Your turn! Tap the microphone.';
+        } else {
+          await services.speakLine('ln_almost').done;
+          await openDoor(true, true); // two misses → the door opens anyway
+        }
+      })();
+    });
+  });
+}
+
+// ── Small helpers used by the quest layer ───────────────────────────────────
+export async function toast(services: Services, lineId: string, nameSub?: string): Promise<void> {
+  const l = getLine(lineId);
+  let text = l.text;
+  if (nameSub) text = text.replaceAll('{name}', nameSub);
+  const layer = openLayer({ scrim: false });
+  const box = el('div', 'dialogue');
+  box.style.padding = '12px 16px';
+  const speech = el('div', 'speech');
+  speech.appendChild(el('div', 'words', text));
+  box.appendChild(speech);
+  layer.root.appendChild(box);
+  layer.root.style.alignItems = 'flex-end';
+  await services.speakLine(lineId, nameSub ? text : undefined).done;
+  await wait(700);
+  layer.close();
+}
+
+export async function showBlueprint(services: Services): Promise<void> {
+  const layer = openLayer();
+  const panel = el('div', 'panel');
+  panel.appendChild(el('div', 'title', '📜 A gift!'));
+  const img = el('img') as HTMLImageElement;
+  img.src = 'assets/sprites/coop.png';
+  img.style.width = '140px';
+  panel.appendChild(img);
+  const clue = getLine('ln_blueprint');
+  const clueEl = el('div', 'word-big', clue.text.toUpperCase());
+  clueEl.style.fontSize = '34px';
+  panel.appendChild(clueEl);
+  const row = el('div', 'cards');
+  row.appendChild(
+    speakerButton(() => {
+      void services.speakLine('ln_blueprint').done;
+    }),
+  );
+  const ok = el('button', 'btn', '✓');
+  row.appendChild(ok);
+  panel.appendChild(row);
+  layer.root.appendChild(panel);
+  await services.speakLine('ln_blueprint').done;
+  await new Promise<void>((r) => ok.addEventListener('click', () => r(), { once: true }));
+  layer.close();
+}
