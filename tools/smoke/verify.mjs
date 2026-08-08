@@ -7,7 +7,7 @@ fs.mkdirSync(OUT, { recursive: true });
 const errors = [];
 
 const browser = await chromium.launch({
-  executablePath: '/opt/pw-browsers/chromium',
+  executablePath: process.env.PLAYWRIGHT_CHROMIUM || '/opt/pw-browsers/chromium',
   args: ['--no-sandbox', '--disable-dev-shm-usage'],
 });
 const page = await browser.newPage({ viewport: { width: 1024, height: 768 }, hasTouch: true });

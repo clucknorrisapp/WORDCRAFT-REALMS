@@ -24,3 +24,5 @@ jobs:
         with:
           name: game-dist
           path: apps/game/dist
+      # Browser smoke/audio/fleet tests run locally (they need Chromium):
+      #   pnpm build && pnpm preview &   then   pnpm smoke   (or   pnpm fleet)

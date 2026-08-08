@@ -8,7 +8,9 @@
     "preview": "pnpm --filter @readquest/game preview",
     "start": "node apps/game/serve.mjs",
     "test": "pnpm -r --if-present test",
-    "typecheck": "pnpm -r --if-present typecheck"
+    "typecheck": "pnpm -r --if-present typecheck",
+    "smoke": "node tools/smoke/verify.mjs && node tools/smoke/verify-door.mjs && node tools/smoke/verify-chest.mjs && node tools/smoke/verify-audio.mjs",
+    "fleet": "node tools/smoke/fleet.mjs"
   },
   "engines": {
     "node": ">=20"
