@@ -5,3 +5,6 @@ dist/
 .DS_Store
 coverage/
 playtest-data/
+
+# playtest bot output
+playtest-data/

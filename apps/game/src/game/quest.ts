@@ -18,6 +18,7 @@ import { QuestStep } from '../types';
 
 export interface WorldControl {
   revealObjective(pos: { x: number; y: number }): void;
+  dragonHappy(): void;
   openCaveDoor(): void;
   buildWall(slot: number): void;
   setCoopStage(stage: number): void;
@@ -375,6 +376,13 @@ export class QuestDirector {
   }
 
   onDragonTapped(): void {
+    // Feeding is a free-play activity. During the scripted quest a dragon tap
+    // (often an accidental hit when it overlaps an NPC) is just a happy,
+    // non-blocking reaction — it must never open a modal board mid-quest.
+    if (this.step !== QuestStep.FREE_PLAY) {
+      this.world.dragonHappy();
+      return;
+    }
     void this.run(async () => {
       const target = FEED_FOODS[this.feedIdx % FEED_FOODS.length]!;
       this.feedIdx += 1;

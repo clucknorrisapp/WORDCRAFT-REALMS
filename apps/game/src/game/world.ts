@@ -601,6 +601,7 @@ export class WorldScene extends Phaser.Scene {
   private worldControl(): WorldControl {
     return {
       revealObjective: (pos) => this.revealObjective(pos),
+      dragonHappy: () => this.dragonCelebrateAnim(false),
       openCaveDoor: () => {
         this.tweens.add({ targets: this.door, alpha: 0, y: this.door.y - 20, duration: 700, ease: 'quad.in' });
         this.doorGlow.setFillStyle(0xffe08a, 0.5);
