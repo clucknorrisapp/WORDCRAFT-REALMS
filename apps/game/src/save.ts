@@ -20,6 +20,7 @@ export function freshSave(): SaveData {
     hensFound: [],
     wallsBuilt: [],
     coopStage: 0,
+    treasureClaimed: false,
     taught: [...curriculum.initialTaught],
     evidence: [],
     events: [],

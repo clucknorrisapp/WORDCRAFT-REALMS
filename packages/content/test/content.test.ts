@@ -78,4 +78,25 @@ describe('challenge builder', () => {
     );
     expect(orders.size).toBeGreaterThan(1);
   });
+
+  it('degrades gracefully for words with no curated confusables (no throw)', () => {
+    // These bare words (dragon names, signs) have no `c` array; buildChallenge
+    // must never throw, and every distractor it invents must be decodable
+    // wherever the target is (skills ⊆ target) and never the target itself.
+    for (const t of ['log', 'hut', 'path', 'rex', 'ash', 'dash']) {
+      const ch = buildChallenge(t, 3);
+      expect(ch.distractors.map((d) => d.id), t).not.toContain(t);
+      const targetSkills = new Set(ch.target.skills);
+      for (const d of ch.distractors) {
+        expect(d.skills.every((s) => targetSkills.has(s)), `${t} vs ${d.id}`).toBe(true);
+      }
+      // order is a valid permutation of [target, ...distractors]
+      expect([...ch.order].sort((a, b) => a - b)).toEqual(
+        Array.from({ length: ch.distractors.length + 1 }, (_, i) => i),
+      );
+    }
+    // Words with plenty of decodable siblings still fill to the full count.
+    expect(buildChallenge('log', 3).distractors.length).toBe(2);
+    expect(buildChallenge('hut', 3).distractors.length).toBe(2);
+  });
 });

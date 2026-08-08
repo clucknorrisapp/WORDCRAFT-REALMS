@@ -134,11 +134,32 @@ export function validateLine(l: Line, taught: Iterable<SkillId>): DecodabilityRe
  */
 export function buildChallenge(targetText: string, seed: number, distractorCount = 2): ChallengeContent {
   const target = word(targetText);
-  if (target.confusables.length < distractorCount) {
-    throw new Error(`Word "${targetText}" has fewer than ${distractorCount} confusables`);
+  const distractors: Word[] = target.confusables.slice(0, distractorCount).map((c) => word(c));
+  // Graceful degradation instead of throwing when curated confusables run
+  // short: top up from corpus words whose every skill the target also has, so
+  // any distractor is decodable wherever the target itself is shown.
+  if (distractors.length < distractorCount) {
+    const chosen = new Set([target.id, ...distractors.map((d) => d.id)]);
+    const targetSkills = new Set(target.skills);
+    // Prefer same length (a closer distractor), then any decodable word. Never
+    // pad with a word requiring a skill the target lacks — that would violate
+    // the iron rule at the target's own gate. Fewer distractors beats that.
+    const decodable = words.filter(
+      (w) => !chosen.has(w.id) && !w.heart && w.skills.every((s) => targetSkills.has(s)),
+    );
+    for (const pool of [
+      decodable.filter((w) => w.text.length === target.text.length),
+      decodable,
+    ]) {
+      for (const w of pool) {
+        if (distractors.length >= distractorCount) break;
+        if (chosen.has(w.id)) continue;
+        distractors.push(w);
+        chosen.add(w.id);
+      }
+    }
   }
-  const distractors = target.confusables.slice(0, distractorCount).map((c) => word(c));
-  const order = seededShuffle(distractorCount + 1, seed);
+  const order = seededShuffle(distractors.length + 1, seed);
   return { target, distractors, order, seed };
 }
 

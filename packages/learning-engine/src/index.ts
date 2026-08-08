@@ -30,7 +30,7 @@ export function band(score: number): MasteryBand {
   if (score <= 20) return 'new';
   if (score <= 40) return 'learning';
   if (score <= 60) return 'developing';
-  if (score <= 80) return 'proficient';
+  if (score < 81) return 'proficient'; // mastered is 81–100 (not a score just over 80)
   return 'mastered';
 }
 

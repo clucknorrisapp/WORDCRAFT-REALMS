@@ -39,6 +39,7 @@ export interface SaveData {
   hensFound: string[]; // 'shed' | 'rock' | 'log'
   wallsBuilt: number[];
   coopStage: number; // 0–3
+  treasureClaimed: boolean;
   taught: SkillId[];
   evidence: Evidence[];
   events: GameEvent[];

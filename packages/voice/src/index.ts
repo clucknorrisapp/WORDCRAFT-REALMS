@@ -32,7 +32,9 @@ function makeHandle(): { handle: SpeakHandle; state: HandleState } {
       else state.endCbs.push(cb);
     },
     stop() {
-      finish(state, false);
+      // A stopped playback IS done — resolve waiters so `await …done` (built on
+      // onEnd) never hangs, which would freeze the awaiting reading moment.
+      finish(state, true);
     },
   };
   return { handle, state };
@@ -123,6 +125,8 @@ class ClipPlayback {
     private voice: string,
   ) {}
 
+  private fellBack = false;
+
   start(): void {
     const audio = new Audio(this.url);
     audio.playbackRate = this.rate;
@@ -131,13 +135,15 @@ class ClipPlayback {
       audio.pause();
       timers.forEach(clearTimeout);
     });
+    // Unconditional safety net: if metadata never fires (and thus no 'ended'),
+    // a slow word estimate still ends the moment. Refined once duration loads.
+    timers.push(setTimeout(() => finish(this.state), words(this.text).length * 700 + 6000));
     audio.addEventListener('loadedmetadata', () => {
       if (this.state.ended) return;
       const totalMs = (audio.duration * 1000) / this.rate;
       estimateWordTimings(this.text, totalMs).forEach((startMs, i) => {
         timers.push(setTimeout(() => emitBoundary(this.state, i), startMs));
       });
-      // Safety: never let a stuck 'ended' event hang a reading moment.
       timers.push(setTimeout(() => finish(this.state), totalMs + 1500));
     });
     audio.addEventListener('ended', () => finish(this.state));
@@ -149,7 +155,8 @@ class ClipPlayback {
   }
 
   private fallback(timers: ReturnType<typeof setTimeout>[]): void {
-    if (this.state.ended) return;
+    if (this.state.ended || this.fellBack) return; // error + play().catch can both fire
+    this.fellBack = true;
     timers.forEach(clearTimeout);
     new SynthPlayback(this.text, this.voice, this.rate, this.state).start();
   }
@@ -286,13 +293,19 @@ function installUnlockOnFirstGesture(): void {
 export function createVoiceService(manifest: VoiceManifest): VoiceService {
   initVoices();
   installUnlockOnFirstGesture();
+  // The game speaks one line at a time (each awaited), so a new speak()
+  // supersedes the previous — stopping it prevents layered/echoing audio when
+  // a child mashes the 🔊 replay button. Stopping resolves the old .done too.
+  let current: SpeakHandle | null = null;
   return {
     hasClip(id: string): boolean {
       return id in manifest.clips;
     },
     speak(req: SpeakRequest): SpeakHandle {
       // Contract: speak() never throws, and every handle always reaches onEnd.
+      current?.stop();
       const { handle, state } = makeHandle();
+      current = handle;
       const clipUrl = req.lineId ? manifest.clips[req.lineId] : undefined;
       const rate = req.rate ?? 1;
       try {

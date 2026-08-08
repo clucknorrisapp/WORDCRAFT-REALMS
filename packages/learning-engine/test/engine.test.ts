@@ -27,6 +27,7 @@ describe('mastery model', () => {
     expect(band(21)).toBe('learning');
     expect(band(41)).toBe('developing');
     expect(band(61)).toBe('proficient');
+    expect(band(80.5)).toBe('proficient'); // a score just over 80 is NOT mastered
     expect(band(81)).toBe('mastered');
   });
 

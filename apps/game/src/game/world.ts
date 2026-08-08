@@ -231,7 +231,8 @@ export class WorldScene extends Phaser.Scene {
       const d = Phaser.Math.Distance.Between(this.player.x, this.player.y, obj.x, obj.y);
       if (d <= radius) {
         this.moveTarget = null;
-        cb();
+        this.pending = null; // stopPropagation suppresses the scene handler that
+        cb(); //               would clear this — do it here or a stale far-tap lingers
       } else {
         this.moveTarget = { x: obj.x, y: obj.y };
         this.pending = t;

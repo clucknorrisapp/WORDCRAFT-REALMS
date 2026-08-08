@@ -169,12 +169,35 @@ export class QuestDirector {
   }
 
   async start(): Promise<void> {
+    this.reconcile();
     this.refresh();
     if (this.step === QuestStep.INTRO_SIGNS && this.services.save.signsRead.length === 0) {
       await toast(this.services, 'ln_sign_hint');
       this.pendingReveal = true; // first-ever objective gets the camera reveal
     }
     this.maybeReveal();
+  }
+
+  /**
+   * Step transitions fire only as a side-effect of the handler that completes
+   * a step's last sub-action, and that handler guards itself out on re-entry.
+   * A mid-quest reload can persist the intermediate "{sub-goal done, step NOT
+   * advanced}" state (persistSave debounces 250ms, shorter than the celebration
+   * that follows). Without this, that state has no forward path — a permanent
+   * soft-lock. reconcile() runs on load and advances any step whose persisted
+   * sub-goal is already satisfied. Loops because one advance can satisfy the
+   * next (e.g. signs → gather).
+   */
+  private reconcile(): void {
+    const s = this.services.save;
+    for (let i = 0; i < 8; i++) {
+      const before = this.step;
+      if (this.step === QuestStep.INTRO_SIGNS && s.signsRead.length >= 2) this.setStep(QuestStep.GATHER_BUILD);
+      else if (this.step === QuestStep.GATHER_BUILD && s.wallsBuilt.length >= 1) this.setStep(QuestStep.MEET_MAYOR);
+      else if (this.step === QuestStep.HUNT && s.hensFound.length >= 3) this.setStep(QuestStep.RETURN_MAYOR);
+      else if (this.step === QuestStep.BUILD_COOP && s.coopStage >= 3) this.setStep(QuestStep.CHEST);
+      if (this.step === before) break;
+    }
   }
 
   /** Serialize interactions — one reading moment at a time. */
@@ -364,7 +387,12 @@ export class QuestDirector {
       }
       await magicWordDoor(this.services, 'chest');
       this.world.openChest();
-      this.services.save.gems += 1;
+      // Idempotent: a reload during the post-open dialogues leaves step===CHEST,
+      // so a re-tap must not grant a second gem.
+      if (!this.services.save.treasureClaimed) {
+        this.services.save.treasureClaimed = true;
+        this.services.save.gems += 1;
+      }
       this.services.save.dragonLevel = 2;
       this.services.persist();
       await showDialogue(this.services, 'ln_chest_open');

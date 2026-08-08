@@ -257,12 +257,18 @@ export async function choiceBoard(services: Services, opts: ChoiceOpts): Promise
 
   await new Promise<void>((resolve) => {
     const buttons: HTMLButtonElement[] = [];
+    let resolved = false; // latch: the winning tap freezes the board
     for (const text of options) {
       const card = el('button', 'word-card', text.toUpperCase());
       buttons.push(card);
       card.addEventListener('click', () => {
+        // A correct answer ends the challenge; ignore every later tap so an
+        // excited double-tap can't log a spurious "wrong" and corrupt mastery.
+        if (resolved) return;
         attempt += 1;
         if (text === target.text) {
+          resolved = true;
+          buttons.forEach((b) => (b.disabled = true));
           card.classList.add('right');
           services.recordEvidence({
             challengeType: opts.challengeType,
@@ -353,10 +359,13 @@ export async function magicWordDoor(services: Services, wordText: string): Promi
     // No mic (unsupported, denied, or parent-disabled): say-it-out-loud ritual.
     // Production-flavored, logged as unverified (micUsed: false).
     status.textContent = 'Say it out loud! Then tap the word.';
-    await services.speakLine('ln_ritual_say').done;
     wrap.style.cursor = 'pointer';
     wrap.classList.add('pulse');
-    await new Promise<void>((r) => wrap.addEventListener('click', () => r(), { once: true }));
+    // Attach the tap listener BEFORE the narration — a child tapping the word
+    // while the narrator is still talking must count, not land on a dead node.
+    const tapped = new Promise<void>((r) => wrap.addEventListener('click', () => r(), { once: true }));
+    void services.speakLine('ln_ritual_say').done;
+    await tapped;
     finish(false, true);
     layer.close();
     return { opened: true, spoken: false };
@@ -397,7 +406,9 @@ export async function magicWordDoor(services: Services, wordText: string): Promi
 
         const result = await services.speech.listen({ expected: w.text, timeoutMs: 6500 });
         mic.classList.remove('listening');
-        mic.disabled = false;
+        // NOTE: mic stays disabled through the coaching narration below; it is
+        // re-enabled only at the points that invite another attempt, so a tap
+        // during "try again" can't start an overlapping listen session.
 
         if (result.status === 'match') {
           finish(true, true, {
@@ -425,6 +436,8 @@ export async function magicWordDoor(services: Services, wordText: string): Promi
           if (!strict && silentTries >= 2) {
             mic.remove();
             resolve(await ritual());
+          } else {
+            mic.disabled = false; // invite another try, now that coaching is done
           }
           return;
         }
@@ -449,6 +462,7 @@ export async function magicWordDoor(services: Services, wordText: string): Promi
             await services.speakText(`Say it with me! ${w.text}!`, 'narrator', 0.8).done;
           }
           status.textContent = 'Your turn! Tap the microphone.';
+          mic.disabled = false; // re-enable only after the hint ladder finishes
         } else {
           await services.speakLine('ln_almost').done;
           await openDoor(true, true); // two misses → the door opens anyway

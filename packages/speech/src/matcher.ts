@@ -1,10 +1,10 @@
 // The forgiving matcher — the closed-set insight that makes v1 viable
 // (architecture §5.5): we never transcribe openly, we ask "did this utterance
 // ≈ the expected word?". Bias policy: false-accepts are pedagogically fine,
-// false-rejects are the product killer. But vowel and onset confusions
-// (sip↔ship, chip↔ship) stay REJECTED — they are exactly the signal the
-// speech-error classifier (v3) is built on, and the hint ladder handles them
-// warmly in the moment.
+// false-rejects are the product killer. ONSET confusions (sip↔ship, chip↔ship)
+// stay REJECTED — they are the signal the speech-error classifier (v3) is built
+// on. Same-onset near-misses (shin↔ship) are ACCEPTED at reduced confidence
+// (0.6): the forgiving bias favors letting a close attempt through.
 
 export interface MatchResult {
   match: boolean;
