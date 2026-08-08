@@ -53,6 +53,13 @@ export class WorldScene extends Phaser.Scene {
 
   private door!: Phaser.Physics.Arcade.Sprite;
   private doorGlow!: Phaser.GameObjects.Arc;
+  private guideArrow!: Phaser.GameObjects.Text;
+  private cinematic = false;
+  private cinematicTimer: Phaser.Time.TimerEvent | null = null;
+  private lastInputAt = 0;
+  private autoWalkCooldownUntil = 0;
+  private autoWalking = false;
+  private slowMs = 0;
   private chest!: Phaser.GameObjects.Sprite;
   private chestGlow!: Phaser.GameObjects.Arc;
   private coop!: Phaser.GameObjects.Sprite;
@@ -89,10 +96,23 @@ export class WorldScene extends Phaser.Scene {
     this.wasd = this.input.keyboard!.addKeys('W,A,S,D') as Record<string, Phaser.Input.Keyboard.Key>;
 
     this.input.on('pointerdown', (p: Phaser.Input.Pointer) => {
+      this.noteInput();
       if (isUiOpen()) return;
       this.moveTarget = { x: p.worldX, y: p.worldY };
       this.pending = null;
+      this.autoWalking = false;
     });
+    this.input.keyboard!.on('keydown', () => this.noteInput());
+
+    // Objective wayfinding: a screen-space arrow that points at the current
+    // goal whenever it is off-screen (the "where do I go" fix).
+    this.guideArrow = this.add
+      .text(0, 0, '➤', { fontSize: '46px', color: '#ffd166', stroke: '#7a4a00', strokeThickness: 8 })
+      .setOrigin(0.5)
+      .setScrollFactor(0)
+      .setDepth(9990)
+      .setVisible(false);
+    this.lastInputAt = this.time.now;
 
     this.director = new QuestDirector(this.services, this.worldControl(), this.hud);
     setDragonCelebrate((big) => this.dragonCelebrateAnim(big));
@@ -204,6 +224,7 @@ export class WorldScene extends Phaser.Scene {
     obj.setInteractive({ useHandCursor: true });
     obj.on('pointerdown', (_p: Phaser.Input.Pointer, _x: number, _y: number, event: Phaser.Types.Input.EventData) => {
       event.stopPropagation();
+      this.noteInput();
       if (isUiOpen()) return;
       const t: Tappable = { x: obj.x, y: obj.y, radius, cb };
       const d = Phaser.Math.Distance.Between(this.player.x, this.player.y, obj.x, obj.y);
@@ -436,9 +457,134 @@ export class WorldScene extends Phaser.Scene {
     }
   }
 
+  // ── Guidance: camera reveal, wayfinding arrow, idle auto-walk ─────────────
+  private noteInput(): void {
+    this.lastInputAt = this.time.now;
+    this.cancelCinematic();
+  }
+
+  private cancelCinematic(): void {
+    if (!this.cinematic) return;
+    this.tweens.killTweensOf(this.cameras.main);
+    this.cinematicTimer?.remove(false);
+    this.cinematicTimer = null;
+    this.endCinematic();
+  }
+
+  private endCinematic(): void {
+    this.cinematic = false;
+    this.cameras.main.startFollow(this.player, true, 0.12, 0.12);
+  }
+
+  private clampScroll(x: number, y: number): { x: number; y: number } {
+    const cam = this.cameras.main;
+    return {
+      x: Phaser.Math.Clamp(x, 0, Math.max(0, W - cam.width)),
+      y: Phaser.Math.Clamp(y, 0, Math.max(0, H - cam.height)),
+    };
+  }
+
+  private revealObjective(pos: { x: number; y: number }): void {
+    if (this.cinematic) return;
+    const cam = this.cameras.main;
+    // If it's already comfortably on screen, just pulse it.
+    const view = cam.worldView;
+    const onScreen =
+      pos.x > view.x + 80 && pos.x < view.right - 80 && pos.y > view.y + 120 && pos.y < view.bottom - 80;
+    if (onScreen) {
+      this.pulseAt(pos.x, pos.y);
+      return;
+    }
+    this.cinematic = true;
+    cam.stopFollow();
+    const there = this.clampScroll(pos.x - cam.width / 2, pos.y - cam.height / 2);
+    this.tweens.add({
+      targets: cam,
+      scrollX: there.x,
+      scrollY: there.y,
+      duration: 650,
+      ease: 'sine.inOut',
+      onComplete: () => {
+        this.pulseAt(pos.x, pos.y);
+        this.cinematicTimer = this.time.delayedCall(950, () => {
+          this.cinematicTimer = null;
+          const back = this.clampScroll(this.player.x - cam.width / 2, this.player.y - cam.height / 2);
+          this.tweens.add({
+            targets: cam,
+            scrollX: back.x,
+            scrollY: back.y,
+            duration: 650,
+            ease: 'sine.inOut',
+            onComplete: () => this.endCinematic(),
+          });
+        });
+      },
+    });
+  }
+
+  private pulseAt(x: number, y: number): void {
+    for (const delay of [0, 350]) {
+      this.time.delayedCall(delay, () => {
+        const ring = this.add.circle(x, y, 14).setStrokeStyle(5, 0xffd166, 0.95).setDepth(9500);
+        this.tweens.add({
+          targets: ring,
+          radius: 100,
+          alpha: 0,
+          duration: 650,
+          ease: 'quad.out',
+          onComplete: () => ring.destroy(),
+        });
+      });
+    }
+  }
+
+  private updateGuidance(): void {
+    const target = this.director?.objectiveTarget() ?? null;
+    const cam = this.cameras.main;
+
+    // Arrow: visible only when there is a goal and it's off-screen.
+    if (!target || this.cinematic || isUiOpen()) {
+      this.guideArrow.setVisible(false);
+    } else {
+      const sx = target.x - cam.scrollX;
+      const sy = target.y - cam.scrollY;
+      const inset = { left: 70, right: 70, top: 130, bottom: 95 };
+      const inside =
+        sx > inset.left && sx < cam.width - inset.right && sy > inset.top && sy < cam.height - inset.bottom;
+      if (inside) {
+        this.guideArrow.setVisible(false);
+      } else {
+        const cx = cam.width / 2;
+        const cy = cam.height / 2;
+        const angle = Math.atan2(sy - cy, sx - cx);
+        const px = Phaser.Math.Clamp(sx, inset.left, cam.width - inset.right);
+        const py = Phaser.Math.Clamp(sy, inset.top, cam.height - inset.bottom);
+        const pulse = 1 + 0.12 * Math.sin(this.time.now / 170);
+        this.guideArrow.setVisible(true).setPosition(px, py).setRotation(angle).setScale(pulse);
+      }
+    }
+
+    // Idle auto-walk: after ~5s of no input, walk the player toward the goal.
+    if (
+      target &&
+      !this.cinematic &&
+      !isUiOpen() &&
+      !this.moveTarget &&
+      !this.pending &&
+      this.time.now - this.lastInputAt > 5000 &&
+      this.time.now > this.autoWalkCooldownUntil &&
+      Phaser.Math.Distance.Between(this.player.x, this.player.y, target.x, target.y) > 170
+    ) {
+      this.moveTarget = { x: target.x, y: target.y };
+      this.autoWalking = true;
+      this.pulseAt(target.x, target.y);
+    }
+  }
+
   // ── World control for the quest director ──────────────────────────────────
   private worldControl(): WorldControl {
     return {
+      revealObjective: (pos) => this.revealObjective(pos),
       openCaveDoor: () => {
         this.tweens.add({ targets: this.door, alpha: 0, y: this.door.y - 20, duration: 700, ease: 'quad.in' });
         this.doorGlow.setFillStyle(0xffe08a, 0.5);
@@ -609,7 +755,7 @@ export class WorldScene extends Phaser.Scene {
     if (this.cursors.up.isDown || this.wasd['W']?.isDown) vy -= 1;
     if (this.cursors.down.isDown || this.wasd['S']?.isDown) vy += 1;
 
-    if (isUiOpen()) {
+    if (isUiOpen() || this.cinematic) {
       body.setVelocity(0, 0);
     } else if (vx !== 0 || vy !== 0) {
       this.moveTarget = null;
@@ -638,6 +784,26 @@ export class WorldScene extends Phaser.Scene {
         cb();
       }
     }
+
+    // A walk that pushes against an obstacle for >1.2s gets released so the
+    // player (or the next auto-walk) can try a different line.
+    if (this.moveTarget && body.speed < 10) {
+      this.slowMs += this.game.loop.delta;
+      if (this.slowMs > 1200) {
+        const d = Phaser.Math.Distance.Between(this.player.x, this.player.y, this.moveTarget.x, this.moveTarget.y);
+        if (d > 40) {
+          this.moveTarget = null;
+          this.pending = null;
+          if (this.autoWalking) this.autoWalkCooldownUntil = this.time.now + 8000;
+          this.autoWalking = false;
+        }
+        this.slowMs = 0;
+      }
+    } else {
+      this.slowMs = 0;
+    }
+
+    this.updateGuidance();
 
     if (body.velocity.x !== 0) this.player.setFlipX(body.velocity.x < 0);
     this.player.setDepth(this.player.y);

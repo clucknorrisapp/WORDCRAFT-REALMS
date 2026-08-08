@@ -17,6 +17,7 @@ import {
 import { QuestStep } from '../types';
 
 export interface WorldControl {
+  revealObjective(pos: { x: number; y: number }): void;
   openCaveDoor(): void;
   buildWall(slot: number): void;
   setCoopStage(stage: number): void;
@@ -50,9 +51,43 @@ const SPOT_WORDS = ['shed', 'rock', 'log'];
 
 const FEED_FOODS = ['egg', 'nut', 'jam'];
 
+// World-layout anchors for guidance. Keep in sync with world.ts placements.
+const POI = {
+  signs: { den: [270, 770], hut: [565, 435], shop: [1040, 435] } as Record<string, [number, number]>,
+  trees: [
+    [180, 230], [1140, 200], [1400, 300], [1520, 720], [1660, 240],
+    [1800, 880], [1960, 380], [2120, 940], [1470, 980],
+  ] as Array<[number, number]>,
+  plot: [445, 860] as [number, number],
+  mayor: [750, 640] as [number, number],
+  pathSign: [1240, 650] as [number, number],
+  wizard: [2255, 335] as [number, number],
+  door: [2380, 300] as [number, number],
+  chest: [760, 1430] as [number, number],
+  spots: { shed: [1560, 400], rock: [2150, 520], log: [1880, 730] } as Record<string, [number, number]>,
+};
+
+function xy(p: [number, number]): { x: number; y: number } {
+  return { x: p[0], y: p[1] };
+}
+
+function nearest(from: { x: number; y: number }, pts: Array<[number, number]>): { x: number; y: number } {
+  let best = pts[0]!;
+  let bestD = Infinity;
+  for (const p of pts) {
+    const d = (p[0] - from.x) ** 2 + (p[1] - from.y) ** 2;
+    if (d < bestD) {
+      bestD = d;
+      best = p;
+    }
+  }
+  return xy(best);
+}
+
 export class QuestDirector {
   private feedIdx = 0;
   private busy = false;
+  private pendingReveal = false;
 
   constructor(
     private services: Services,
@@ -68,7 +103,50 @@ export class QuestDirector {
     this.services.save.questStep = step as typeof this.services.save.questStep;
     this.services.persist();
     this.services.analytics.log('quest_step', { step });
+    this.pendingReveal = true; // show the player where to go next
     this.refresh();
+  }
+
+  /** Where should the player head right now? null = free play, no guidance. */
+  objectiveTarget(): { x: number; y: number } | null {
+    const s = this.services.save;
+    const p = this.world.playerPos();
+    switch (this.step) {
+      case QuestStep.INTRO_SIGNS: {
+        const unread = Object.entries(POI.signs)
+          .filter(([w]) => !s.signsRead.includes(w))
+          .map(([, c]) => c);
+        return unread.length ? nearest(p, unread) : xy(POI.signs['den']!);
+      }
+      case QuestStep.GATHER_BUILD:
+        return s.wood < 1 ? nearest(p, POI.trees) : xy(POI.plot);
+      case QuestStep.MEET_MAYOR:
+      case QuestStep.RETURN_MAYOR:
+        return xy(POI.mayor);
+      case QuestStep.PATH_CHOICE:
+        return xy(POI.pathSign);
+      case QuestStep.CAVE_DOOR:
+        return xy(POI.wizard);
+      case QuestStep.HUNT: {
+        const left = Object.entries(POI.spots)
+          .filter(([k]) => !s.hensFound.includes(k))
+          .map(([, c]) => c);
+        return left.length ? nearest(p, left) : xy(POI.mayor);
+      }
+      case QuestStep.BUILD_COOP:
+        return s.wood >= 2 ? xy(POI.plot) : nearest(p, POI.trees);
+      case QuestStep.CHEST:
+        return p.y > 1200 ? xy(POI.chest) : xy(POI.door);
+      default:
+        return null; // FREE_PLAY — no arrow, no auto-walk; free play is sacred
+    }
+  }
+
+  private maybeReveal(): void {
+    if (!this.pendingReveal) return;
+    this.pendingReveal = false;
+    const target = this.objectiveTarget();
+    if (target) this.world.revealObjective(target);
   }
 
   refresh(): void {
@@ -93,7 +171,9 @@ export class QuestDirector {
     this.refresh();
     if (this.step === QuestStep.INTRO_SIGNS && this.services.save.signsRead.length === 0) {
       await toast(this.services, 'ln_sign_hint');
+      this.pendingReveal = true; // first-ever objective gets the camera reveal
     }
+    this.maybeReveal();
   }
 
   /** Serialize interactions — one reading moment at a time. */
@@ -105,6 +185,7 @@ export class QuestDirector {
     } finally {
       this.busy = false;
       this.refresh();
+      this.maybeReveal();
     }
   }
 

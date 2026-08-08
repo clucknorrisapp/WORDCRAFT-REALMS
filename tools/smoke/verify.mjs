@@ -99,6 +99,10 @@ if (!saveState || saveState.dragonName !== 'chip' || saveState.evidence < 1) {
 }
 
 await step('05-sign-read', async () => {
+  // A ground tap first: cancels the objective-reveal camera pan (if running)
+  // so screen coordinates are stable before we aim at the sign.
+  await page.mouse.click(512, 700);
+  await page.waitForTimeout(500);
   // Click the DEN sign (world 270,770) via the camera transform.
   const pos = await page.evaluate(() => {
     const s = window.__readquest.game.scene.keys.world;
