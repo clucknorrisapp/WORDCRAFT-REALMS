@@ -60,7 +60,7 @@ docs/                      Roadmap · Technical architecture · Phase 1 build pl
 ## Asset pipeline (Higgsfield + ElevenLabs)
 
 - **Art:** the entire cast (4 avatars, dragon, Mayor Hen, wizard, hen, and 8 props) was generated as a single 4×4 sprite sheet with Higgsfield `nano_banana`, then sliced locally: `node tools/sprites/slice-sheet.mjs <sheet.png> apps/game/public/assets/sprites`
-- **Voice:** premium lines are generated with Higgsfield `text2speech_v2` (**variant: `elevenlabs`**) and registered in `apps/game/public/assets/audio/manifest.json`; any line without a clip falls back to browser speech synthesis at runtime, so the game is always fully voiced. Two premium clips ship today (the wizard's magic-word prompt and the door-open celebration — the thesis moment); batch-generating the rest requires topping up Higgsfield credits.
+- **Voice (standing pipeline):** all 53 clips are ElevenLabs, committed in `apps/game/public/assets/audio/` and registered in `manifest.json`. The Railway build step runs `tools/audio/generate-elevenlabs.mjs --into-dist`: with the `ELEVENLABS_API_KEY` service variable set it voices any clip that's missing (delta-only — normal deploys generate nothing), and anything absent falls back to browser speech synthesis so a voice hiccup can never block a deploy. **Adding content:** write lines in `packages/content/data/lines.json` (and/or words in `tools/audio/clips.mjs`), cast any new speaker in `tools/audio/voices.json`, push — the next deploy voices it. Casting prefers your account's voices by name, falls back to ElevenLabs premade voices (Rachel/George/Charlotte) for TTS-scoped keys, and accepts raw voice IDs.
 
 ## The one rule that outranks the rest
 

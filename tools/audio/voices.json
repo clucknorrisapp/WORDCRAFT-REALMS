@@ -1,0 +1,6 @@
+{
+  "_comment": "Casting sheet: speaker (as used in lines.json) → ElevenLabs voice preferences, first match wins. Entries may be voice NAMES from the account's voice list or raw voice IDs (IDs work even with TTS-only scoped keys). Add a character: add its speaker here + write its lines in lines.json → next deploy voices it. Env overrides NARRATOR_VOICE / WIZARD_VOICE / MAYOR_VOICE still take precedence.",
+  "narrator": ["Dorothy", "Matilda", "Rachel", "Sarah", "Alice", "Lily"],
+  "wizard": ["George", "Brian", "Daniel", "Callum", "Bill"],
+  "mayor_hen": ["Charlotte", "Jessica", "Laura", "Alice", "Dorothy"]
+}

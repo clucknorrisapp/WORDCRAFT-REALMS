@@ -37,11 +37,18 @@ if (!KEY) {
   process.exit(1);
 }
 
-const VOICE_PREFS = {
-  narrator: (process.env.NARRATOR_VOICE ?? '').split(',').filter(Boolean).concat(['Dorothy', 'Matilda', 'Rachel', 'Sarah', 'Alice', 'Lily']),
-  wizard: (process.env.WIZARD_VOICE ?? '').split(',').filter(Boolean).concat(['George', 'Brian', 'Daniel', 'Callum', 'Bill']),
-  mayor_hen: (process.env.MAYOR_VOICE ?? '').split(',').filter(Boolean).concat(['Charlotte', 'Jessica', 'Laura', 'Alice', 'Dorothy']),
+// Casting comes from the committed casting sheet; env vars prepend overrides.
+const CASTING = JSON.parse(fs.readFileSync('tools/audio/voices.json', 'utf8'));
+const ENV_OVERRIDES = {
+  narrator: process.env.NARRATOR_VOICE,
+  wizard: process.env.WIZARD_VOICE,
+  mayor_hen: process.env.MAYOR_VOICE,
 };
+const VOICE_PREFS = {};
+for (const [speaker, prefs] of Object.entries(CASTING)) {
+  if (speaker.startsWith('_')) continue;
+  VOICE_PREFS[speaker] = (ENV_OVERRIDES[speaker] ?? '').split(',').filter(Boolean).concat(prefs);
+}
 
 async function apiJson(url) {
   if (USE_CURL) {
@@ -112,7 +119,7 @@ async function main() {
       // A raw voice id override works even when the list is unavailable.
       if (looksLikeVoiceId(want)) return { name: `${want} (by id)`, voice_id: want };
     }
-    return FALLBACK_VOICES[speaker];
+    return FALLBACK_VOICES[speaker] ?? FALLBACK_VOICES.narrator; // new speakers never break the batch
   };
 
   const chosen = {};
