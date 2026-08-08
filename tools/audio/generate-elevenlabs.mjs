@@ -85,20 +85,39 @@ async function tts(voiceId, text, outFile) {
   }
 }
 
+// Universal premade voices — addressable by id with any key, even TTS-only
+// scoped keys that are not allowed to list the account's voices.
+const FALLBACK_VOICES = {
+  narrator: { name: 'Rachel (premade)', voice_id: '21m00Tcm4TlvDq8ikWAM' },
+  wizard: { name: 'George (premade)', voice_id: 'JBFqnCBsd6RMkjVDRZzb' },
+  mayor_hen: { name: 'Charlotte (premade)', voice_id: 'XB0fDUnXU5powFXDhCwa' },
+};
+
+const looksLikeVoiceId = (s) => /^[A-Za-z0-9]{16,}$/.test(s);
+
 async function main() {
-  const voiceList = (await apiJson(`${API}/voices`)).voices ?? [];
-  const resolveVoice = (prefs) => {
+  console.log(`[voice] key present (…${KEY.slice(-4)})`);
+  let voiceList = [];
+  try {
+    voiceList = (await apiJson(`${API}/voices`)).voices ?? [];
+    console.log(`[voice] account voice list: ${voiceList.length} voices`);
+  } catch (e) {
+    console.log(`[voice] cannot list voices (${String(e.message).slice(0, 120)}) — scoped key? using premade voice ids`);
+  }
+
+  const resolveVoice = (speaker, prefs) => {
     for (const want of prefs) {
       const hit = voiceList.find((v) => v.voice_id === want || v.name.toLowerCase() === want.toLowerCase());
       if (hit) return hit;
+      // A raw voice id override works even when the list is unavailable.
+      if (looksLikeVoiceId(want)) return { name: `${want} (by id)`, voice_id: want };
     }
-    return null;
+    return FALLBACK_VOICES[speaker];
   };
 
   const chosen = {};
   for (const [speaker, prefs] of Object.entries(VOICE_PREFS)) {
-    const v = resolveVoice(prefs);
-    if (!v) throw new Error(`No voice found for "${speaker}". Available: ${voiceList.map((x) => x.name).join(', ')}`);
+    const v = resolveVoice(speaker, prefs);
     chosen[speaker] = v;
     console.log(`[voice] ${speaker} → ${v.name} (${v.voice_id})`);
   }
