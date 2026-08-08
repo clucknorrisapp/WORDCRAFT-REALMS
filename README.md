@@ -34,6 +34,14 @@ node tools/smoke/verify.mjs        # select → naming → world → sign read
 node tools/smoke/verify-door.mjs   # the magic door: stubbed "ship" → evidence
 ```
 
+## Deploy (Railway)
+
+The repo is config-as-code ready: `railway.json` builds with `pnpm install && pnpm build` and starts `node apps/game/serve.mjs` (a zero-dependency static server that binds `0.0.0.0:$PORT` with an SPA fallback).
+
+1. Railway → **New Project → Deploy from GitHub repo** → pick `clucknorrisapp/WORDCRAFT-REALMS` (the working branch is the repo's default branch, so it deploys as-is; no environment variables needed).
+2. After the first deploy: service **Settings → Networking → Generate Domain**.
+3. Open the domain — Railway domains are HTTPS, which is required for the microphone (`SpeechRecognition`/`getUserMedia` need a secure context), so the magic-word door works on the deployed URL in Chrome and iPad Safari.
+
 ## Repository map
 
 ```

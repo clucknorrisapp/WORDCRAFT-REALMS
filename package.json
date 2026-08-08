@@ -6,8 +6,12 @@
     "dev": "pnpm --filter @readquest/game dev",
     "build": "pnpm --filter @readquest/game build",
     "preview": "pnpm --filter @readquest/game preview",
+    "start": "node apps/game/serve.mjs",
     "test": "pnpm -r --if-present test",
     "typecheck": "pnpm -r --if-present typecheck"
+  },
+  "engines": {
+    "node": ">=20"
   },
   "packageManager": "pnpm@10.33.0",
   "devDependencies": {
