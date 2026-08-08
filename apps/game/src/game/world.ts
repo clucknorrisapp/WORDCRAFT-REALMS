@@ -54,6 +54,7 @@ export class WorldScene extends Phaser.Scene {
   private door!: Phaser.Physics.Arcade.Sprite;
   private doorGlow!: Phaser.GameObjects.Arc;
   private guideArrow!: Phaser.GameObjects.Text;
+  private caveEntrance: Phaser.GameObjects.Arc | null = null;
   private cinematic = false;
   private cinematicTimer: Phaser.Time.TimerEvent | null = null;
   private lastInputAt = 0;
@@ -358,6 +359,21 @@ export class WorldScene extends Phaser.Scene {
       if (this.services.save.questStep > QuestStep.CAVE_DOOR) this.enterCave();
       else this.director.onWizardTapped();
     });
+    this.marker('cave_enter', 2380, 205);
+  }
+
+  /** Once the door is gone, the open mouth itself must be tappable — a hidden
+   *  sprite receives no input, which soft-locked the chest step. */
+  private enableCaveEntrance(): void {
+    if (this.caveEntrance) return;
+    const zone = this.add.circle(2380, 305, 80, 0xffffff, 0.001).setDepth(392);
+    this.caveEntrance = zone;
+    this.tappable(zone as unknown as Phaser.GameObjects.Sprite, () => this.enterCave(), 190);
+    const hint = this.add
+      .text(2380, 296, '⬇', { fontSize: '42px', color: '#ffe08a' })
+      .setOrigin(0.5)
+      .setDepth(393);
+    this.tweens.add({ targets: hint, y: 312, duration: 620, yoyo: true, repeat: -1, ease: 'sine.inOut' });
   }
 
   private buildCave(): void {
@@ -591,6 +607,7 @@ export class WorldScene extends Phaser.Scene {
         this.cameras.main.shake(350, 0.006);
         this.time.delayedCall(750, () => {
           this.door.disableBody(true, true);
+          this.enableCaveEntrance();
         });
       },
       buildWall: (slot: number) => {
@@ -681,6 +698,7 @@ export class WorldScene extends Phaser.Scene {
     show('spot_log', step === QuestStep.HUNT && !found.includes('log'));
     show('coop', step === QuestStep.BUILD_COOP);
     show('chest', step === QuestStep.CHEST);
+    show('cave_enter', step === QuestStep.CHEST);
   }
 
   private restoreFromSave(): void {
@@ -691,6 +709,7 @@ export class WorldScene extends Phaser.Scene {
     if (s.questStep > QuestStep.CAVE_DOOR) {
       this.door.disableBody(true, true);
       this.doorGlow.setFillStyle(0xffe08a, 0.4);
+      this.enableCaveEntrance();
     }
     if (s.questStep > QuestStep.CHEST) {
       this.chestGlow.setVisible(false);
