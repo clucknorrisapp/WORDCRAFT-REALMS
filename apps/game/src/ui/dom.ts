@@ -27,17 +27,20 @@ export interface Layer {
   close(): void;
 }
 
-export function openLayer(opts: { scrim?: boolean } = {}): Layer {
+export function openLayer(opts: { scrim?: boolean; modal?: boolean } = {}): Layer {
   const root = el('div', opts.scrim === false ? 'scrim clear' : 'scrim');
   overlay().appendChild(root);
-  uiOpenCount += 1;
+  // Non-modal layers (toasts) never block world input — a kid tapping while
+  // the narrator is mid-sentence must not hit a dead screen.
+  const modal = opts.modal !== false;
+  if (modal) uiOpenCount += 1;
   let closed = false;
   return {
     root,
     close() {
       if (closed) return;
       closed = true;
-      uiOpenCount -= 1;
+      if (modal) uiOpenCount -= 1;
       root.remove();
     },
   };

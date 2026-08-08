@@ -192,12 +192,13 @@ export class QuestDirector {
   onSignTapped(word: string): void {
     void this.run(async () => {
       await readWordCard(this.services, word);
-      await celebrate(this.services);
+      // State first, juice second — progress must never wait on audio.
       const s = this.services.save;
       if (!s.signsRead.includes(word)) {
         s.signsRead.push(word);
         this.services.persist();
       }
+      await celebrate(this.services);
       if (this.step === QuestStep.INTRO_SIGNS && s.signsRead.length >= 2) {
         this.setStep(QuestStep.GATHER_BUILD);
         await toast(this.services, 'ln_gather_hint');

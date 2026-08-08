@@ -172,11 +172,14 @@ export async function readWordCard(
   panel.appendChild(row);
   layer.root.appendChild(panel);
 
+  // Listen from the moment the button exists — a fast tap during narration
+  // must count, never land on a button that isn't wired up yet.
+  const okClicked = new Promise<void>((resolve) => ok.addEventListener('click', () => resolve(), { once: true }));
   if (opts.autoSpeak !== false) {
     await wait(650); // let them look at the word first
     await services.speakWord(w.text).done;
   }
-  await new Promise<void>((resolve) => ok.addEventListener('click', () => resolve(), { once: true }));
+  await okClicked;
   layer.close();
 
   services.recordEvidence({
@@ -460,7 +463,7 @@ export async function toast(services: Services, lineId: string, nameSub?: string
   const l = getLine(lineId);
   let text = l.text;
   if (nameSub) text = text.replaceAll('{name}', nameSub);
-  const layer = openLayer({ scrim: false });
+  const layer = openLayer({ scrim: false, modal: false });
   const box = el('div', 'dialogue');
   box.style.padding = '12px 16px';
   const speech = el('div', 'speech');
@@ -495,7 +498,8 @@ export async function showBlueprint(services: Services): Promise<void> {
   row.appendChild(ok);
   panel.appendChild(row);
   layer.root.appendChild(panel);
+  const okClicked = new Promise<void>((r) => ok.addEventListener('click', () => r(), { once: true }));
   await services.speakLine('ln_blueprint').done;
-  await new Promise<void>((r) => ok.addEventListener('click', () => r(), { once: true }));
+  await okClicked;
   layer.close();
 }

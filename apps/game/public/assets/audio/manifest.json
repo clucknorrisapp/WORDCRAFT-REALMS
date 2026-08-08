@@ -51,6 +51,8 @@
     "w_nut": "assets/audio/w_nut.mp3",
     "w_jam": "assets/audio/w_jam.mp3",
     "w_ten": "assets/audio/w_ten.mp3",
-    "w_pen": "assets/audio/w_pen.mp3"
+    "w_pen": "assets/audio/w_pen.mp3",
+    "ln_wizard_prompt": "assets/audio/ln_wizard_prompt.mp3",
+    "ln_door_open": "assets/audio/ln_door_open.mp3"
   }
 }
