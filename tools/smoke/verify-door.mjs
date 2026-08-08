@@ -4,7 +4,7 @@
 import { chromium } from 'playwright-core';
 import fs from 'node:fs';
 
-const OUT = process.env.SHOT_DIR || '.';
+const OUT = process.env.SHOT_DIR || 'playtest-data/shots';
 fs.mkdirSync(OUT, { recursive: true });
 const errors = [];
 
