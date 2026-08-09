@@ -16,5 +16,8 @@
   { "id": "bus",  "word": "bus",  "icon": "🚌" },
   { "id": "jet",  "word": "jet",  "icon": "✈️" },
   { "id": "hat",  "word": "hat",  "icon": "🎩" },
-  { "id": "map",  "word": "map",  "icon": "🗺️" }
+  { "id": "map",  "word": "map",  "icon": "🗺️" },
+  { "id": "sand", "word": "sand", "icon": "🟨" },
+  { "id": "tin",  "word": "tin",  "icon": "⬜" },
+  { "id": "net",  "word": "net",  "icon": "🕸️" }
 ]

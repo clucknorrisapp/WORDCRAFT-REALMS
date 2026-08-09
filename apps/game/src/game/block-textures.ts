@@ -162,6 +162,24 @@ const PAINTERS: Record<string, (c: Ctx) => void> = {
     rect(c, 3, 9, 12, 2, '#a02b20'); // brim
     rect(c, 5, 4, 6, 1, '#d0493b');
   },
+  sand: (c) => {
+    noise(c, ['#e3d29a', '#dcc98a', '#e8daa8', '#d3bd7a', '#eaddab'], 13);
+    rect(c, 0, 5, G, 1, '#cbb374');
+    rect(c, 0, 11, G, 1, '#cbb374');
+  },
+  tin: (c) => {
+    noise(c, ['#c9ccd1', '#bcc1c9', '#d6d9dd', '#b2b7c0'], 14);
+    rect(c, 0, 0, G, 1, '#e6e9ee'); // top highlight
+    rect(c, 0, 0, 1, G, '#e6e9ee');
+    rect(c, 0, 15, G, 1, '#9298a2'); // bottom shade
+    rect(c, 15, 0, 1, G, '#9298a2');
+  },
+  net: (c) => {
+    fill(c, SKY);
+    for (const x of [2, 5, 8, 11, 14]) rect(c, x, 1, 1, 14, '#8b93a1');
+    for (const y of [2, 6, 10, 14]) rect(c, 1, y, 14, 1, '#8b93a1');
+    for (const x of [2, 5, 8, 11, 14]) for (const y of [2, 6, 10, 14]) px(c, x, y, '#c2c9d2');
+  },
   map: (c) => {
     fill(c, '#e8d8a8');
     rect(c, 0, 0, G, 1, '#c9b57e');

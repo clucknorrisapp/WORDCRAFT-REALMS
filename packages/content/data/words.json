@@ -186,6 +186,7 @@
   {"text":"moth","g":["m","o","th"]},
   {"text":"chomp","g":["ch","o","m","p"]},
   {"text":"chicks","g":["ch","i","ck","s"]},
+  {"text":"sand","g":["s","a","n","d"]},
   {"text":"the","g":["th","e"],"heart":true},
   {"text":"a","g":["a"],"heart":true},
   {"text":"i","g":["i"],"heart":true},
