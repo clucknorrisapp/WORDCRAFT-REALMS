@@ -68,5 +68,75 @@
       "The fox has a bun. It is for us!",
       "The hen sat. We had fun. Big hug!"
     ]
+  },
+  {
+    "id": "cat-nap",
+    "title": "The Cat Nap",
+    "cover": "🐱",
+    "reward": "egg",
+    "pages": [
+      "The cat can nap. But not yet!",
+      "Nap on the mat? Not this cat.",
+      "Nap on a lap? Not this cat.",
+      "Nap in the sun? Yes, this cat!",
+      "The sun is hot. The cat sat.",
+      "Nap, cat, nap. Fun in the sun!"
+    ]
+  },
+  {
+    "id": "bug-in-a-rug",
+    "title": "Bug in a Rug",
+    "cover": "🐛",
+    "reward": "wood",
+    "pages": [
+      "A bug is in the rug.",
+      "A big pup can dig.",
+      "Dig and dig and dig!",
+      "Pop! I see you!",
+      "The pup and bug hug.",
+      "Yes! Fun for us!"
+    ]
+  },
+  {
+    "id": "jam-on-ham",
+    "title": "Jam On Ham",
+    "cover": "🍓",
+    "reward": "gem",
+    "pages": [
+      "I see jam. I see red jam!",
+      "Jam on ham. Yum yum!",
+      "Jam on a bun. Jam on an egg.",
+      "Jam on a pot. Jam on a pan.",
+      "Jam on you and me! So wet!",
+      "So much fun. Yum yum!"
+    ]
+  },
+  {
+    "id": "the-big-fish",
+    "title": "The Big Fish",
+    "cover": "🐟",
+    "reward": "stone",
+    "pages": [
+      "A big fish sat in a dish.",
+      "The big fish had a wish.",
+      "A wish for fun in the sun.",
+      "Then a kid ran to the fish.",
+      "The kid and fish had fun. Wet fun in the sun!",
+      "The big fish got the wish. Yes!"
+    ]
+  },
+  {
+    "id": "fox-and-socks",
+    "title": "Fox and Sock",
+    "cover": "🧦",
+    "reward": "gem",
+    "pages": [
+      "Fox has a red sock. It is a fun sock.",
+      "The sock is on Fox. Hop, Fox, hop!",
+      "Fox can hop on a rock. Hop, Fox, hop!",
+      "The red sock got wet. Wet, wet, wet!",
+      "Is Fox sad? No, not Fox!",
+      "Hop, Fox, hop! Fox has so much fun."
+    ]
   }
 ]
