@@ -8,7 +8,7 @@ export const PRIORITY_WORDS = [
   'den', 'hut', 'shop', 'path', 'shed', 'rock', 'log',
   'hen', 'hat', 'hop', 'chick', 'chin',
   'ship', 'chest',
-  'egg', 'nut', 'jam', 'ten', 'pen',
+  'egg', 'nut', 'jam', 'ten', 'pen', 'ham', 'fig', 'bun',
 ];
 
 /** Every clip the game wants: [{ id, speaker, text }] */

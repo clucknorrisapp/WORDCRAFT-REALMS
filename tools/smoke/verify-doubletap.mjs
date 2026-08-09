@@ -35,23 +35,27 @@ await page.waitForTimeout(1200);
 
 // Free play: tap the dragon to open a feed board. The dragon wants
 // FEED_FOODS[feedIdx]; feedIdx starts 0 → the correct card is EGG.
-const target = await page.evaluate(() => {
-  const d = window.__readquest.game.scene.keys.world.director;
-  d.onDragonTapped();
-  return ['egg', 'nut', 'jam'][((d.feedIdx - 1) % 3 + 3) % 3]; // feedIdx already incremented
-});
+const FOODS = ['egg', 'nut', 'jam', 'ham', 'fig', 'bun'];
+await page.evaluate(() => window.__readquest.game.scene.keys.world.director.onDragonTapped());
 await page.waitForSelector('.word-card', { timeout: 8000 });
+// Feeding is adaptive now — the correct food is whatever the engine targeted;
+// read it from the analytics event the director logged.
+const target = await page.evaluate(() => {
+  const evs = window.__readquest.services.analytics.all();
+  const last = [...evs].reverse().find((e) => e.type === 'adaptive_target');
+  return last?.payload?.food;
+});
 
 // The excited double-tap: tap the CORRECT card twice, fast, inside the 450ms
 // resolve window. The fix must count this as one first-try correct — not a
 // spurious wrong on the second tap.
-const card = page.locator(`.word-card:has-text("${target.toUpperCase()}")`).first();
+const card = page.locator(`.word-card:has-text("${String(target).toUpperCase()}")`).first();
 await card.click({ force: true }).catch(() => {});
 await card.click({ force: true }).catch(() => {});
 await page.waitForTimeout(900);
 
 const ev = await page.evaluate(() => JSON.parse(localStorage.getItem('readquest_save_v1')).evidence);
-const foodRows = ev.filter((e) => ['egg', 'nut', 'jam'].includes(e.wordId));
+const foodRows = ev.filter((e) => FOODS.includes(e.wordId));
 console.log(`target=${target}, feed rows: ${JSON.stringify(foodRows.map((e) => ({ w: e.wordId, ok: e.correct, n: e.attemptIndex })))}`);
 
 await browser.close();

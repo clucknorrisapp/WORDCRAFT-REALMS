@@ -1,7 +1,7 @@
 // Composition root — the only place where all modules meet (architecture §5.1:
 // the game client composes everything but implements no pedagogy).
 import { createAnalytics, type Analytics } from '@readquest/analytics';
-import { line, validateText } from '@readquest/content';
+import { curriculum, line, validateText } from '@readquest/content';
 import { LearningEngine } from '@readquest/learning-engine';
 import {
   COUNTABLE_TYPES,
@@ -66,6 +66,7 @@ export async function createServices(save: SaveData): Promise<Services> {
   const analytics = createAnalytics(save.events, () => persistSave(save));
   // Mastery state is a projection of the evidence log — replay it (architecture §7).
   const engine = LearningEngine.replay(save.taught, save.evidence);
+  engine.setCurriculum(curriculum.order); // enables adaptive 70/20/10 selection
 
   const services: Services = {
     save,

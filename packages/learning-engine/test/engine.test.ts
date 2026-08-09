@@ -89,3 +89,75 @@ describe('mastery model', () => {
     expect(e.scaffolding().dialogueAudio).toBe('on_request');
   });
 });
+
+describe('adaptive selection', () => {
+  function drive(e: LearningEngine, skill: string, n: number, correct = true) {
+    for (let i = 0; i < n; i++) {
+      e.record(ev({ skillIds: [skill], channel: 'production', correct }));
+    }
+  }
+
+  it('nextTarget honors the ~70/20/10 comfort/stretch/new split', () => {
+    const e = new LearningEngine(['short_a', 'short_i', 'short_o', 'heart']);
+    e.setCurriculum(['short_a', 'short_i', 'short_o', 'heart', 'digraph_sh']); // sh untaught = "new"
+    drive(e, 'short_a', 30); // → mastered (comfort)
+    drive(e, 'short_i', 30);
+    drive(e, 'short_o', 30);
+    drive(e, 'heart', 2); // 2 production → score ~51 = developing (stretch)
+    expect(e.mastery('heart').band).toBe('developing');
+    expect(e.mastery('short_a').band).toBe('mastered');
+
+    const tally = { comfort: 0, stretch: 0, new: 0 };
+    for (let seed = 1; seed <= 3000; seed++) {
+      tally[e.nextTarget({ childId: 'c', hostableTypes: ['word_match'] }, seed).bucket] += 1;
+    }
+    const total = 3000;
+    expect(tally.comfort / total).toBeGreaterThan(0.6);
+    expect(tally.comfort / total).toBeLessThan(0.8);
+    expect(tally.stretch / total).toBeGreaterThan(0.12);
+    expect(tally.stretch / total).toBeLessThan(0.28);
+    expect(tally.new / total).toBeGreaterThan(0.05);
+    expect(tally.new / total).toBeLessThan(0.15);
+  });
+
+  it('the "new" bucket targets the next untaught curriculum skill', () => {
+    const e = new LearningEngine(['short_a']);
+    e.setCurriculum(['short_a', 'digraph_sh', 'digraph_ch']);
+    let sawNew = false;
+    for (let seed = 1; seed <= 200; seed++) {
+      const plan = e.nextTarget({ childId: 'c', hostableTypes: ['word_match'] }, seed);
+      if (plan.bucket === 'new') {
+        expect(plan.targetSkill).toBe('digraph_sh');
+        sawNew = true;
+      }
+    }
+    expect(sawNew).toBe(true);
+  });
+
+  it('mastering a skill schedules a spaced-repetition review; a failed review resets it', () => {
+    const e = new LearningEngine(['digraph_sh']);
+    const t0 = 1_000_000;
+    for (let i = 0; i < 20; i++) {
+      e.record(ev({ skillIds: ['digraph_sh'], channel: 'production', at: t0 + i }));
+    }
+    expect(e.mastery('digraph_sh').band).toBe('mastered');
+    const review = e.mastery('digraph_sh').nextReviewAt;
+    expect(review).toBeGreaterThan(t0);
+    expect(e.dueReviews(t0)).not.toContain('digraph_sh'); // not due yet
+    expect(e.dueReviews(review! + 1)).toContain('digraph_sh'); // due later
+
+    // A failed review drops the score and clears the schedule (back to practice).
+    const before = e.mastery('digraph_sh').score;
+    e.record(ev({ skillIds: ['digraph_sh'], correct: false, at: review! + 2 }));
+    expect(e.mastery('digraph_sh').score).toBeLessThan(before);
+    expect(e.mastery('digraph_sh').nextReviewAt).toBeUndefined();
+  });
+
+  it('nextTarget is deterministic for a given seed', () => {
+    const e = new LearningEngine(['short_a', 'short_i']);
+    e.setCurriculum(['short_a', 'short_i', 'digraph_sh']);
+    const a = e.nextTarget({ childId: 'c', hostableTypes: ['word_match'] }, 77);
+    const b = e.nextTarget({ childId: 'c', hostableTypes: ['word_match'] }, 77);
+    expect(a).toEqual(b);
+  });
+});

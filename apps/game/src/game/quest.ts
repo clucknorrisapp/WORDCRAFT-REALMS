@@ -50,7 +50,9 @@ const HUNT_SPOTS: Record<string, { clue: string; target: string }> = {
 };
 const SPOT_WORDS = ['shed', 'rock', 'log'];
 
-const FEED_FOODS = ['egg', 'nut', 'jam'];
+// Decodable foods spanning several skills, so adaptive feeding can target the
+// skill the child needs (egg/jam short-vowels, fig short_i, ham short_a, bun/nut short_u).
+const FEED_FOODS = ['egg', 'nut', 'jam', 'ham', 'fig', 'bun'];
 
 // World-layout anchors for guidance. Keep in sync with world.ts placements.
 const POI = {
@@ -412,13 +414,25 @@ export class QuestDirector {
       return;
     }
     void this.run(async () => {
-      const target = FEED_FOODS[this.feedIdx % FEED_FOODS.length]!;
+      // Adaptive free-play practice: the invisible engine picks the skill the
+      // child needs next (70/20/10), and we feed the dragon a food that
+      // exercises it. Distractors are other foods (curated, thematic).
+      const seed = Math.floor(Math.random() * 1e6);
+      const plan = this.services.engine.nextTarget(
+        { childId: this.services.save.childId, hostableTypes: ['word_match'] },
+        seed,
+        Date.now(),
+      );
+      const forSkill = FEED_FOODS.filter((f) => getWord(f).skills.includes(plan.targetSkill));
+      const target = (forSkill.length ? forSkill : FEED_FOODS)[seed % (forSkill.length || FEED_FOODS.length)]!;
       this.feedIdx += 1;
+      this.services.analytics.log('adaptive_target', { skill: plan.targetSkill, bucket: plan.bucket, food: target });
+      const distractors = FEED_FOODS.filter((f) => f !== target).slice(0, 2);
       await toast(this.services, 'ln_feed_dragon');
       await choiceBoard(this.services, {
         challengeType: 'word_match',
         targetWord: target,
-        distractors: FEED_FOODS.filter((f) => f !== target),
+        distractors,
         spokenPrompt: `Your dragon wants: ${target}!`,
         emoji: '🐉🍽️',
       });

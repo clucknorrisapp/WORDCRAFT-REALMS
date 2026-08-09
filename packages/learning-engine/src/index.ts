@@ -10,7 +10,10 @@ import type {
   MasteryState,
   ScaffoldingPolicy,
   SkillId,
+  TargetPlan,
+  TargetRequest,
 } from '@readquest/shared';
+import { seededRandom } from '@readquest/shared';
 
 interface SkillRecord {
   score: number;
@@ -19,12 +22,20 @@ interface SkillRecord {
   correct: number;
   lastSeenAt?: number;
   nextReviewAt?: number;
+  reviewIntervalMs?: number;
 }
 
 const BASE_LEARNING_RATE = 0.15;
 const MAX_LEARNING_RATE = 0.4;
 const PRODUCTION_WEIGHT = 2.0;
 const HINT_PENALTY = 0.25;
+
+// Spaced repetition (roadmap §15): a mastered skill resurfaces at widening
+// intervals; a failed review resets it and drops it back into practice.
+const FIRST_REVIEW_MS = 2 * 24 * 60 * 60 * 1000; // 2 days
+const MAX_REVIEW_MS = 32 * 24 * 60 * 60 * 1000; // 32 days
+const MASTERED_SCORE = 81;
+const REVIEW_CONFIDENCE = 0.5;
 
 export function band(score: number): MasteryBand {
   if (score <= 20) return 'new';
@@ -37,9 +48,15 @@ export function band(score: number): MasteryBand {
 export class LearningEngine {
   private skills = new Map<SkillId, SkillRecord>();
   private taught = new Set<SkillId>();
+  private curriculumOrder: SkillId[] = [];
 
   constructor(initialTaught: Iterable<SkillId> = []) {
     for (const s of initialTaught) this.markTaught(s);
+  }
+
+  /** The ordered skill sequence, so nextTarget() knows what "new" comes next. */
+  setCurriculum(order: SkillId[]): void {
+    this.curriculumOrder = [...order];
   }
 
   /** "Taught" is a curriculum event, not a score (architecture §5.2). */
@@ -72,8 +89,78 @@ export class LearningEngine {
       if (e.correct) rec.correct += 1;
       rec.confidence = Math.min(1, rec.confidence + 0.08 * weight);
       rec.lastSeenAt = e.at;
+      this.updateReviewSchedule(rec, e);
       this.skills.set(skillId, rec);
     }
+  }
+
+  /** Spaced-repetition scheduling, updated on every attempt for a skill. */
+  private updateReviewSchedule(rec: SkillRecord, e: Evidence): void {
+    const wasScheduled = rec.nextReviewAt !== undefined;
+    if (wasScheduled && e.at >= (rec.nextReviewAt ?? 0)) {
+      // This attempt IS the due review.
+      if (e.correct) {
+        rec.reviewIntervalMs = Math.min(MAX_REVIEW_MS, (rec.reviewIntervalMs ?? FIRST_REVIEW_MS) * 2);
+        rec.nextReviewAt = e.at + rec.reviewIntervalMs;
+      } else {
+        // Forgotten — reset and re-enter active practice (decay as scheduling).
+        rec.score = clamp(rec.score - 15, 0, 100);
+        rec.reviewIntervalMs = undefined;
+        rec.nextReviewAt = undefined;
+      }
+      return;
+    }
+    // Newly mastered with enough evidence → schedule the first review.
+    if (!wasScheduled && rec.score >= MASTERED_SCORE && rec.confidence >= REVIEW_CONFIDENCE) {
+      rec.reviewIntervalMs = FIRST_REVIEW_MS;
+      rec.nextReviewAt = e.at + FIRST_REVIEW_MS;
+    }
+  }
+
+  /** Taught skills whose spaced-repetition review is due at `now`. */
+  dueReviews(now: number): SkillId[] {
+    const out: SkillId[] = [];
+    for (const [id, rec] of this.skills) {
+      if (this.taught.has(id) && rec.nextReviewAt !== undefined && rec.nextReviewAt <= now) {
+        out.push(id);
+      }
+    }
+    return out;
+  }
+
+  /**
+   * Adaptive selection (roadmap §10, §15): ~70% comfort / 20% stretch / 10%
+   * new, plus due spaced-repetition reviews woven into the stretch bucket.
+   * Deterministic given a seed, so any session is reproducible.
+   */
+  nextTarget(req: TargetRequest, seed = 1, now = 0): TargetPlan {
+    const rand = seededRandom(seed);
+    const skillOf = (id: SkillId) => this.mastery(id).band;
+    const taught = [...this.taught].filter((s) => s !== 'base');
+    const due = this.dueReviews(now);
+
+    const comfort = taught.filter((s) => ['proficient', 'mastered'].includes(skillOf(s)) && !due.includes(s));
+    const stretch = taught.filter((s) => ['learning', 'developing'].includes(skillOf(s)));
+    const fresh = taught.filter((s) => skillOf(s) === 'new'); // taught but barely practiced
+    const nextNew = this.curriculumOrder.find((s) => !this.taught.has(s));
+
+    const roll = rand();
+    let bucket: TargetPlan['bucket'];
+    let pool: SkillId[];
+    if (roll < 0.1 && (nextNew || fresh.length)) {
+      bucket = 'new';
+      pool = nextNew ? [nextNew] : fresh;
+    } else if (roll < 0.3 && (due.length || stretch.length || fresh.length)) {
+      bucket = 'stretch';
+      pool = due.length ? due : stretch.length ? stretch : fresh;
+    } else {
+      bucket = 'comfort';
+      pool = comfort.length ? comfort : stretch.length ? stretch : fresh.length ? fresh : taught;
+    }
+    if (pool.length === 0) pool = taught.length ? taught : this.curriculumOrder.slice(0, 1);
+
+    const targetSkill = pool[Math.floor(rand() * pool.length)] ?? 'short_a';
+    return { targetSkill, bucket, taughtSkills: this.taughtSkills(), weaveReviews: due };
   }
 
   mastery(skillId: SkillId): MasteryState {
