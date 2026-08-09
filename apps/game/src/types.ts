@@ -21,6 +21,13 @@ export interface SettingsData {
   micStrictness: 'gentle' | 'strict';
   narrationRate: number; // 0.7–1.3
   textScale: number; // 0.9–1.4
+  // ── Accessibility ──
+  /** Dyslexia-friendly typography: generous letter/word/line spacing. */
+  dyslexiaFont: boolean;
+  /** High-contrast palette: near-black text on white, bolder borders. */
+  highContrast: boolean;
+  /** Calm mode: suppress confetti, bounces, camera drift, and CSS animation. */
+  reducedMotion: boolean;
 }
 
 export interface SaveData {

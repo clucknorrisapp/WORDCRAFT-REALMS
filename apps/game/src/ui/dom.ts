@@ -55,8 +55,9 @@ export function speakerButton(onTap: () => void): HTMLButtonElement {
   return btn;
 }
 
-/** Confetti burst — the DOM half of every celebration. */
+/** Confetti burst — the DOM half of every celebration. Calm mode skips it. */
 export function confetti(count = 26): void {
+  if (motionReduced) return;
   const colors = ['#ff9f43', '#6c5ce7', '#2ecc71', '#ff6b81', '#feca57', '#54a0ff'];
   const w = window.innerWidth;
   for (let i = 0; i < count; i++) {
@@ -93,6 +94,27 @@ export function floatNote(text: string, x: number, y: number): void {
 
 export function applyTextScale(scale: number): void {
   document.documentElement.style.setProperty('--text-scale', String(scale));
+}
+
+// ── Accessibility ───────────────────────────────────────────────────────────
+let motionReduced = false;
+/** True when calm mode is on — motion-heavy effects check this and stay still. */
+export function reducedMotion(): boolean {
+  return motionReduced;
+}
+
+/** Apply the accessibility settings as classes on <html> (+ a motion flag).
+ *  CSS does the visual work; JS effects (confetti, camera) read reducedMotion(). */
+export function applyAccessibility(s: {
+  dyslexiaFont: boolean;
+  highContrast: boolean;
+  reducedMotion: boolean;
+}): void {
+  const root = document.documentElement;
+  root.classList.toggle('a11y-dyslexia', s.dyslexiaFont);
+  root.classList.toggle('a11y-contrast', s.highContrast);
+  root.classList.toggle('a11y-reduce-motion', s.reducedMotion);
+  motionReduced = s.reducedMotion;
 }
 
 export function wait(ms: number): Promise<void> {

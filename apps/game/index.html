@@ -177,6 +177,40 @@
     .book-word:active { transform: scale(0.94); }
     .book-word.hot { background: #ffe08a; color: #7a5a00; }
     .book-controls { margin-top: 8px; }
+
+    /* ── Accessibility: dyslexia-friendly typography ──
+       Evidence points to generous spacing helping more than any single font,
+       so calm the letter/word/line spacing across all reading surfaces. */
+    .a11y-dyslexia .words, .a11y-dyslexia .book-page, .a11y-dyslexia .book-title,
+    .a11y-dyslexia .dialogue .words, .a11y-dyslexia .subtitle,
+    .a11y-dyslexia .word-card, .a11y-dyslexia .book-spine-title {
+      letter-spacing: 0.06em; word-spacing: 0.14em; line-height: 1.9;
+    }
+    .a11y-dyslexia .book-word { padding: 2px 6px; }
+
+    /* ── Accessibility: high contrast ── */
+    .a11y-contrast {
+      --ink: #000000; --panel: #ffffff; --card: #ffffff;
+      --accent: #b23c00; --accent2: #23146e; --good: #0a7a34;
+      --shadow: 0 4px 0 rgba(0, 0, 0, 0.6);
+    }
+    .a11y-contrast .panel, .a11y-contrast .dialogue { border: 3px solid #000; }
+    .a11y-contrast .word-card, .a11y-contrast .book-spine { border-color: #000; }
+    .a11y-contrast .chip, .a11y-contrast .objective { border: 2px solid #000; background: #fff; }
+    .a11y-contrast .btn.ghost { background: #fff; color: #23146e; border: 3px solid #23146e; }
+    .a11y-contrast .book-word.hot, .a11y-contrast .dialogue .words span.hot { background: #ffd000; color: #000; }
+
+    /* ── Accessibility: reduced motion (explicit toggle OR OS preference) ── */
+    .a11y-reduce-motion *, .a11y-reduce-motion *::before, .a11y-reduce-motion *::after {
+      animation-duration: 0.001ms !important; animation-iteration-count: 1 !important;
+      transition-duration: 0.001ms !important; scroll-behavior: auto !important;
+    }
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation-duration: 0.001ms !important; animation-iteration-count: 1 !important;
+        transition-duration: 0.001ms !important;
+      }
+    }
   </style>
 </head>
 <body>

@@ -4,7 +4,7 @@
 import Phaser from 'phaser';
 import type { Services } from '../services';
 import type { Hud } from '../ui/hud';
-import { floatNote, isUiOpen } from '../ui/dom';
+import { floatNote, isUiOpen, reducedMotion } from '../ui/dom';
 import { setDragonCelebrate } from '../ui/widgets';
 import { QuestDirector, type WorldControl } from './quest';
 import { DRAGON_TINTS, QuestStep } from '../types';
@@ -449,16 +449,20 @@ export class WorldScene extends Phaser.Scene {
   }
 
   private dragonCelebrateAnim(big: boolean): void {
-    const jumps = big ? 3 : 1;
-    this.tweens.add({
-      targets: this.dragon,
-      y: this.dragon.y - (big ? 46 : 26),
-      duration: 190,
-      yoyo: true,
-      repeat: jumps,
-      ease: 'quad.out',
-    });
-    this.tweens.add({ targets: this.dragon, angle: big ? 360 : 14, duration: big ? 550 : 160, yoyo: !big, ease: 'sine.inOut', onComplete: () => this.dragon.setAngle(0) });
+    // Calm mode: keep the floating hearts (gentle, celebratory) but skip the
+    // spin and big jumps that WCAG flags as vestibular triggers.
+    if (!reducedMotion()) {
+      const jumps = big ? 3 : 1;
+      this.tweens.add({
+        targets: this.dragon,
+        y: this.dragon.y - (big ? 46 : 26),
+        duration: 190,
+        yoyo: true,
+        repeat: jumps,
+        ease: 'quad.out',
+      });
+      this.tweens.add({ targets: this.dragon, angle: big ? 360 : 14, duration: big ? 550 : 160, yoyo: !big, ease: 'sine.inOut', onComplete: () => this.dragon.setAngle(0) });
+    }
     for (let i = 0; i < (big ? 7 : 3); i++) {
       const heart = this.add
         .text(this.dragon.x + Phaser.Math.Between(-26, 26), this.dragon.y - 20, '💛', { fontSize: '22px' })
@@ -512,6 +516,8 @@ export class WorldScene extends Phaser.Scene {
       this.pulseAt(pos.x, pos.y);
       return;
     }
+    // Calm mode: no camera drift. The wayfinding arrow still points the way.
+    if (reducedMotion()) return;
     this.cinematic = true;
     cam.stopFollow();
     const there = this.clampScroll(pos.x - cam.width / 2, pos.y - cam.height / 2);
@@ -606,7 +612,7 @@ export class WorldScene extends Phaser.Scene {
       openCaveDoor: () => {
         this.tweens.add({ targets: this.door, alpha: 0, y: this.door.y - 20, duration: 700, ease: 'quad.in' });
         this.doorGlow.setFillStyle(0xffe08a, 0.5);
-        this.cameras.main.shake(350, 0.006);
+        if (!reducedMotion()) this.cameras.main.shake(350, 0.006);
         this.time.delayedCall(750, () => {
           this.door.disableBody(true, true);
           this.enableCaveEntrance();
@@ -624,7 +630,7 @@ export class WorldScene extends Phaser.Scene {
         const alphas = [0.28, 0.55, 0.8, 1];
         this.coop.setAlpha(alphas[Math.min(stage, 3)]!);
         this.tweens.add({ targets: this.coop, scaleX: this.coop.scaleX * 1.06, scaleY: this.coop.scaleY * 1.06, duration: 140, yoyo: true });
-        this.cameras.main.shake(120, 0.003);
+        if (!reducedMotion()) this.cameras.main.shake(120, 0.003);
       },
       henFoundAt: (spot: string) => {
         const pos = HUNT_SPOT_POS[spot];

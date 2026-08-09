@@ -26,7 +26,17 @@ export function freshSave(): SaveData {
     evidence: [],
     events: [],
     firstSessionAt: Date.now(),
-    settings: { micEnabled: true, micStrictness: 'gentle', narrationRate: 1, textScale: 1 },
+    settings: {
+      micEnabled: true,
+      micStrictness: 'gentle',
+      narrationRate: 1,
+      textScale: 1,
+      dyslexiaFont: false,
+      highContrast: false,
+      // Honor the OS "reduce motion" preference out of the box.
+      reducedMotion:
+        typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches,
+    },
   };
 }
 

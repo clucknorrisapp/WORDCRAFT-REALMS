@@ -3,7 +3,7 @@
 import { COUNTABLE_TYPES } from '@readquest/shared';
 import { voiceDiagnostics } from '@readquest/voice';
 import type { Services } from '../services';
-import { applyTextScale, el, openLayer } from './dom';
+import { applyAccessibility, applyTextScale, el, openLayer } from './dom';
 import { wipeSave } from '../save';
 
 const SKILL_LABELS: Record<string, string> = {
@@ -144,6 +144,41 @@ export function openParentScreen(services: Services): void {
   });
   settingsRow.appendChild(sizeBtn);
   panel.appendChild(settingsRow);
+
+  // ── Accessibility toggles ──
+  panel.appendChild(el('h2', '', 'Accessibility'));
+  const a11yRow = el('div', 'cards');
+  const onOff = (b: boolean) => (b ? 'ON' : 'OFF');
+  const a11yToggle = (
+    label: (on: boolean) => string,
+    get: () => boolean,
+    set: (v: boolean) => void,
+  ) => {
+    const btn = el('button', 'btn ghost', label(get()));
+    btn.addEventListener('click', () => {
+      set(!get());
+      btn.textContent = label(get());
+      applyAccessibility(services.save.settings);
+      services.persist();
+    });
+    a11yRow.appendChild(btn);
+  };
+  a11yToggle(
+    (on) => `📖 Easy-read font: ${onOff(on)}`,
+    () => services.save.settings.dyslexiaFont,
+    (v) => (services.save.settings.dyslexiaFont = v),
+  );
+  a11yToggle(
+    (on) => `◐ High contrast: ${onOff(on)}`,
+    () => services.save.settings.highContrast,
+    (v) => (services.save.settings.highContrast = v),
+  );
+  a11yToggle(
+    (on) => `🍃 Calm motion: ${onOff(on)}`,
+    () => services.save.settings.reducedMotion,
+    (v) => (services.save.settings.reducedMotion = v),
+  );
+  panel.appendChild(a11yRow);
 
   const actions = el('div', 'cards');
   const exportBtn = el('button', 'btn alt', '⬇ Export playtest data');

@@ -6,11 +6,12 @@ import { WorldScene } from './game/world';
 import { mountHud } from './ui/hud';
 import { mountParentButton } from './ui/parent';
 import { mountLibraryButton } from './ui/library';
-import { applyTextScale } from './ui/dom';
+import { applyTextScale, applyAccessibility } from './ui/dom';
 
 async function boot(): Promise<void> {
   const save = loadSave();
   applyTextScale(save.settings.textScale);
+  applyAccessibility(save.settings);
   const services = await createServices(save);
   services.analytics.log('session_start', { questStep: save.questStep });
   window.addEventListener('visibilitychange', () => {
