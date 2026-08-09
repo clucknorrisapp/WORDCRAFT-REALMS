@@ -101,7 +101,7 @@ const snap = () =>
     const save = JSON.parse(localStorage.getItem('readquest_save_v1') ?? 'null');
     const world = window.__readquest?.game?.scene?.keys?.world;
     const dialogNext = [...document.querySelectorAll('.dialogue button')].some(
-      (b) => b.textContent === '▶' && getComputedStyle(b).visibility !== 'hidden',
+      (b) => b.textContent === 'Keep going' && getComputedStyle(b).visibility !== 'hidden',
     );
     const cards = [...document.querySelectorAll('.word-card')].map((c) => c.textContent);
     return {
@@ -227,7 +227,7 @@ while (Date.now() - start < MAX_MS) {
     }
   }
   if (s.dialogNext) {
-    await clickText('▶');
+    await clickText('Keep going');
     continue;
   }
   if (!s.dragonName && s.cards.length === 4 && !s.hasWorld) {

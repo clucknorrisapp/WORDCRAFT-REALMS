@@ -114,9 +114,9 @@ const dbg = await page.evaluate(() => {
 console.log('debug:', JSON.stringify(dbg));
 
 // Wizard dialogue (premium ElevenLabs clip) → continue.
-await page.waitForSelector('.dialogue button:has-text("▶")', { timeout: 20000 });
+await page.waitForSelector('.dialogue button:has-text("Keep going")', { timeout: 20000 });
 await page.screenshot({ path: `${OUT}/10-wizard.png` });
-await page.locator('.dialogue button:has-text("▶")').click();
+await page.locator('.dialogue button:has-text("Keep going")').click();
 
 // The magic door.
 await page.waitForSelector('.mic-btn', { timeout: 12000 });
@@ -130,9 +130,9 @@ const micDbg = await page.evaluate(() => ({
   evidence: JSON.parse(localStorage.getItem('readquest_save_v1')).evidence.filter((e) => e.challengeType === 'magic_word'),
 }));
 console.log('mic debug:', JSON.stringify(micDbg));
-await page.waitForSelector('.dialogue button:has-text("▶")', { timeout: 20000 }); // "You did it!" line
+await page.waitForSelector('.dialogue button:has-text("Keep going")', { timeout: 20000 }); // "You did it!" line
 await page.screenshot({ path: `${OUT}/12-door-heard.png` });
-await page.locator('.dialogue button:has-text("▶")').click();
+await page.locator('.dialogue button:has-text("Keep going")').click();
 await page.waitForTimeout(2500); // celebration + door animation
 await page.screenshot({ path: `${OUT}/13-door-open.png` });
 

@@ -132,7 +132,7 @@ export async function showDialogue(
     services.analytics.log('audio_requested', { lineId });
     void speak();
   });
-  const next = el('button', 'btn', '▶');
+  const next = el('button', 'btn', 'Keep going');
   next.style.visibility = 'hidden';
   row.appendChild(replay);
   row.appendChild(next);

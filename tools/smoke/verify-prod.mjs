@@ -51,12 +51,12 @@ console.log('✓ character select renders on', BASE);
 
 await page.locator('.avatar-grid img').nth(3).click();
 await page.locator('button:has-text("Go!")').click();
-await page.locator('.dialogue button:has-text("▶")').click();
-await page.locator('.dialogue button:has-text("▶")').click();
+await page.locator('.dialogue button:has-text("Keep going")').click();
+await page.locator('.dialogue button:has-text("Keep going")').click();
 await page.waitForSelector('text=Name your dragon!', { timeout: 15000 });
 await page.locator('.word-card:has-text("DASH")').click();
 await page.locator('button:has-text("Keep this name!")').click();
-await page.locator('.dialogue button:has-text("▶")').click();
+await page.locator('.dialogue button:has-text("Keep going")').click();
 await page.waitForSelector('canvas', { timeout: 20000 });
 await page.waitForTimeout(2500);
 await page.screenshot({ path: `${OUT}/prod-2-village.png` });

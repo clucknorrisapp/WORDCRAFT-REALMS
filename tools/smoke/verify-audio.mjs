@@ -92,15 +92,15 @@ await gate('welcome narration', async () => {
 });
 // 2. Dragon-name prompt + a name card pronunciation.
 await gate('dragon prompt + name', async () => {
-  await page.locator('.dialogue button:has-text("▶")').click().catch(() => {});
-  await page.locator('.dialogue button:has-text("▶")').click().catch(() => {});
+  await page.locator('.dialogue button:has-text("Keep going")').click().catch(() => {});
+  await page.locator('.dialogue button:has-text("Keep going")').click().catch(() => {});
   await page.waitForSelector('text=Name your dragon!', { timeout: 8000 }).catch(() => {});
   await page.locator('.word-card:has-text("CHIP")').click().catch(() => {});
 });
 // 3. Into the world, then a sign read (audio well after the initial gesture).
 await gate('enter world', async () => {
   await page.locator('button:has-text("Keep this name!")').click().catch(() => {});
-  await page.locator('.dialogue button:has-text("▶")').click().catch(() => {});
+  await page.locator('.dialogue button:has-text("Keep going")').click().catch(() => {});
   await page.waitForSelector('canvas', { timeout: 12000 }).catch(() => {});
   await page.waitForTimeout(2000);
 });

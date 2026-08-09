@@ -113,15 +113,15 @@ const chestPos = await page.evaluate(() => {
   return { x: 760 - cam.scrollX, y: 1430 - cam.scrollY };
 });
 await page.mouse.click(chestPos.x, chestPos.y);
-await page.waitForSelector('.dialogue button:has-text("▶")', { timeout: 20000 });
-await page.locator('.dialogue button:has-text("▶")').click();
+await page.waitForSelector('.dialogue button:has-text("Keep going")', { timeout: 20000 });
+await page.locator('.dialogue button:has-text("Keep going")').click();
 await page.waitForSelector('.mic-btn', { timeout: 12000 });
 await page.locator('.mic-btn').click();
-await page.waitForSelector('.dialogue button:has-text("▶")', { timeout: 20000 }); // chest open line
+await page.waitForSelector('.dialogue button:has-text("Keep going")', { timeout: 20000 }); // chest open line
 await page.screenshot({ path: `${OUT}/21-chest-open.png` });
-await page.locator('.dialogue button:has-text("▶")').click();
-await page.waitForSelector('.dialogue button:has-text("▶")', { timeout: 20000 }); // free play line
-await page.locator('.dialogue button:has-text("▶")').click();
+await page.locator('.dialogue button:has-text("Keep going")').click();
+await page.waitForSelector('.dialogue button:has-text("Keep going")', { timeout: 20000 }); // free play line
+await page.locator('.dialogue button:has-text("Keep going")').click();
 await page.waitForTimeout(1000);
 
 const state = await page.evaluate(() => {

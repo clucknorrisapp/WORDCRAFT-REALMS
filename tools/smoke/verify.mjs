@@ -73,8 +73,8 @@ await step('02-welcome', async () => {
 });
 
 await step('03-name-dragon', async () => {
-  await page.locator('.dialogue button:has-text("▶")').click(); // welcome
-  await page.locator('.dialogue button:has-text("▶")').click(); // "pick your dragon" prompt
+  await page.locator('.dialogue button:has-text("Keep going")').click(); // welcome
+  await page.locator('.dialogue button:has-text("Keep going")').click(); // "pick your dragon" prompt
   await page.waitForSelector('text=Name your dragon!', { timeout: 10000 });
   await page.locator('.word-card:has-text("CHIP")').click();
   await page.waitForTimeout(300);
@@ -82,8 +82,8 @@ await step('03-name-dragon', async () => {
 
 await step('04-village', async () => {
   await page.locator('button:has-text("Keep this name!")').click();
-  await page.waitForSelector('.dialogue button:has-text("▶")', { timeout: 10000 });
-  await page.locator('.dialogue button:has-text("▶")').click();
+  await page.waitForSelector('.dialogue button:has-text("Keep going")', { timeout: 10000 });
+  await page.locator('.dialogue button:has-text("Keep going")').click();
   await page.waitForSelector('canvas', { timeout: 15000 });
   await page.waitForTimeout(2500); // camera settle + toast
 });
