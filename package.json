@@ -10,7 +10,8 @@
     "test": "pnpm -r --if-present test",
     "typecheck": "pnpm -r --if-present typecheck",
     "smoke": "node tools/smoke/verify.mjs && node tools/smoke/verify-door.mjs && node tools/smoke/verify-chest.mjs && node tools/smoke/verify-audio.mjs && node tools/smoke/verify-reload.mjs && node tools/smoke/verify-doubletap.mjs && node tools/smoke/verify-library.mjs && node tools/smoke/verify-spells.mjs && node tools/smoke/verify-a11y.mjs && node tools/smoke/verify-build.mjs",
-    "fleet": "node tools/smoke/fleet.mjs"
+    "fleet": "node tools/smoke/fleet.mjs",
+    "audit:pronunciation": "python3 tools/audio/audit-pronunciation.py"
   },
   "engines": {
     "node": ">=20"

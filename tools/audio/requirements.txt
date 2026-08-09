@@ -1,0 +1,10 @@
+# Pronunciation verification deps.
+#
+# Deterministic audit (audit-pronunciation.py / `pnpm audit:pronunciation`) —
+# the primary gate, needs only:
+cmudict>=1.0
+
+# Optional TTS->ASR round-trip (verify-pronunciation.py) — a heavier, noisier
+# cross-check; install these only to run it:
+#   faster-whisper>=1.0
+#   gTTS>=2.5
