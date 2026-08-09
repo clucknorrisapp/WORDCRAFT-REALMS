@@ -29,6 +29,16 @@ const SKY = '#bfe3f5';
 const WATER = ['#3b6fd4', '#4a7ee0', '#3466c6', '#5a8bea'];
 
 const PAINTERS: Record<string, (c: Ctx) => void> = {
+  // Ground tile (not a build block) — the plot's Minecraft grass field.
+  grass: (c) => {
+    noise(c, ['#5fae3a', '#6cbf42', '#529a32', '#74c94a', '#57a636'], 11);
+    for (let i = 0; i < 12; i++) {
+      const x = Math.floor(hash(i, 1, 11) * G);
+      const y = Math.floor(hash(i, 2, 11) * G);
+      px(c, x, y, '#3f8a26');
+      px(c, x, Math.max(0, y - 1), '#8ad85e');
+    }
+  },
   mud: (c) => noise(c, ['#6b4a29', '#7a5230', '#875c37', '#5e3d20', '#6f4d2b'], 1),
   log: (c) => {
     rect(c, 0, 0, G, G, '#8a6a3a');

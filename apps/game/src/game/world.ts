@@ -327,8 +327,11 @@ export class WorldScene extends Phaser.Scene {
     const cy = BUILD_ORIGIN.y + (BUILD_TILE * 7) / 2;
     const w = BUILD_TILE * 10 + 40;
     const h = BUILD_TILE * 8 + 40;
-    const pad = this.add.rectangle(cx, cy, w, h, 0xcfa568, 0.5).setDepth(-90);
-    pad.setStrokeStyle(6, 0x9c7b45, 0.7);
+    // A tiled Minecraft grass field for the ground the child builds on.
+    const ground = this.add.tileSprite(cx, cy, w, h, 'blk_grass').setDepth(-90);
+    ground.setTileScale(BUILD_TILE / 96, BUILD_TILE / 96);
+    const pad = this.add.rectangle(cx, cy, w, h, 0x000000, 0).setDepth(-89);
+    pad.setStrokeStyle(6, 0x6e4a24, 0.85);
     const label = this.add
       .text(cx, cy - h / 2 - 34, '🔨 Your Build!', {
         fontSize: '34px', fontFamily: FONT, color: '#5a3d1a', stroke: '#fff7e6', strokeThickness: 6,
@@ -354,10 +357,10 @@ export class WorldScene extends Phaser.Scene {
 
   /** Turn each block's procedural pixel-art canvas into a crisp Phaser texture. */
   private registerBlockTextures(): void {
-    for (const b of allBlocks()) {
-      const key = `blk_${b.id}`;
+    for (const id of [...allBlocks().map((b) => b.id), 'grass']) {
+      const key = `blk_${id}`;
       if (this.textures.exists(key)) continue;
-      this.textures.addCanvas(key, blockTextureCanvas(b.id));
+      this.textures.addCanvas(key, blockTextureCanvas(id));
       this.textures.get(key).setFilter(Phaser.Textures.FilterMode.NEAREST);
     }
   }
