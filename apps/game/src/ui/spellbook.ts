@@ -50,8 +50,9 @@ export async function openSpellbook(services: Services): Promise<void> {
   const layer = openLayer();
   const panel = el('div', 'panel spellbook');
   panel.appendChild(el('h2', '', '✨ My Spells'));
+  const allKnown = unlockedCount(services) >= allSpells().length;
   panel.appendChild(
-    el('div', 'subtitle', 'Read a book to learn a new spell!'),
+    el('div', 'subtitle', allKnown ? 'You know every spell! ✨' : 'Read a book to learn a new spell!'),
   );
 
   const grid = el('div', 'spell-grid');

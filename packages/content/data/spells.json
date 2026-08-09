@@ -4,5 +4,9 @@
   { "word": "wet", "icon": "💧", "particle": "💧", "hue": "#4dabf7" },
   { "word": "hot", "icon": "🔥", "particle": "🔥", "hue": "#ff6b6b" },
   { "word": "zap", "icon": "⚡", "particle": "⚡", "hue": "#ffe066" },
-  { "word": "hop", "icon": "⭐", "particle": "⭐", "hue": "#63e6be" }
+  { "word": "hop", "icon": "⭐", "particle": "⭐", "hue": "#63e6be" },
+  { "word": "run", "icon": "💨", "particle": "💨", "hue": "#91a7ff" },
+  { "word": "pop", "icon": "💥", "particle": "💥", "hue": "#ffa94d" },
+  { "word": "mix", "icon": "🌀", "particle": "🌀", "hue": "#da77f2" },
+  { "word": "dig", "icon": "⛏️", "particle": "🪨", "hue": "#b08968" }
 ]

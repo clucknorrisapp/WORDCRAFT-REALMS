@@ -28,6 +28,12 @@ function bookWords() {
   return [...words];
 }
 
+/** Every spell's power word — cast audio should be premium narrator, not TTS. */
+function spellWords() {
+  const spells = JSON.parse(fs.readFileSync('packages/content/data/spells.json', 'utf8'));
+  return spells.map((s) => s.word);
+}
+
 /** One narrator clip per book page, so "Read to me" is premium storytelling
  *  audio. Word highlighting still works: the voice layer estimates per-word
  *  timings from the clip's duration. */
@@ -58,8 +64,8 @@ export function wantedClips() {
     }
     clips.push({ id: l.id, speaker: l.speaker === 'sign' ? 'narrator' : l.speaker, text: l.text });
   }
-  // Word-card audio: priority words + every word used in a book.
-  const allWords = [...new Set([...PRIORITY_WORDS, ...bookWords()])];
+  // Word-card audio: priority words + every word used in a book + spell words.
+  const allWords = [...new Set([...PRIORITY_WORDS, ...bookWords(), ...spellWords()])];
   for (const w of allWords) {
     clips.push({ id: `w_${w}`, speaker: 'narrator', text: `${w[0].toUpperCase()}${w.slice(1)}.` });
   }
