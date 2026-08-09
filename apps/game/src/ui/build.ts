@@ -39,16 +39,18 @@ export async function openBuild(services: Services): Promise<void> {
   // ── The grid ──
   const grid = el('div', 'build-grid');
   grid.style.setProperty('--cols', String(GRID_W));
-  const cells: HTMLButtonElement[] = [];
   let selected: string = firstUnlockedId(services); // block id, or ERASER
 
-  const paint = (c: number, r: number, cell: HTMLButtonElement) => {
-    const key = cellKey(c, r);
+  const paintCell = (cell: HTMLElement) => {
+    const key = cell.dataset['key'];
+    if (!key) return;
     if (selected === ERASER) {
+      if (!(key in services.save.build)) return;
       delete services.save.build[key];
       cell.textContent = '';
       cell.classList.remove('filled');
     } else {
+      if (services.save.build[key] === selected) return; // already this block
       services.save.build[key] = selected;
       cell.textContent = iconOf(selected);
       cell.classList.add('filled');
@@ -59,17 +61,50 @@ export async function openBuild(services: Services): Promise<void> {
   for (let r = 0; r < GRID_H; r++) {
     for (let c = 0; c < GRID_W; c++) {
       const cell = el('button', 'build-cell') as HTMLButtonElement;
+      cell.dataset['key'] = cellKey(c, r);
       const existing = services.save.build[cellKey(c, r)];
       if (existing) {
         cell.textContent = iconOf(existing);
         cell.classList.add('filled');
       }
-      cell.addEventListener('click', () => paint(c, r, cell));
-      cells.push(cell);
       grid.appendChild(cell);
     }
   }
   panel.appendChild(grid);
+
+  // Drag-to-paint: hold and drag across cells to lay blocks like a crayon.
+  // Uses elementFromPoint so it works for touch (pointerenter doesn't fire
+  // mid-touch-drag). touch-action:none on the grid keeps drags from scrolling.
+  let painting = false;
+  const cellAt = (x: number, y: number): HTMLElement | null => {
+    const t = document.elementFromPoint(x, y) as HTMLElement | null;
+    const cell = t?.closest?.('.build-cell') as HTMLElement | null;
+    return cell && grid.contains(cell) ? cell : null;
+  };
+  const onDown = (e: PointerEvent) => {
+    const cell = cellAt(e.clientX, e.clientY);
+    if (!cell) return;
+    painting = true;
+    paintCell(cell);
+    e.preventDefault();
+  };
+  const onMove = (e: PointerEvent) => {
+    if (!painting) return;
+    const cell = cellAt(e.clientX, e.clientY);
+    if (cell) paintCell(cell);
+  };
+  const onUp = () => {
+    painting = false;
+  };
+  grid.addEventListener('pointerdown', onDown);
+  document.addEventListener('pointermove', onMove);
+  document.addEventListener('pointerup', onUp);
+  document.addEventListener('pointercancel', onUp);
+  const teardown = () => {
+    document.removeEventListener('pointermove', onMove);
+    document.removeEventListener('pointerup', onUp);
+    document.removeEventListener('pointercancel', onUp);
+  };
 
   // ── The palette ──
   const palette = el('div', 'build-palette');
@@ -128,12 +163,31 @@ export async function openBuild(services: Services): Promise<void> {
   renderPalette();
   panel.appendChild(palette);
 
-  const hint = el('div', 'subtitle', 'Tap a block, then tap the grid. Read a 🔒 word to unlock more!');
+  const hint = el('div', 'subtitle', 'Drag to build! Read a 🔒 word to unlock more blocks.');
   panel.appendChild(hint);
 
+  const actions = el('div', 'cards');
+  const clear = el('button', 'btn ghost', '🧹 Clear');
+  clear.addEventListener('click', () => {
+    if (Object.keys(services.save.build).length === 0) return;
+    if (!confirm('Clear the whole build?')) return;
+    services.save.build = {};
+    services.persist();
+    for (const cell of grid.querySelectorAll('.build-cell')) {
+      cell.textContent = '';
+      cell.classList.remove('filled');
+    }
+    services.analytics.log('build_cleared', {});
+  });
+  actions.appendChild(clear);
+
   const close = el('button', 'btn', 'Done');
-  close.addEventListener('click', () => layer.close());
-  panel.appendChild(close);
+  close.addEventListener('click', () => {
+    teardown();
+    layer.close();
+  });
+  actions.appendChild(close);
+  panel.appendChild(actions);
   layer.root.appendChild(panel);
 }
 

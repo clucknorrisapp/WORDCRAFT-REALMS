@@ -87,6 +87,23 @@ if (!placedNew) errors.push(`newly unlocked block "${unlocked[0]}" was not place
 const readRows = await page.evaluate(() => JSON.parse(localStorage.getItem('readquest_save_v1')).evidence.filter((e) => e.challengeType === 'sign_read').length);
 if (readRows < 1) errors.push('reading to unlock a block logged no reading interaction');
 
+// Drag-to-paint: one continuous stroke across a row lays several blocks.
+const before = Object.keys(build).length;
+const b50 = await page.locator('.build-cell').nth(50).boundingBox();
+await page.mouse.move(b50.x + b50.width / 2, b50.y + b50.height / 2);
+await page.mouse.down();
+for (let i = 51; i <= 54; i++) {
+  const bb = await page.locator('.build-cell').nth(i).boundingBox();
+  await page.mouse.move(bb.x + bb.width / 2, bb.y + bb.height / 2, { steps: 3 });
+}
+await page.mouse.up();
+await page
+  .waitForFunction((n) => Object.keys(JSON.parse(localStorage.getItem('readquest_save_v1')).build).length >= n, before + 4, { timeout: 8000 })
+  .catch(() => {});
+const gained = Object.keys((await readSave()).build).length - before;
+console.log(`drag stroke painted ${gained} new cells (want >= 4)`);
+if (gained < 4) errors.push(`drag-to-paint laid too few cells: ${gained} (expected >= 4 across the stroke)`);
+
 await browser.close();
 const fatal = errors.filter((e) => !e.includes('Failed to load resource'));
 if (fatal.length) {
