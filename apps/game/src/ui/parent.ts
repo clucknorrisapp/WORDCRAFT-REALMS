@@ -201,6 +201,13 @@ export function openParentScreen(services: Services): void {
   });
   actions.appendChild(exportBtn);
 
+  const pronBtn = el('button', 'btn ghost', '🔊 Check pronunciations');
+  pronBtn.addEventListener('click', () => {
+    location.hash = 'pronounce';
+    location.reload();
+  });
+  actions.appendChild(pronBtn);
+
   const resetBtn = el('button', 'btn ghost', '♻ Reset game');
   resetBtn.addEventListener('click', () => {
     if (confirm('Erase this child profile and start over?')) {

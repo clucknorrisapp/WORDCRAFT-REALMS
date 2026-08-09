@@ -15,6 +15,15 @@ async function boot(): Promise<void> {
   applyTextScale(save.settings.textScale);
   applyAccessibility(save.settings);
   const services = await createServices(save);
+
+  // Grown-up pronunciation review: <url>#pronounce speaks every word through
+  // the real voice pipeline so a human can double-check how things sound.
+  if (location.hash.toLowerCase().includes('pronounce')) {
+    const { mountPronounceReview } = await import('./ui/pronounce');
+    mountPronounceReview(services);
+    return;
+  }
+
   services.analytics.log('session_start', { questStep: save.questStep });
   window.addEventListener('visibilitychange', () => {
     services.analytics.log('session_ping', { visible: document.visibilityState });

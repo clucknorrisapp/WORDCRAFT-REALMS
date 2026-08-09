@@ -141,6 +141,28 @@
     .band.proficient { background: #d6f5e3; color: #1b7943; }
     .band.mastered { background: #d0ebff; color: #1864ab; }
 
+    /* ── Pronunciation Check page ── */
+    body.pronounce-mode #game { display: none; }
+    .pronounce-page { position: absolute; inset: 0; overflow-y: auto; background: var(--panel); padding: 18px 16px 60px; z-index: 60; -webkit-overflow-scrolling: touch; }
+    .pronounce-page h1 { color: var(--ink); font-size: 26px; margin-bottom: 4px; }
+    .pron-sub { color: #6b7280; font-size: 15px; margin-bottom: 12px; max-width: 620px; }
+    .pron-h2 { color: var(--ink); font-size: 20px; margin: 22px 0 8px; }
+    .pron-bar { position: sticky; top: 0; background: var(--panel); padding: 8px 0; display: flex; gap: 10px; flex-wrap: wrap; z-index: 2; border-bottom: 2px solid #eee; margin-bottom: 12px; }
+    .pron-bar .btn { padding: 10px 16px; font-size: 16px; }
+    .pron-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; }
+    .pron-card { position: relative; display: flex; background: var(--card); border: 3px solid #e7e3d8; border-radius: 14px; overflow: hidden; box-shadow: 0 3px 0 rgba(0,0,0,0.08); }
+    .pron-card.playing { border-color: var(--accent); background: #fff6ea; }
+    .pron-card.flagged { border-color: #e03131; background: #fff0f0; }
+    .pron-play { flex: 1; background: none; border: none; padding: 12px 8px; cursor: pointer; text-align: left; font-family: var(--font); }
+    .pron-word { font-size: 24px; font-weight: 900; letter-spacing: 2px; color: var(--ink); }
+    .pron-graph { font-size: 13px; font-weight: 800; color: #8a94a6; margin-top: 2px; }
+    .pron-flag { border: none; background: #f4f2ec; color: #b0b0b0; font-size: 18px; width: 40px; cursor: pointer; }
+    .pron-card.flagged .pron-flag { background: #ffd3d3; color: #e03131; }
+    .pron-lines { display: flex; flex-direction: column; gap: 6px; }
+    .pron-line { text-align: left; background: var(--card); border: 2px solid #e7e3d8; border-radius: 10px; padding: 10px 12px; font-size: 15px; color: var(--ink); cursor: pointer; font-family: var(--font); }
+    .pron-line.playing { border-color: var(--accent); background: #fff6ea; }
+    .pron-line-spk { font-weight: 900; color: var(--accent2); }
+
     /* ── Library + Spellbook buttons (bottom-left, kid-facing, single tap) ── */
     .hud-left { position: absolute; bottom: max(14px, env(safe-area-inset-bottom)); left: 12px; z-index: 20; display: flex; gap: 10px; align-items: center; }
     .hud-left .round { position: relative; width: 60px; height: 60px; font-size: 28px; background: #fff2df; box-shadow: 0 4px 0 rgba(0,0,0,0.15); }
