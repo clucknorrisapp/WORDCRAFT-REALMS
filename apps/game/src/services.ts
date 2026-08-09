@@ -1,7 +1,7 @@
 // Composition root — the only place where all modules meet (architecture §5.1:
 // the game client composes everything but implements no pedagogy).
 import { createAnalytics, type Analytics } from '@readquest/analytics';
-import { curriculum, line, validateText } from '@readquest/content';
+import { curriculum, line, sayAs, validateText } from '@readquest/content';
 import { LearningEngine } from '@readquest/learning-engine';
 import {
   COUNTABLE_TYPES,
@@ -108,7 +108,9 @@ export async function createServices(save: SaveData): Promise<Services> {
     speakWord(text, rate) {
       const handle = voice.speak({
         lineId: `w_${text.toLowerCase()}`,
-        text,
+        // The clip is keyed by the real word, but the synthesis fallback speaks
+        // the pronunciation override (e.g. "i" → "eye") so it matches the clip.
+        text: sayAs(text),
         voice: 'narrator',
         rate: rate ?? save.settings.narrationRate,
       });

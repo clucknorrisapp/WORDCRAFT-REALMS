@@ -14,6 +14,7 @@ import blocksJson from '../data/blocks.json';
 import booksJson from '../data/books.json';
 import curriculumJson from '../data/curriculum.json';
 import linesJson from '../data/lines.json';
+import pronunciationsJson from '../data/pronunciations.json';
 import spellsJson from '../data/spells.json';
 import wordsJson from '../data/words.json';
 
@@ -139,6 +140,17 @@ export function spell(word: string): Spell {
   const s = spells.find((x) => x.word === word.toLowerCase());
   if (!s) throw new Error(`Unknown spell "${word}"`);
   return s;
+}
+
+// Per-word pronunciation overrides — the spoken form a TTS engine should
+// voice for words it gets wrong in isolation (e.g. "i" → "eye"). Used both by
+// the clip generator (so premium clips are recorded right) and by the game's
+// synthesis fallback, so a word sounds the same however it's produced.
+const pronunciations = pronunciationsJson as Record<string, string>;
+
+/** The spoken form for a word — its override, or the word itself. */
+export function sayAs(word: string): string {
+  return pronunciations[word.toLowerCase()] ?? word;
 }
 
 export function allBlocks(): BuildBlock[] {

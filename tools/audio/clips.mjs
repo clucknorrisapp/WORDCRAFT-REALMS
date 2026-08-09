@@ -34,6 +34,9 @@ function spellWords() {
   return spells.map((s) => s.word);
 }
 
+/** Per-word pronunciation overrides (e.g. "i" → "eye") for correct clips. */
+const PRONUNCIATIONS = JSON.parse(fs.readFileSync('packages/content/data/pronunciations.json', 'utf8'));
+
 /** Every build block's unlock word — reading it to unlock should be premium. */
 function blockWords() {
   const blocks = JSON.parse(fs.readFileSync('packages/content/data/blocks.json', 'utf8'));
@@ -76,7 +79,8 @@ export function wantedClips() {
     // Common words are spoken LOWERCASE: a capitalized isolated token makes
     // ElevenLabs treat it as a name/foreign word (capitalized "Hut." was read
     // as the German word → "hoot"). Only the dragon names stay capitalized.
-    const say = DRAGON_NAMES.includes(w) ? `${w[0].toUpperCase()}${w.slice(1)}` : w;
+    // A per-word override (pronunciations.json) wins — e.g. "i" → "eye".
+    const say = PRONUNCIATIONS[w] ?? (DRAGON_NAMES.includes(w) ? `${w[0].toUpperCase()}${w.slice(1)}` : w);
     clips.push({ id: `w_${w}`, speaker: 'narrator', text: `${say}.` });
   }
   clips.push(...bookPageClips());
