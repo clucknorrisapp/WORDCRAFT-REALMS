@@ -79,7 +79,8 @@ function renderCover(
   cover.appendChild(el('div', 'book-emoji', book.cover));
   const title = el('div', 'book-title', book.title);
   cover.appendChild(title);
-  const hear = speakerButton(() => void services.speakText(book.title).done);
+  const sayTitle = () => void services.speakLine(`book_${book.id}_title`, book.title).done;
+  const hear = speakerButton(sayTitle);
   cover.appendChild(hear);
   panel.appendChild(cover);
 
@@ -91,7 +92,7 @@ function renderCover(
   row.append(close, open);
   panel.appendChild(row);
 
-  void services.speakText(book.title).done;
+  sayTitle();
 }
 
 async function runPages(services: Services, panel: HTMLElement, book: Book): Promise<boolean> {
@@ -137,7 +138,9 @@ async function runPages(services: Services, panel: HTMLElement, book: Book): Pro
       const readAloud = el('button', 'btn ghost', '🔊 Read to me');
       readAloud.addEventListener('click', () => {
         audioRequested = true;
-        const { handle } = services.speakText(book.pages[idx]!);
+        // Premium per-page narrator clip when present (book_<id>_p<idx>);
+        // speakLine falls back to synthesis for the same text otherwise.
+        const { handle } = services.speakLine(`book_${book.id}_p${idx}`, book.pages[idx]!);
         handle.onWordBoundary((i) => {
           spans.forEach((s) => s.el.classList.remove('hot'));
           spans[i]?.el.classList.add('hot');

@@ -15,7 +15,35 @@ export const PRIORITY_WORDS = [
  *  personalized "X likes you!" line is real ElevenLabs audio, not synthesis. */
 const DRAGON_NAMES = ['rex', 'ash', 'chip', 'dash'];
 
-/** Every clip the game wants: [{ id, speaker, text }] */
+/** Distinct decodable words appearing in any Library book, so tapping a word
+ *  in the reader plays a real narrator clip (not synthesis). */
+function bookWords() {
+  const books = JSON.parse(fs.readFileSync('packages/content/data/books.json', 'utf8'));
+  const words = new Set();
+  for (const b of books) {
+    for (const text of [b.title, ...b.pages]) {
+      for (const tok of text.toLowerCase().match(/[a-z]+/g) ?? []) words.add(tok);
+    }
+  }
+  return [...words];
+}
+
+/** One narrator clip per book page, so "Read to me" is premium storytelling
+ *  audio. Word highlighting still works: the voice layer estimates per-word
+ *  timings from the clip's duration. */
+function bookPageClips() {
+  const books = JSON.parse(fs.readFileSync('packages/content/data/books.json', 'utf8'));
+  const clips = [];
+  for (const b of books) {
+    clips.push({ id: `book_${b.id}_title`, speaker: 'narrator', text: b.title });
+    b.pages.forEach((text, i) => {
+      clips.push({ id: `book_${b.id}_p${i}`, speaker: 'narrator', text });
+    });
+  }
+  return clips;
+}
+
+/** Every clip the game wants: [{ id, speaker, text }] — deduped by id. */
 export function wantedClips() {
   const lines = JSON.parse(fs.readFileSync('packages/content/data/lines.json', 'utf8'));
   const clips = [];
@@ -30,10 +58,16 @@ export function wantedClips() {
     }
     clips.push({ id: l.id, speaker: l.speaker === 'sign' ? 'narrator' : l.speaker, text: l.text });
   }
-  for (const w of PRIORITY_WORDS) {
+  // Word-card audio: priority words + every word used in a book.
+  const allWords = [...new Set([...PRIORITY_WORDS, ...bookWords()])];
+  for (const w of allWords) {
     clips.push({ id: `w_${w}`, speaker: 'narrator', text: `${w[0].toUpperCase()}${w.slice(1)}.` });
   }
-  return clips;
+  clips.push(...bookPageClips());
+  // Dedupe by id (a book word may also be a priority word).
+  const byId = new Map();
+  for (const c of clips) if (!byId.has(c.id)) byId.set(c.id, c);
+  return [...byId.values()];
 }
 
 export function readManifest(path = 'apps/game/public/assets/audio/manifest.json') {
