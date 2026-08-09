@@ -1,6 +1,7 @@
 // One-screen parent/facilitator view (slice scope): real information, the
 // privacy headline, gate instrumentation, and a data export for playtests.
 import { COUNTABLE_TYPES } from '@readquest/shared';
+import { voiceDiagnostics } from '@readquest/voice';
 import type { Services } from '../services';
 import { applyTextScale, el, openLayer } from './dom';
 import { wipeSave } from '../save';
@@ -44,6 +45,28 @@ export function openParentScreen(services: Services): void {
 
   panel.appendChild(el('h2', '', 'Grown-up corner'));
   panel.appendChild(el('div', 'privacy', '🔒 We never store your child’s voice. Audio is checked in the moment; only results are saved.'));
+
+  // Audio diagnostic (for troubleshooting device sound). Tapping it plays a
+  // test line so a grown-up can confirm sound works and read the counts.
+  const vd = voiceDiagnostics();
+  const audioRow = el('div', 'stat-row');
+  audioRow.style.cursor = 'pointer';
+  audioRow.appendChild(el('span', '', '🔊 Sound test (tap)'));
+  const audioVal = el('strong', '', `ctx:${vd.ctx} w:${vd.webaudio} h:${vd.htmlaudio} s:${vd.synth}`);
+  audioRow.appendChild(audioVal);
+  audioRow.addEventListener('click', () => {
+    void services.speakText('Hello! Can you hear me?', 'narrator').done.then(() => {
+      const d = voiceDiagnostics();
+      audioVal.textContent = `ctx:${d.ctx} w:${d.webaudio} h:${d.htmlaudio} s:${d.synth}`;
+    });
+  });
+  panel.appendChild(audioRow);
+  if (vd.lastError) {
+    const errRow = el('div', 'stat-row');
+    errRow.appendChild(el('span', '', 'Audio note'));
+    errRow.appendChild(el('strong', '', vd.lastError));
+    panel.appendChild(errRow);
+  }
 
   const ev = services.save.evidence;
   const countable = ev.filter((e) => COUNTABLE_TYPES.includes(e.challengeType));

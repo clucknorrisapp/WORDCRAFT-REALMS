@@ -201,7 +201,9 @@ class WebAudioClip {
           timers.forEach(clearTimeout);
         });
         src.start();
-      } catch {
+        voiceDiag.webaudio += 1;
+      } catch (e) {
+        voiceDiag.lastError = `webaudio: ${(e as Error).message}`.slice(0, 80);
         timers.forEach(clearTimeout);
         this.fallback();
       }
@@ -250,7 +252,7 @@ class ClipPlayback {
     // If the browser blocks playback (mobile autoplay policy before the audio
     // is unlocked), don't go silent — fall back to speech synthesis so the
     // child always hears the line.
-    void audio.play().catch(() => this.fallback(timers));
+    void audio.play().then(() => (voiceDiag.htmlaudio += 1)).catch(() => this.fallback(timers));
   }
 
   private fallback(timers: ReturnType<typeof setTimeout>[]): void {
@@ -279,9 +281,11 @@ class SynthPlayback {
 
   start(): void {
     if (typeof window === 'undefined' || !('speechSynthesis' in window)) {
+      voiceDiag.silent += 1;
       this.estimated(10); // non-browser host (tests)
       return;
     }
+    voiceDiag.synth += 1;
 
     const utter = new SpeechSynthesisUtterance(this.text);
     utter.rate = Math.max(0.5, Math.min(2, this.rate * 0.9)); // slightly slow for kids
@@ -350,27 +354,58 @@ class SynthPlayback {
 // clip is played inside a real user gesture. We prime BOTH engines on the
 // first pointer/touch: a silent clip for HTMLAudio, a muted utterance for
 // synthesis. After this, clips that play later (after awaits) are allowed.
-let audioUnlocked = false;
+let warmedOnce = false;
 const SILENT_WAV =
   'data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAgLsAAAB3AQACABAAZGF0YQAAAAA=';
 
+// Live audio diagnostics — surfaced on the parent screen so a device that
+// still can't play can be diagnosed remotely.
+export const voiceDiag = {
+  webaudio: 0,
+  htmlaudio: 0,
+  synth: 0,
+  silent: 0,
+  lastError: '' as string,
+};
+export function voiceDiagnostics(): {
+  ctx: string;
+  webaudio: number;
+  htmlaudio: number;
+  synth: number;
+  silent: number;
+  lastError: string;
+} {
+  return {
+    ctx: sharedCtx ? sharedCtx.state : 'none',
+    webaudio: voiceDiag.webaudio,
+    htmlaudio: voiceDiag.htmlaudio,
+    synth: voiceDiag.synth,
+    silent: voiceDiag.silent,
+    lastError: voiceDiag.lastError,
+  };
+}
+
+/**
+ * Resume the AudioContext and warm HTMLAudio/synthesis. The resume is retried
+ * on EVERY early gesture (not just the first) because iOS may not move the
+ * context to 'running' on the first attempt — clips play silently until it does.
+ */
 export function unlockAudio(): void {
-  if (audioUnlocked || typeof window === 'undefined') return;
-  audioUnlocked = true;
-  // Web Audio unlock: resume the context and tick a silent buffer inside the
-  // gesture — this is what lets clips play later (and through the silent switch).
+  if (typeof window === 'undefined') return;
   try {
     const ctx = getAudioContext();
-    if (ctx) {
+    if (ctx && ctx.state !== 'running') {
       void ctx.resume();
       const src = ctx.createBufferSource();
       src.buffer = ctx.createBuffer(1, 1, 22050);
       src.connect(ctx.destination);
       src.start(0);
     }
-  } catch {
-    /* ignore */
+  } catch (e) {
+    voiceDiag.lastError = `unlock: ${(e as Error).message}`;
   }
+  if (warmedOnce) return;
+  warmedOnce = true;
   try {
     const a = new Audio(SILENT_WAV);
     a.volume = 0;
@@ -394,12 +429,16 @@ function installUnlockOnFirstGesture(): void {
   if (typeof window === 'undefined') return;
   const handler = () => {
     unlockAudio();
-    window.removeEventListener('pointerdown', handler, true);
-    window.removeEventListener('touchstart', handler, true);
-    window.removeEventListener('click', handler, true);
+    // Keep listening until the context actually reaches 'running' — one tap
+    // may not be enough on iOS.
+    if (sharedCtx && sharedCtx.state === 'running') {
+      window.removeEventListener('pointerdown', handler, true);
+      window.removeEventListener('touchend', handler, true);
+      window.removeEventListener('click', handler, true);
+    }
   };
   window.addEventListener('pointerdown', handler, true);
-  window.addEventListener('touchstart', handler, true);
+  window.addEventListener('touchend', handler, true);
   window.addEventListener('click', handler, true);
 }
 
