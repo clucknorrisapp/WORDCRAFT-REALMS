@@ -7,7 +7,7 @@ import type { Hud } from '../ui/hud';
 import { allBlocks } from '@readquest/content';
 import { floatNote, isUiOpen, reducedMotion } from '../ui/dom';
 import { setBuildRenderer, setDragonCelebrate } from '../ui/widgets';
-import { openBuild } from '../ui/build';
+import { openBuild, GRID_W, GRID_H } from '../ui/build';
 import { blockTextureCanvas } from './block-textures';
 
 // Where the child's Build-Mode creation is shown in the world (open grass in
@@ -323,10 +323,10 @@ export class WorldScene extends Phaser.Scene {
   // The child's own build plot: a dirt pad in the open south-east where their
   // Build-Mode creation is shown in the world. Tapping it opens Build Mode.
   private setupBuildPlot(): void {
-    const cx = BUILD_ORIGIN.x + (BUILD_TILE * 9) / 2;
-    const cy = BUILD_ORIGIN.y + (BUILD_TILE * 7) / 2;
-    const w = BUILD_TILE * 10 + 40;
-    const h = BUILD_TILE * 8 + 40;
+    const cx = BUILD_ORIGIN.x + (BUILD_TILE * (GRID_W - 1)) / 2;
+    const cy = BUILD_ORIGIN.y + (BUILD_TILE * (GRID_H - 1)) / 2;
+    const w = BUILD_TILE * GRID_W + 40;
+    const h = BUILD_TILE * GRID_H + 40;
     // A tiled Minecraft grass field for the ground the child builds on.
     const ground = this.add.tileSprite(cx, cy, w, h, 'blk_grass').setDepth(-90);
     ground.setTileScale(BUILD_TILE / 96, BUILD_TILE / 96);

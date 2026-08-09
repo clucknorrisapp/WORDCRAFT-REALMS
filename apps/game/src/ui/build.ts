@@ -11,8 +11,8 @@ import { blockTextureURL } from '../game/block-textures';
 
 const tex = (id: string) => `url("${blockTextureURL(id)}")`;
 
-const GRID_W = 10;
-const GRID_H = 8;
+export const GRID_W = 12;
+export const GRID_H = 8;
 const ERASER = '__erase__';
 
 // Builder ranks — building levels you up, so the world visibly grows more
