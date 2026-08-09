@@ -14,7 +14,14 @@ The first playable build of the SLICE ("The Magic Door") exists and runs in a br
 - 4 Reading Moments: narrated dialogue with word-by-word highlighting, sign reading, word match, magic-word door with the pronunciation hint ladder
 - Warm failure everywhere ("Almost! Listen…"), **two-miss-and-the-door-opens-anyway**, and a no-mic ritual fallback — the mic can never block
 - Evidence + mastery live (production weighted 2×), parent/facilitator screen with gate metrics and JSON export
-- ~180-word decodable corpus enforced by a build-time validator (the iron rule)
+- ~205-word decodable corpus enforced by a build-time validator (the iron rule)
+
+**Beyond the slice — the reading loop that keeps growing:**
+
+- **Adaptive tutor (invisible):** a 70/20/10 comfort/stretch/new selector + spaced repetition quietly decides which word the dragon asks for next — mastery state is a pure projection of the evidence log.
+- 📚 **Library** — a shelf of **10 decodable readers** (multi-agent authored, every page gated through the real validator). Page-turn reader, tap-any-word audio, "Read to me" with word highlighting; finishing a book pays a reward once. Reading a page logs `sentence_read` — the strongest reading signal the game collects.
+- ✨ **Spellbook** — **10 decodable "power words"** the child casts by *reading* them (voice-first, but a miss never blocks). Each cast fires a themed effect + the dragon's celebration. Spells unlock through reading: a starter + one per book, so the Library and Spellbook are one loop (read a book → learn a spell).
+- ♿ **Accessibility** — easy-read (dyslexia-friendly spacing) font, high-contrast palette, and calm-motion mode (auto-on when the OS requests reduced motion), all in the grown-up screen.
 
 ## Quickstart
 
@@ -30,8 +37,12 @@ Smoke tests (need Chromium; used in this repo's verification):
 
 ```bash
 pnpm build && pnpm preview &
-node tools/smoke/verify.mjs        # select → naming → world → sign read
-node tools/smoke/verify-door.mjs   # the magic door: stubbed "ship" → evidence
+pnpm smoke                          # the full browser suite (9 flows), or run one:
+node tools/smoke/verify.mjs         # select → naming → world → sign read
+node tools/smoke/verify-door.mjs    # the magic door: stubbed "ship" → evidence
+node tools/smoke/verify-library.mjs # read a book → reward paid once → sentence_read
+node tools/smoke/verify-spells.mjs  # reading unlocks spells → cast logs production evidence
+node tools/smoke/verify-a11y.mjs    # a11y modes apply on boot; calm mode kills confetti
 ```
 
 ## Deploy (Railway)
@@ -47,8 +58,8 @@ The repo is config-as-code ready: `railway.json` builds with `pnpm install && pn
 ```
 apps/game                  Phaser 3 world + DOM reading UI + parent screen
 packages/shared            Typed contracts — the module seams
-packages/learning-engine   Mastery math, evidence replay, scaffolding policy (pure TS)
-packages/content           Curriculum, 180-word corpus, script lines, decodability validator
+packages/learning-engine   Mastery math, evidence replay, adaptive 70/20/10 + spaced repetition, scaffolding policy (pure TS)
+packages/content           Curriculum, ~205-word corpus, script lines, decodable books + spells, decodability validator
 packages/voice             speak(): pre-generated clips (ElevenLabs) + browser-synthesis fallback
 packages/speech            listen(): WebSpeech adapter + forgiving phonetic matcher (no audio ever stored)
 packages/analytics         Local event log + playtest export
@@ -60,7 +71,7 @@ docs/                      Roadmap · Technical architecture · Phase 1 build pl
 ## Asset pipeline (Higgsfield + ElevenLabs)
 
 - **Art:** the entire cast (4 avatars, dragon, Mayor Hen, wizard, hen, and 8 props) was generated as a single 4×4 sprite sheet with Higgsfield `nano_banana`, then sliced locally: `node tools/sprites/slice-sheet.mjs <sheet.png> apps/game/public/assets/sprites`
-- **Voice (standing pipeline):** all 53 clips are ElevenLabs, committed in `apps/game/public/assets/audio/` and registered in `manifest.json`. The Railway build step runs `tools/audio/generate-elevenlabs.mjs --into-dist`: with the `ELEVENLABS_API_KEY` service variable set it voices any clip that's missing (delta-only — normal deploys generate nothing), and anything absent falls back to browser speech synthesis so a voice hiccup can never block a deploy. **Adding content:** write lines in `packages/content/data/lines.json` (and/or words in `tools/audio/clips.mjs`), cast any new speaker in `tools/audio/voices.json`, push — the next deploy voices it. Casting prefers your account's voices by name, falls back to ElevenLabs premade voices (Rachel/George/Charlotte) for TTS-scoped keys, and accepts raw voice IDs.
+- **Voice (standing pipeline):** premium clips are ElevenLabs, committed in `apps/game/public/assets/audio/` and registered in `manifest.json`. The want-list (`tools/audio/clips.mjs`) covers script lines, per-name dragon variants, word cards, **every book page + title, and every spell word** — so books read aloud and spells cast are real narrator audio, not synthesis. The Railway build step runs `tools/audio/generate-elevenlabs.mjs --into-dist`: with the `ELEVENLABS_API_KEY` service variable set it voices any clip that's missing (delta-only — normal deploys generate nothing), and anything absent falls back to browser speech synthesis so a voice hiccup can never block a deploy. **Adding content:** write lines in `packages/content/data/lines.json`, books in `books.json`, or spells in `spells.json`, cast any new speaker in `tools/audio/voices.json`, push — the next deploy voices it. Casting prefers your account's voices by name, falls back to ElevenLabs premade voices (Rachel/George/Charlotte) for TTS-scoped keys, and accepts raw voice IDs.
 
 ## The one rule that outranks the rest
 
