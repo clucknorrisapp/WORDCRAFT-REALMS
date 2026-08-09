@@ -7,6 +7,9 @@ import type { BuildBlock } from '@readquest/shared';
 import type { Services } from '../services';
 import { bottomLeftCluster, confetti, el, floatNote, openLayer } from './dom';
 import { readWordCard, renderBuildInWorld } from './widgets';
+import { blockTextureURL } from '../game/block-textures';
+
+const tex = (id: string) => `url("${blockTextureURL(id)}")`;
 
 const GRID_W = 10;
 const GRID_H = 8;
@@ -97,12 +100,12 @@ export async function openBuild(services: Services): Promise<void> {
     if (selected === ERASER) {
       if (!(key in services.save.build)) return;
       delete services.save.build[key];
-      cell.textContent = '';
+      cell.style.backgroundImage = '';
       cell.classList.remove('filled');
     } else {
       if (services.save.build[key] === selected) return; // already this block
       services.save.build[key] = selected;
-      cell.textContent = iconOf(selected);
+      cell.style.backgroundImage = tex(selected);
       cell.classList.add('filled');
       registerPlacement(); // cumulative — drives Builder rank
     }
@@ -115,7 +118,7 @@ export async function openBuild(services: Services): Promise<void> {
       cell.dataset['key'] = cellKey(c, r);
       const existing = services.save.build[cellKey(c, r)];
       if (existing) {
-        cell.textContent = iconOf(existing);
+        cell.style.backgroundImage = tex(existing);
         cell.classList.add('filled');
       }
       grid.appendChild(cell);
@@ -179,7 +182,8 @@ export async function openBuild(services: Services): Promise<void> {
 
     for (const b of allBlocks()) {
       if (isUnlocked(services, b)) {
-        const tool = el('button', 'build-tool', b.icon) as HTMLButtonElement;
+        const tool = el('button', 'build-tool tex') as HTMLButtonElement;
+        tool.style.backgroundImage = tex(b.id);
         tool.title = b.word;
         tool.addEventListener('click', () => selectTool(b.id));
         palette.appendChild(tool);
@@ -242,11 +246,6 @@ export async function openBuild(services: Services): Promise<void> {
   actions.appendChild(close);
   panel.appendChild(actions);
   layer.root.appendChild(panel);
-}
-
-function iconOf(blockId: string): string {
-  const b = allBlocks().find((x) => x.id === blockId);
-  return b ? b.icon : '';
 }
 
 function firstUnlockedId(services: Services): string {

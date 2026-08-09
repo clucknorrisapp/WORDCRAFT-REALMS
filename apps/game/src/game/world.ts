@@ -8,12 +8,12 @@ import { allBlocks } from '@readquest/content';
 import { floatNote, isUiOpen, reducedMotion } from '../ui/dom';
 import { setBuildRenderer, setDragonCelebrate } from '../ui/widgets';
 import { openBuild } from '../ui/build';
+import { blockTextureCanvas } from './block-textures';
 
 // Where the child's Build-Mode creation is shown in the world (open grass in
 // the south-east, clear of the village, forest, and cave).
 const BUILD_ORIGIN = { x: 1800, y: 1130 };
 const BUILD_TILE = 54;
-const BLOCK_ICON: Record<string, string> = Object.fromEntries(allBlocks().map((b) => [b.id, b.icon]));
 import { QuestDirector, type WorldControl } from './quest';
 import { DRAGON_TINTS, QuestStep } from '../types';
 
@@ -75,7 +75,7 @@ export class WorldScene extends Phaser.Scene {
   private markers = new Map<string, Phaser.GameObjects.Text>();
   private caveReturn = { x: 2320, y: 430 };
   private eggsOnGround = 0;
-  private buildTiles: Phaser.GameObjects.Text[] = [];
+  private buildTiles: Phaser.GameObjects.Image[] = [];
 
   constructor(services: Services, hud: Hud) {
     super('world');
@@ -93,6 +93,7 @@ export class WorldScene extends Phaser.Scene {
     this.paintGround();
     this.obstacles = this.physics.add.staticGroup();
 
+    this.registerBlockTextures();
     this.buildVillage();
     this.buildForest();
     this.buildCave();
@@ -351,7 +352,17 @@ export class WorldScene extends Phaser.Scene {
     this.renderBuild();
   }
 
-  /** Redraw the child's placed blocks as emoji tiles in the world plot. */
+  /** Turn each block's procedural pixel-art canvas into a crisp Phaser texture. */
+  private registerBlockTextures(): void {
+    for (const b of allBlocks()) {
+      const key = `blk_${b.id}`;
+      if (this.textures.exists(key)) continue;
+      this.textures.addCanvas(key, blockTextureCanvas(b.id));
+      this.textures.get(key).setFilter(Phaser.Textures.FilterMode.NEAREST);
+    }
+  }
+
+  /** Redraw the child's placed blocks as pixel-art tiles in the world plot. */
   renderBuild(): void {
     for (const t of this.buildTiles) t.destroy();
     this.buildTiles = [];
@@ -361,14 +372,11 @@ export class WorldScene extends Phaser.Scene {
       const c = Number(cs);
       const r = Number(rs);
       if (!Number.isInteger(c) || !Number.isInteger(r)) continue;
-      const icon = BLOCK_ICON[build[key]!];
-      if (!icon) continue;
+      const texKey = `blk_${build[key]}`;
+      if (!this.textures.exists(texKey)) continue;
       const x = BUILD_ORIGIN.x + c * BUILD_TILE;
       const y = BUILD_ORIGIN.y + r * BUILD_TILE;
-      const tile = this.add
-        .text(x, y, icon, { fontSize: `${BUILD_TILE - 8}px`, fontFamily: FONT })
-        .setOrigin(0.5)
-        .setDepth(y);
+      const tile = this.add.image(x, y, texKey).setDisplaySize(BUILD_TILE, BUILD_TILE).setOrigin(0.5).setDepth(y);
       this.buildTiles.push(tile);
     }
   }
