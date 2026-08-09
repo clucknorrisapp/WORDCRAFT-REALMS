@@ -112,6 +112,14 @@ console.log(`buildPlaced=${placed}, rank header="${rankText}"`);
 if (placed < 8) errors.push(`buildPlaced should count every placement, got ${placed}`);
 if (!/Builder|Maker/.test(rankText)) errors.push(`builder rank header not shown: "${rankText}"`);
 
+// Close Build Mode → the creation appears in the actual game world.
+await page.locator('.panel.build button:has-text("Done")').click();
+await page.waitForTimeout(500);
+const cellsPlaced = Object.keys((await readSave()).build).length;
+const worldTiles = await page.evaluate(() => window.__readquest.game.scene.keys.world.buildTileCount());
+console.log(`world shows ${worldTiles} build tiles (placed ${cellsPlaced} cells)`);
+if (worldTiles !== cellsPlaced) errors.push(`world build tiles (${worldTiles}) != placed blocks (${cellsPlaced})`);
+
 await browser.close();
 const fatal = errors.filter((e) => !e.includes('Failed to load resource'));
 if (fatal.length) {

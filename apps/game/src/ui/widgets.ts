@@ -25,6 +25,17 @@ export function setDragonCelebrate(fn: (big: boolean) => void): void {
   dragonCelebrate = fn;
 }
 
+// Bridge: the world scene registers how to redraw the child's build; Build
+// Mode calls renderBuildInWorld() when it closes so the creation appears in
+// the actual world ("look what I built"), not just in the modal.
+let buildRenderer: () => void = () => {};
+export function setBuildRenderer(fn: () => void): void {
+  buildRenderer = fn;
+}
+export function renderBuildInWorld(): void {
+  buildRenderer();
+}
+
 const CELEBRATE_LINES = ['ln_celebrate_1', 'ln_celebrate_2', 'ln_celebrate_3'];
 let celebrateIdx = 0;
 

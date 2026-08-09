@@ -4,8 +4,16 @@
 import Phaser from 'phaser';
 import type { Services } from '../services';
 import type { Hud } from '../ui/hud';
+import { allBlocks } from '@readquest/content';
 import { floatNote, isUiOpen, reducedMotion } from '../ui/dom';
-import { setDragonCelebrate } from '../ui/widgets';
+import { setBuildRenderer, setDragonCelebrate } from '../ui/widgets';
+import { openBuild } from '../ui/build';
+
+// Where the child's Build-Mode creation is shown in the world (open grass in
+// the south-east, clear of the village, forest, and cave).
+const BUILD_ORIGIN = { x: 1800, y: 1130 };
+const BUILD_TILE = 54;
+const BLOCK_ICON: Record<string, string> = Object.fromEntries(allBlocks().map((b) => [b.id, b.icon]));
 import { QuestDirector, type WorldControl } from './quest';
 import { DRAGON_TINTS, QuestStep } from '../types';
 
@@ -67,6 +75,7 @@ export class WorldScene extends Phaser.Scene {
   private markers = new Map<string, Phaser.GameObjects.Text>();
   private caveReturn = { x: 2320, y: 430 };
   private eggsOnGround = 0;
+  private buildTiles: Phaser.GameObjects.Text[] = [];
 
   constructor(services: Services, hud: Hud) {
     super('world');
@@ -87,6 +96,7 @@ export class WorldScene extends Phaser.Scene {
     this.buildVillage();
     this.buildForest();
     this.buildCave();
+    this.setupBuildPlot();
     this.spawnPlayerAndDragon();
     this.restoreFromSave();
 
@@ -117,6 +127,7 @@ export class WorldScene extends Phaser.Scene {
 
     this.director = new QuestDirector(this.services, this.worldControl(), this.hud);
     setDragonCelebrate((big) => this.dragonCelebrateAnim(big));
+    setBuildRenderer(() => this.renderBuild());
     this.time.delayedCall(400, () => void this.director.start());
 
     this.time.addEvent({
@@ -306,6 +317,65 @@ export class WorldScene extends Phaser.Scene {
 
     this.sign('path', 1240, 650, () => this.director.onPathSignTapped());
     this.marker('pathsign', 1240, 570);
+  }
+
+  // The child's own build plot: a dirt pad in the open south-east where their
+  // Build-Mode creation is shown in the world. Tapping it opens Build Mode.
+  private setupBuildPlot(): void {
+    const cx = BUILD_ORIGIN.x + (BUILD_TILE * 9) / 2;
+    const cy = BUILD_ORIGIN.y + (BUILD_TILE * 7) / 2;
+    const w = BUILD_TILE * 10 + 40;
+    const h = BUILD_TILE * 8 + 40;
+    const pad = this.add.rectangle(cx, cy, w, h, 0xcfa568, 0.5).setDepth(-90);
+    pad.setStrokeStyle(6, 0x9c7b45, 0.7);
+    const label = this.add
+      .text(cx, cy - h / 2 - 34, '🔨 Your Build!', {
+        fontSize: '34px', fontFamily: FONT, color: '#5a3d1a', stroke: '#fff7e6', strokeThickness: 6,
+      })
+      .setOrigin(0.5)
+      .setDepth(cy);
+    // Tap the plot (or its label) to open Build Mode — walk into range first.
+    for (const target of [pad, label]) {
+      target.setInteractive({ useHandCursor: true });
+      target.on('pointerdown', (_p: unknown, _x: unknown, _y: unknown, event: Phaser.Types.Input.EventData) => {
+        event.stopPropagation();
+        if (isUiOpen()) return;
+        if (Phaser.Math.Distance.Between(this.player.x, this.player.y, cx, cy) <= 320) {
+          void openBuild(this.services);
+        } else {
+          this.moveTarget = { x: cx, y: cy + h / 2 };
+          this.pending = { x: cx, y: cy, radius: 340, cb: () => void openBuild(this.services) };
+        }
+      });
+    }
+    this.renderBuild();
+  }
+
+  /** Redraw the child's placed blocks as emoji tiles in the world plot. */
+  renderBuild(): void {
+    for (const t of this.buildTiles) t.destroy();
+    this.buildTiles = [];
+    const build = this.services.save.build;
+    for (const key of Object.keys(build)) {
+      const [cs, rs] = key.split(',');
+      const c = Number(cs);
+      const r = Number(rs);
+      if (!Number.isInteger(c) || !Number.isInteger(r)) continue;
+      const icon = BLOCK_ICON[build[key]!];
+      if (!icon) continue;
+      const x = BUILD_ORIGIN.x + c * BUILD_TILE;
+      const y = BUILD_ORIGIN.y + r * BUILD_TILE;
+      const tile = this.add
+        .text(x, y, icon, { fontSize: `${BUILD_TILE - 8}px`, fontFamily: FONT })
+        .setOrigin(0.5)
+        .setDepth(y);
+      this.buildTiles.push(tile);
+    }
+  }
+
+  /** Test/facilitator hook: how many build tiles are currently shown. */
+  buildTileCount(): number {
+    return this.buildTiles.length;
   }
 
   private buildForest(): void {
