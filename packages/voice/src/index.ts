@@ -116,6 +116,105 @@ export function estimateWordTimings(text: string, totalMs: number): number[] {
   return starts;
 }
 
+// ── Web Audio clip playback (primary) ───────────────────────────────────────
+// HTMLAudio clips obey the iOS ringer/silent switch and unlock unreliably —
+// on iPhone this made the ElevenLabs clips silent, falling back to robotic
+// synthesis. The Web Audio API ignores the silent switch and unlocks cleanly
+// via AudioContext.resume() inside a gesture, so real voices play. Falls back
+// to HTMLAudio, then to synthesis.
+type AudioCtx = AudioContext;
+let sharedCtx: AudioCtx | null = null;
+const bufferCache = new Map<string, AudioBuffer>();
+const inflight = new Map<string, Promise<AudioBuffer>>();
+
+function getAudioContext(): AudioCtx | null {
+  if (typeof window === 'undefined') return null;
+  if (sharedCtx) return sharedCtx;
+  const Ctor =
+    (window as unknown as { AudioContext?: typeof AudioContext }).AudioContext ??
+    (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+  if (!Ctor) return null;
+  try {
+    sharedCtx = new Ctor();
+  } catch {
+    sharedCtx = null;
+  }
+  return sharedCtx;
+}
+
+async function loadBuffer(ctx: AudioCtx, url: string): Promise<AudioBuffer> {
+  const cached = bufferCache.get(url);
+  if (cached) return cached;
+  let p = inflight.get(url);
+  if (!p) {
+    p = (async () => {
+      const res = await fetch(url);
+      const arr = await res.arrayBuffer();
+      const buf = await ctx.decodeAudioData(arr);
+      bufferCache.set(url, buf);
+      inflight.delete(url);
+      return buf;
+    })();
+    inflight.set(url, p);
+  }
+  return p;
+}
+
+class WebAudioClip {
+  private fellBack = false;
+  constructor(
+    private url: string,
+    private text: string,
+    private rate: number,
+    private state: HandleState,
+    private voice: string,
+  ) {}
+
+  start(): void {
+    const ctx = getAudioContext();
+    if (!ctx) {
+      this.fallback();
+      return;
+    }
+    const timers: ReturnType<typeof setTimeout>[] = [];
+    void (async () => {
+      try {
+        if (ctx.state === 'suspended') await ctx.resume();
+        const buf = await loadBuffer(ctx, this.url);
+        if (this.state.ended) return;
+        const src = ctx.createBufferSource();
+        src.buffer = buf;
+        src.playbackRate.value = this.rate;
+        src.connect(ctx.destination);
+        const totalMs = (buf.duration * 1000) / this.rate;
+        estimateWordTimings(this.text, totalMs).forEach((startMs, i) => {
+          timers.push(setTimeout(() => emitBoundary(this.state, i), startMs));
+        });
+        timers.push(setTimeout(() => finish(this.state), totalMs + 1200));
+        src.onended = () => finish(this.state);
+        this.state.cancels.push(() => {
+          try {
+            src.stop();
+          } catch {
+            /* already stopped */
+          }
+          timers.forEach(clearTimeout);
+        });
+        src.start();
+      } catch {
+        timers.forEach(clearTimeout);
+        this.fallback();
+      }
+    })();
+  }
+
+  private fallback(): void {
+    if (this.state.ended || this.fellBack) return;
+    this.fellBack = true;
+    new ClipPlayback(this.url, this.text, this.rate, this.state, this.voice).start();
+  }
+}
+
 class ClipPlayback {
   constructor(
     private url: string,
@@ -258,6 +357,20 @@ const SILENT_WAV =
 export function unlockAudio(): void {
   if (audioUnlocked || typeof window === 'undefined') return;
   audioUnlocked = true;
+  // Web Audio unlock: resume the context and tick a silent buffer inside the
+  // gesture — this is what lets clips play later (and through the silent switch).
+  try {
+    const ctx = getAudioContext();
+    if (ctx) {
+      void ctx.resume();
+      const src = ctx.createBufferSource();
+      src.buffer = ctx.createBuffer(1, 1, 22050);
+      src.connect(ctx.destination);
+      src.start(0);
+    }
+  } catch {
+    /* ignore */
+  }
   try {
     const a = new Audio(SILENT_WAV);
     a.volume = 0;
@@ -309,7 +422,9 @@ export function createVoiceService(manifest: VoiceManifest): VoiceService {
       const clipUrl = req.lineId ? manifest.clips[req.lineId] : undefined;
       const rate = req.rate ?? 1;
       try {
-        if (clipUrl) new ClipPlayback(clipUrl, req.text, rate, state, req.voice).start();
+        // Web Audio first (plays through the silent switch, unlocks reliably),
+        // then HTMLAudio, then synthesis — each falls back to the next.
+        if (clipUrl) new WebAudioClip(clipUrl, req.text, rate, state, req.voice).start();
         else new SynthPlayback(req.text, req.voice, rate, state).start();
       } catch {
         const ws = words(req.text);

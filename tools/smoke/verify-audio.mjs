@@ -20,7 +20,18 @@ page.on('pageerror', (e) => errors.push('pageerror: ' + e.message.slice(0, 160))
 await page.exposeFunction('__aud', (m) => events.push(m));
 
 await page.addInitScript(() => {
-  // Wrap HTMLAudio to record play attempts and outcomes.
+  // Web Audio is the primary clip path now — count buffer-source starts as
+  // audible clip playback.
+  const BSN = window.AudioBufferSourceNode && window.AudioBufferSourceNode.prototype;
+  if (BSN && BSN.start) {
+    const origStart = BSN.start;
+    BSN.start = function (...args) {
+      // A 1-sample silent buffer is the unlock tick — ignore it.
+      if (!this.buffer || this.buffer.length > 100) window.__aud('webaudio_ok');
+      return origStart.apply(this, args);
+    };
+  }
+  // Wrap HTMLAudio to record play attempts and outcomes (fallback path).
   const O = window.Audio;
   window.Audio = function (src) {
     const a = new O(src);
@@ -60,7 +71,7 @@ await page.addInitScript(() => {
   });
 });
 
-const heardSince = (mark) => events.slice(mark).filter((e) => e.startsWith('clip_ok:') || e.startsWith('synth:'));
+const heardSince = (mark) => events.slice(mark).filter((e) => e === 'webaudio_ok' || e.startsWith('clip_ok:') || e.startsWith('synth:'));
 
 await page.goto(BASE, { waitUntil: 'domcontentloaded' });
 await page.waitForSelector('text=Pick your hero!', { timeout: 20000 });
@@ -123,10 +134,11 @@ for (const c of checks) {
   if (!ok) silent += 1;
   console.log(`  ${ok ? '✓' : '✗'} ${c.label}: ${c.heard} audible (${c.sample})`);
 }
+const webaudio = events.filter((e) => e === 'webaudio_ok').length;
 const clipOk = events.filter((e) => e.startsWith('clip_ok:')).length;
 const blocked = events.filter((e) => e.startsWith('clip_blocked:')).length;
 const synth = events.filter((e) => e.startsWith('synth:')).length;
-console.log(`\n  clips played: ${clipOk} · clips blocked→fallback: ${blocked} · synth spoke: ${synth}`);
+console.log(`\n  webaudio clips: ${webaudio} · htmlaudio clips: ${clipOk} · blocked→fallback: ${blocked} · synth: ${synth}`);
 
 if (errors.length) {
   console.error('\nPAGE ERRORS:');
