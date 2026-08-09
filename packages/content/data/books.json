@@ -1,0 +1,30 @@
+[
+  {
+    "id": "pig-in-mud",
+    "title": "Pig in Mud",
+    "cover": "🐷",
+    "reward": "egg",
+    "pages": [
+      "The pig is in the mud.",
+      "The pig can dig and dig.",
+      "Dig, pig, dig!",
+      "The pig is big and hot.",
+      "The pig had fun in the mud.",
+      "Yum! The pig is a mud pig."
+    ]
+  },
+  {
+    "id": "hen-and-eggs",
+    "title": "Hen and Eggs",
+    "cover": "🐔",
+    "reward": "gem",
+    "pages": [
+      "A hen sat on ten eggs.",
+      "The hen sat in the shed.",
+      "The hen did not get up.",
+      "The eggs go tap, tap, tap.",
+      "Pop! A chick did pop up.",
+      "Ten chicks run to the hen."
+    ]
+  }
+]

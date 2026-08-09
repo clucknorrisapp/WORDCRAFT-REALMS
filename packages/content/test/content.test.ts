@@ -1,9 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import {
+  allBooks,
   allLines,
   allWords,
   buildChallenge,
   curriculum,
+  validateBook,
   validateLine,
   validateText,
   word,
@@ -98,5 +100,31 @@ describe('challenge builder', () => {
     // Words with plenty of decodable siblings still fill to the full count.
     expect(buildChallenge('log', 3).distractors.length).toBe(2);
     expect(buildChallenge('hut', 3).distractors.length).toBe(2);
+  });
+});
+
+describe('decodable books (the Library)', () => {
+  it('every book is fully decodable at the first curriculum band (iron rule)', () => {
+    // This is the gate: a child opens any Library book with only the initial
+    // skills taught, so every title and page must contain only decodable words.
+    for (const b of allBooks()) {
+      const report = validateBook(b, taught);
+      const bad = report.pages.flatMap((p) => p.violations.map((v) => v.token));
+      expect(report.ok, `book "${b.id}" has undecodable words: ${bad.join(', ')}`).toBe(true);
+    }
+  });
+
+  it('books have sane shape (id, title, 4-7 pages, valid reward)', () => {
+    const ids = new Set<string>();
+    for (const b of allBooks()) {
+      expect(b.id, 'book id').toBeTruthy();
+      expect(ids.has(b.id), `duplicate book id ${b.id}`).toBe(false);
+      ids.add(b.id);
+      expect(b.title.trim().length, `${b.id} title`).toBeGreaterThan(0);
+      expect(b.pages.length, `${b.id} page count`).toBeGreaterThanOrEqual(4);
+      expect(b.pages.length, `${b.id} page count`).toBeLessThanOrEqual(7);
+      expect(['egg', 'gem', 'wood', 'stone'], `${b.id} reward`).toContain(b.reward);
+      expect(b.pages.every((p) => p.trim().length > 0), `${b.id} empty page`).toBe(true);
+    }
   });
 });

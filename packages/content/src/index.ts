@@ -1,4 +1,5 @@
 import type {
+  Book,
   ChallengeContent,
   DecodabilityReport,
   DecodabilityViolation,
@@ -7,6 +8,7 @@ import type {
   Word,
 } from '@readquest/shared';
 import { seededShuffle } from '@readquest/shared';
+import booksJson from '../data/books.json';
 import curriculumJson from '../data/curriculum.json';
 import linesJson from '../data/lines.json';
 import wordsJson from '../data/words.json';
@@ -74,6 +76,8 @@ const words: Word[] = (wordsJson as RawWord[]).map(toWord);
 const byText = new Map<string, Word>(words.map((w) => [w.text, w]));
 const lines: Line[] = linesJson as Line[];
 const linesById = new Map<string, Line>(lines.map((l) => [l.id, l]));
+const books: Book[] = booksJson as Book[];
+const booksById = new Map<string, Book>(books.map((b) => [b.id, b]));
 
 export function allWords(): Word[] {
   return words;
@@ -97,6 +101,27 @@ export function line(id: string): Line {
   const l = linesById.get(id);
   if (!l) throw new Error(`Unknown line "${id}"`);
   return l;
+}
+
+export function allBooks(): Book[] {
+  return books;
+}
+
+export function book(id: string): Book {
+  const b = booksById.get(id);
+  if (!b) throw new Error(`Unknown book "${id}"`);
+  return b;
+}
+
+/** A book is decodable only if every page passes the iron rule. Reported
+ *  per-page so the failing text is easy to find (used by the content test). */
+export function validateBook(b: Book, taught: Iterable<SkillId>): {
+  ok: boolean;
+  pages: DecodabilityReport[];
+} {
+  const taughtSet = new Set(taught);
+  const pages = [b.title, ...b.pages].map((t) => validateText(t, taughtSet));
+  return { ok: pages.every((p) => p.ok), pages };
 }
 
 const TOKEN_RE = /[a-z]+/g;

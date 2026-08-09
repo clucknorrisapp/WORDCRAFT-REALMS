@@ -140,6 +140,43 @@
     .band.developing { background: #fff3bf; color: #8d7b1a; }
     .band.proficient { background: #d6f5e3; color: #1b7943; }
     .band.mastered { background: #d0ebff; color: #1864ab; }
+
+    /* ── Library button (bottom-left, kid-facing, single tap) ── */
+    .hud-left { position: absolute; bottom: max(14px, env(safe-area-inset-bottom)); left: 12px; z-index: 20; }
+    .hud-left .round { position: relative; width: 60px; height: 60px; font-size: 28px; background: #fff2df; box-shadow: 0 4px 0 rgba(0,0,0,0.15); }
+    .lib-dot { position: absolute; top: 2px; right: 2px; width: 14px; height: 14px; border-radius: 50%; background: var(--good); border: 2px solid #fff; animation: pulse 1.2s infinite; }
+
+    /* ── Library shelf ── */
+    .library { width: min(680px, 94vw); max-height: 88vh; overflow-y: auto; }
+    .shelf { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 14px; margin: 14px 0; }
+    .book-spine {
+      display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 16px 10px;
+      background: var(--card); border: 4px solid #e7e3d8; border-radius: 18px; cursor: pointer;
+      box-shadow: var(--shadow); touch-action: manipulation; position: relative; font-family: var(--font);
+    }
+    .book-spine:active { transform: scale(0.96); }
+    .book-spine.read { border-color: var(--good); background: #eafff2; }
+    .book-spine-title { font-size: 16px; font-weight: 900; color: var(--ink); text-align: center; line-height: 1.2; }
+    .book-emoji { font-size: 44px; line-height: 1; }
+    .book-badge { position: absolute; top: 6px; right: 8px; font-size: 20px; font-weight: 900; color: var(--good); }
+
+    /* ── Book reader ── */
+    .book { width: min(620px, 94vw); }
+    .book-cover { display: flex; flex-direction: column; align-items: center; gap: 12px; padding: 10px 0 4px; }
+    .book-cover .book-emoji { font-size: 84px; }
+    .book-title { font-size: calc(30px * var(--text-scale, 1)); font-weight: 900; color: var(--ink); text-align: center; }
+    .book-dots { display: flex; gap: 8px; justify-content: center; margin-bottom: 12px; }
+    .book-dot { width: 10px; height: 10px; border-radius: 50%; background: #e0ddd2; }
+    .book-dot.on { background: var(--accent); }
+    .book-page {
+      font-size: calc(30px * var(--text-scale, 1)); font-weight: 800; color: var(--ink);
+      line-height: 1.6; min-height: 34vh; display: flex; align-items: center; justify-content: center;
+      flex-wrap: wrap; text-align: center; padding: 6px 4px;
+    }
+    .book-word { padding: 2px 5px; border-radius: 8px; cursor: pointer; transition: background 0.12s, color 0.12s; touch-action: manipulation; }
+    .book-word:active { transform: scale(0.94); }
+    .book-word.hot { background: #ffe08a; color: #7a5a00; }
+    .book-controls { margin-top: 8px; }
   </style>
 </head>
 <body>

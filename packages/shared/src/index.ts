@@ -24,6 +24,7 @@ export const COUNTABLE_TYPES: readonly ChallengeType[] = [
   'path_choice',
   'word_match',
   'magic_word',
+  'sentence_read', // reading a Library book page — the strongest reading signal
 ];
 
 // ── Evidence: the atomic learning record ────────────────────────────────────
@@ -115,6 +116,20 @@ export interface ChallengeContent {
   distractors: Word[];
   order: number[]; // seeded shuffle of [target, ...distractors]
   seed: number;
+}
+
+// ── Decodable readers ───────────────────────────────────────────────────────
+export type BookReward = 'egg' | 'gem' | 'wood' | 'stone';
+
+/** A little decodable book a child reads in the Library. Every page is
+ *  iron-rule text: only words the reader can already decode (validated in
+ *  content's test suite exactly like decodable lines). */
+export interface Book {
+  id: string;
+  title: string; // 2-4 decodable words
+  cover: string; // emoji shown on the shelf + cover page
+  reward: BookReward; // paid once, the first time the book is finished
+  pages: string[]; // one decodable string per page (4-7 pages)
 }
 
 export interface DecodabilityViolation {

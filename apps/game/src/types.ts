@@ -40,6 +40,7 @@ export interface SaveData {
   wallsBuilt: number[];
   coopStage: number; // 0–3
   treasureClaimed: boolean;
+  booksRead: string[]; // Library book ids finished at least once (reward paid)
   taught: SkillId[];
   evidence: Evidence[];
   events: GameEvent[];
