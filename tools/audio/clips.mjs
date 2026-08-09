@@ -11,12 +11,23 @@ export const PRIORITY_WORDS = [
   'egg', 'nut', 'jam', 'ten', 'pen', 'ham', 'fig', 'bun',
 ];
 
+/** Dragon names — the {name} template line gets one clip per name so even the
+ *  personalized "X likes you!" line is real ElevenLabs audio, not synthesis. */
+const DRAGON_NAMES = ['rex', 'ash', 'chip', 'dash'];
+
 /** Every clip the game wants: [{ id, speaker, text }] */
 export function wantedClips() {
   const lines = JSON.parse(fs.readFileSync('packages/content/data/lines.json', 'utf8'));
   const clips = [];
   for (const l of lines) {
-    if (l.text.includes('{name}')) continue; // template line — per-name variants later
+    if (l.text.includes('{name}')) {
+      // Expand the template into per-name variant clips (id: <lineId>_<name>).
+      for (const name of DRAGON_NAMES) {
+        const cap = name[0].toUpperCase() + name.slice(1);
+        clips.push({ id: `${l.id}_${name}`, speaker: l.speaker, text: l.text.replaceAll('{name}', cap) });
+      }
+      continue;
+    }
     clips.push({ id: l.id, speaker: l.speaker === 'sign' ? 'narrator' : l.speaker, text: l.text });
   }
   for (const w of PRIORITY_WORDS) {

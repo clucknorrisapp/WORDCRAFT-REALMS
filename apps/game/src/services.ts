@@ -76,16 +76,23 @@ export async function createServices(save: SaveData): Promise<Services> {
     analytics,
     persist: () => persistSave(save),
     speakLine(lineId, textOverride) {
-      const l = line(lineId);
-      const text = textOverride ?? l.text;
-      if (import.meta.env.DEV && l.mode === 'decodable') {
+      // lineId may be a synthetic clip-only id (e.g. a per-name variant like
+      // ln_dragon_joins_rex) that isn't a registered line — tolerate that.
+      let l: ReturnType<typeof line> | null = null;
+      try {
+        l = line(lineId);
+      } catch {
+        l = null;
+      }
+      const text = textOverride ?? l?.text ?? '';
+      if (import.meta.env.DEV && l?.mode === 'decodable') {
         const report = validateText(text, engine.taughtSkills());
         if (!report.ok) console.warn(`[iron rule] line ${lineId}:`, report.violations);
       }
       const handle = voice.speak({
         lineId,
         text,
-        voice: l.speaker,
+        voice: l?.speaker ?? 'narrator',
         rate: save.settings.narrationRate,
       });
       return { handle, done: handleDone(handle) };

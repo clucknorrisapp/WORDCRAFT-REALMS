@@ -87,7 +87,7 @@ async function slowBlend(services: Services, text: string, spans: HTMLElement[])
 export async function showDialogue(
   services: Services,
   lineId: string,
-  opts: { nameSub?: string } = {},
+  opts: { nameSub?: string; audioLineId?: string } = {},
 ): Promise<void> {
   const l = getLine(lineId);
   let text = l.text;
@@ -117,7 +117,9 @@ export async function showDialogue(
 
   const speak = () =>
     new Promise<void>((resolve) => {
-      const { handle } = services.speakLine(lineId, opts.nameSub ? text : undefined);
+      // audioLineId lets a template line use a per-variant pre-generated clip
+      // (e.g. ln_dragon_joins_rex) while the displayed text keeps the name.
+      const { handle } = services.speakLine(opts.audioLineId ?? lineId, text);
       handle.onWordBoundary((i) => {
         spans.forEach((s) => s.classList.remove('hot'));
         spans[i]?.classList.add('hot');

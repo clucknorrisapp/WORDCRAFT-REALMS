@@ -98,7 +98,10 @@ export async function runCharacterSelect(services: Services): Promise<void> {
       responseMs: Date.now() - started,
     });
 
-    await showDialogue(services, 'ln_dragon_joins', { nameSub: cap(picked!) });
+    await showDialogue(services, 'ln_dragon_joins', {
+      nameSub: cap(picked!),
+      audioLineId: `ln_dragon_joins_${picked!}`, // per-name ElevenLabs clip
+    });
     await wait(150);
   }
 }
