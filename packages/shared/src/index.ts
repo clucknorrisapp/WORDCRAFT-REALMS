@@ -143,6 +143,16 @@ export interface Spell {
   hue: string; // glow color for the card + effect
 }
 
+// ── Build blocks ────────────────────────────────────────────────────────────
+/** A block the child can place in Build Mode. Reading its (decodable) word is
+ *  what unlocks it — building literally grows out of reading. */
+export interface BuildBlock {
+  id: string; // stable id used in saved builds
+  word: string; // decodable corpus word read to unlock the block
+  icon: string; // emoji shown in the palette + on the grid
+  starter?: boolean; // available from the start (no reading needed)
+}
+
 export interface DecodabilityViolation {
   token: string;
   missingSkills: SkillId[];

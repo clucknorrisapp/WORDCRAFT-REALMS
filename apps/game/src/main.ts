@@ -7,6 +7,7 @@ import { mountHud } from './ui/hud';
 import { mountParentButton } from './ui/parent';
 import { mountLibraryButton } from './ui/library';
 import { mountSpellbookButton } from './ui/spellbook';
+import { mountBuildButton } from './ui/build';
 import { applyTextScale, applyAccessibility } from './ui/dom';
 
 async function boot(): Promise<void> {
@@ -26,6 +27,7 @@ async function boot(): Promise<void> {
   mountParentButton(services);
   mountLibraryButton(services, hud);
   mountSpellbookButton(services);
+  mountBuildButton(services);
 
   const game = new Phaser.Game({
     type: Phaser.AUTO,

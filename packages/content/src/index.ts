@@ -1,5 +1,6 @@
 import type {
   Book,
+  BuildBlock,
   ChallengeContent,
   DecodabilityReport,
   DecodabilityViolation,
@@ -9,6 +10,7 @@ import type {
   Word,
 } from '@readquest/shared';
 import { seededShuffle } from '@readquest/shared';
+import blocksJson from '../data/blocks.json';
 import booksJson from '../data/books.json';
 import curriculumJson from '../data/curriculum.json';
 import linesJson from '../data/lines.json';
@@ -81,6 +83,8 @@ const linesById = new Map<string, Line>(lines.map((l) => [l.id, l]));
 const books: Book[] = booksJson as Book[];
 const booksById = new Map<string, Book>(books.map((b) => [b.id, b]));
 const spells: Spell[] = spellsJson as Spell[];
+const blocks: BuildBlock[] = blocksJson as BuildBlock[];
+const blocksById = new Map<string, BuildBlock>(blocks.map((b) => [b.id, b]));
 
 export function allWords(): Word[] {
   return words;
@@ -135,6 +139,16 @@ export function spell(word: string): Spell {
   const s = spells.find((x) => x.word === word.toLowerCase());
   if (!s) throw new Error(`Unknown spell "${word}"`);
   return s;
+}
+
+export function allBlocks(): BuildBlock[] {
+  return blocks;
+}
+
+export function block(id: string): BuildBlock {
+  const b = blocksById.get(id);
+  if (!b) throw new Error(`Unknown block "${id}"`);
+  return b;
 }
 
 const TOKEN_RE = /[a-z]+/g;

@@ -22,6 +22,8 @@ export function freshSave(): SaveData {
     coopStage: 0,
     treasureClaimed: false,
     booksRead: [],
+    blocksUnlocked: [],
+    build: {},
     taught: [...curriculum.initialTaught],
     evidence: [],
     events: [],

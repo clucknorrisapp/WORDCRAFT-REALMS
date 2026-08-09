@@ -48,6 +48,8 @@ export interface SaveData {
   coopStage: number; // 0–3
   treasureClaimed: boolean;
   booksRead: string[]; // Library book ids finished at least once (reward paid)
+  blocksUnlocked: string[]; // Build Mode block ids unlocked by reading their word
+  build: Record<string, string>; // Build Mode grid: "col,row" → blockId
   taught: SkillId[];
   evidence: Evidence[];
   events: GameEvent[];

@@ -1,0 +1,14 @@
+[
+  { "id": "mud",  "word": "mud",  "icon": "🟫", "starter": true },
+  { "id": "log",  "word": "log",  "icon": "🪵", "starter": true },
+  { "id": "rock", "word": "rock", "icon": "🪨", "starter": true },
+  { "id": "bush", "word": "bush", "icon": "🌳", "starter": true },
+  { "id": "hut",  "word": "hut",  "icon": "🛖" },
+  { "id": "pen",  "word": "pen",  "icon": "🚧" },
+  { "id": "pot",  "word": "pot",  "icon": "🪴" },
+  { "id": "web",  "word": "web",  "icon": "🕸️" },
+  { "id": "egg",  "word": "egg",  "icon": "🥚" },
+  { "id": "sun",  "word": "sun",  "icon": "☀️" },
+  { "id": "fish", "word": "fish", "icon": "🐟" },
+  { "id": "bed",  "word": "bed",  "icon": "🛏️" }
+]

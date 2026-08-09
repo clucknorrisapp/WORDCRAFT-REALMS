@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  allBlocks,
   allBooks,
   allLines,
   allSpells,
@@ -146,5 +147,22 @@ describe('spells (power words)', () => {
   it('spell words are unique', () => {
     const ws = allSpells().map((s) => s.word);
     expect(new Set(ws).size).toBe(ws.length);
+  });
+});
+
+describe('build blocks', () => {
+  it('every block unlock word is a single decodable corpus word', () => {
+    for (const b of allBlocks()) {
+      const report = validateText(b.word, taught);
+      expect(report.ok, `block "${b.id}" word not decodable: ${JSON.stringify(report.violations)}`).toBe(true);
+      expect(b.word.trim().split(/\s+/).length, `block "${b.id}" must unlock with one word`).toBe(1);
+      expect(b.icon.length, `block "${b.id}" needs an icon`).toBeGreaterThan(0);
+    }
+  });
+
+  it('block ids are unique and at least one is a starter', () => {
+    const ids = allBlocks().map((b) => b.id);
+    expect(new Set(ids).size).toBe(ids.length);
+    expect(allBlocks().some((b) => b.starter)).toBe(true);
   });
 });

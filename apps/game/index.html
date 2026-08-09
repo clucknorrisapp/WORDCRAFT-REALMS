@@ -208,6 +208,36 @@
     .cast-bit { position: absolute; font-size: 30px; pointer-events: none; z-index: 45; will-change: transform, opacity; }
     .cast-flash { position: absolute; inset: 0; pointer-events: none; z-index: 44; opacity: 0; }
 
+    /* ── Build Mode ── */
+    .build { width: min(640px, 96vw); max-height: 92vh; overflow-y: auto; }
+    .build-grid {
+      display: grid; grid-template-columns: repeat(var(--cols, 10), 1fr); gap: 2px;
+      background: #bfe3a0; border: 4px solid #7ec850; border-radius: 14px; padding: 4px;
+      margin: 10px 0; touch-action: manipulation;
+      background-image: linear-gradient(#b6dd98 1px, transparent 1px), linear-gradient(90deg, #b6dd98 1px, transparent 1px);
+    }
+    .build-cell {
+      aspect-ratio: 1 / 1; border: none; border-radius: 5px; background: rgba(255,255,255,0.16);
+      font-size: clamp(15px, 4.4vw, 26px); line-height: 1; padding: 0; cursor: pointer;
+      display: flex; align-items: center; justify-content: center; touch-action: manipulation;
+    }
+    .build-cell:active { transform: scale(0.9); }
+    .build-cell.filled { background: rgba(255,255,255,0.5); }
+    .build-palette {
+      display: flex; gap: 8px; overflow-x: auto; padding: 8px 2px; margin-top: 4px;
+      scroll-snap-type: x proximity; -webkit-overflow-scrolling: touch;
+    }
+    .build-tool {
+      flex: 0 0 auto; width: 54px; height: 54px; border-radius: 14px; border: 3px solid #e7e3d8;
+      background: var(--card); font-size: 26px; cursor: pointer; box-shadow: 0 3px 0 rgba(0,0,0,0.12);
+      display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px; touch-action: manipulation;
+    }
+    .build-tool:active { transform: scale(0.92); }
+    .build-tool.sel { border-color: var(--accent); background: #fff2df; box-shadow: 0 0 0 3px rgba(255,159,67,0.4), 0 3px 0 rgba(0,0,0,0.12); }
+    .build-tool.locked { border-style: dashed; border-color: #c8c3b6; background: #f4f2ec; filter: grayscale(0.2); }
+    .build-tool .lock-ico { font-size: 18px; }
+    .build-tool .lock-word { font-size: 11px; font-weight: 900; letter-spacing: 1px; color: var(--accent2); }
+
     /* ── Accessibility: dyslexia-friendly typography ──
        Evidence points to generous spacing helping more than any single font,
        so calm the letter/word/line spacing across all reading surfaces. */
