@@ -100,6 +100,7 @@ export class WorldScene extends Phaser.Scene {
     this.setupBuildPlot();
     this.spawnPlayerAndDragon();
     this.restoreFromSave();
+    this.spawnCritters();
 
     this.cameras.main.setBounds(0, 0, W, H);
     this.cameras.main.startFollow(this.player, true, 0.12, 0.12);
@@ -530,6 +531,33 @@ export class WorldScene extends Phaser.Scene {
     this.tweens.add({ targets: this.dragon, displayOriginY: this.dragon.displayOriginY + 3, duration: 700, yoyo: true, repeat: -1, ease: 'sine.inOut' });
     this.tappable(this.dragon, () => this.director.onDragonTapped(), 200);
     if (this.services.save.dragonLevel >= 2) this.dragon.setScale((64 / this.dragon.height) * 1.18);
+  }
+
+  // Ambient life: a few hens amble around the meadow so the world feels alive
+  // (Minecraft passive mobs). Free play only, so they never muddle the hunt.
+  private spawnCritters(): void {
+    if (this.services.save.questStep !== QuestStep.FREE_PLAY) return;
+    for (const [x, y] of [[320, 300], [980, 760], [1180, 900], [500, 1010], [860, 470]] as Array<[number, number]>) {
+      const c = this.add.sprite(x, y, 'hen').setDepth(y);
+      c.setScale(42 / c.height);
+      this.tweens.add({ targets: c, y: `-=4`, duration: 640 + Phaser.Math.Between(0, 300), yoyo: true, repeat: -1, ease: 'sine.inOut' });
+      this.wander(c);
+    }
+  }
+
+  private wander(c: Phaser.GameObjects.Sprite): void {
+    const nx = Phaser.Math.Clamp(c.x + Phaser.Math.Between(-170, 170), 120, W - 120);
+    const ny = Phaser.Math.Clamp(c.y + Phaser.Math.Between(-110, 110), 220, 1060);
+    c.setFlipX(nx < c.x);
+    this.tweens.add({
+      targets: c,
+      x: nx,
+      y: ny,
+      duration: 2200 + Phaser.Math.Between(0, 2200),
+      ease: 'sine.inOut',
+      onUpdate: () => c.setDepth(c.y),
+      onComplete: () => this.time.delayedCall(400 + Phaser.Math.Between(0, 2200), () => c.active && this.wander(c)),
+    });
   }
 
   private dragonCelebrateAnim(big: boolean): void {
