@@ -90,10 +90,10 @@ export class WorldScene extends Phaser.Scene {
   create(): void {
     this.physics.world.setBounds(0, 0, W, H);
     this.makeProceduralTextures();
+    this.registerBlockTextures();
     this.paintGround();
     this.obstacles = this.physics.add.staticGroup();
 
-    this.registerBlockTextures();
     this.buildVillage();
     this.buildForest();
     this.buildCave();
@@ -179,12 +179,15 @@ export class WorldScene extends Phaser.Scene {
   }
 
   private paintGround(): void {
-    this.add.rectangle(W / 2, H / 2, W, H, 0x7ec850).setDepth(-100);
-    this.add.rectangle(1950, 560, 1300, 1000, 0x6db143).setDepth(-99); // forest floor
-    // paths
-    this.add.rectangle(1280, 660, 2280, 86, 0xdbb37f).setDepth(-90);
-    this.add.rectangle(680, 520, 90, 420, 0xdbb37f).setDepth(-90);
-    this.add.rectangle(445, 905, 400, 290, 0xcfa568, 0.55).setDepth(-90); // plot dirt
+    const S = 48 / 96; // render the 96px textures as 48px world tiles
+    // Whole-world Minecraft grass floor.
+    this.add.tileSprite(W / 2, H / 2, W, H, 'blk_grass').setDepth(-100).setTileScale(S, S);
+    // Forest: a darker green wash so it still reads as a denser biome.
+    this.add.rectangle(1950, 560, 1300, 1000, 0x3f8a26, 0.28).setDepth(-99);
+    // Dirt paths, tiled.
+    this.add.tileSprite(1280, 660, 2280, 86, 'blk_mud').setDepth(-90).setTileScale(S, S);
+    this.add.tileSprite(680, 520, 90, 420, 'blk_mud').setDepth(-90).setTileScale(S, S);
+    this.add.tileSprite(445, 905, 400, 290, 'blk_mud').setDepth(-90).setTileScale(S, S).setAlpha(0.85); // village plot dirt
     // grass tufts
     const rnd = new Phaser.Math.RandomDataGenerator(['readquest']);
     for (let i = 0; i < 90; i++) {
