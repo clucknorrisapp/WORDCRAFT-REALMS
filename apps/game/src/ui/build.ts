@@ -5,12 +5,30 @@
 import { allBlocks } from '@readquest/content';
 import type { BuildBlock } from '@readquest/shared';
 import type { Services } from '../services';
-import { bottomLeftCluster, el, openLayer } from './dom';
+import { bottomLeftCluster, confetti, el, floatNote, openLayer } from './dom';
 import { readWordCard } from './widgets';
 
 const GRID_W = 10;
 const GRID_H = 8;
 const ERASER = '__erase__';
+
+// Builder ranks — building levels you up, so the world visibly grows more
+// advanced as the child plays (reading unlocks the blocks; building ranks up).
+const RANKS: Array<{ at: number; title: string; icon: string }> = [
+  { at: 0, title: 'New Builder', icon: '🌱' },
+  { at: 10, title: 'Builder', icon: '🔨' },
+  { at: 25, title: 'Big Builder', icon: '🏗️' },
+  { at: 50, title: 'Master Builder', icon: '🏆' },
+  { at: 100, title: 'World Maker', icon: '🌍' },
+];
+
+export function builderRank(placed: number): { level: number; title: string; icon: string; prevAt: number; nextAt: number | null } {
+  let i = 0;
+  for (let k = 0; k < RANKS.length; k++) if (placed >= RANKS[k]!.at) i = k;
+  const cur = RANKS[i]!;
+  const next = RANKS[i + 1] ?? null;
+  return { level: i + 1, title: cur.title, icon: cur.icon, prevAt: cur.at, nextAt: next ? next.at : null };
+}
 
 function cellKey(c: number, r: number): string {
   return `${c},${r}`;
@@ -36,6 +54,38 @@ export async function openBuild(services: Services): Promise<void> {
   const panel = el('div', 'panel build');
   panel.appendChild(el('h2', '', '🔨 Build Your World'));
 
+  // ── Builder rank header (progress that grows as you build) ──
+  const rankRow = el('div', 'builder-rank');
+  const rankLabel = el('div', 'builder-title');
+  const bar = el('div', 'builder-bar');
+  const barFill = el('div', 'builder-bar-fill');
+  bar.appendChild(barFill);
+  rankRow.append(rankLabel, bar);
+  panel.appendChild(rankRow);
+
+  const renderRank = () => {
+    const r = builderRank(services.save.buildPlaced);
+    rankLabel.textContent =
+      r.nextAt === null
+        ? `${r.icon} ${r.title} · ${services.save.buildPlaced} blocks`
+        : `${r.icon} ${r.title} · ${services.save.buildPlaced}/${r.nextAt} blocks`;
+    const pct = r.nextAt === null ? 100 : Math.round(((services.save.buildPlaced - r.prevAt) / (r.nextAt - r.prevAt)) * 100);
+    barFill.style.width = `${Math.max(4, Math.min(100, pct))}%`;
+  };
+
+  const registerPlacement = () => {
+    const before = builderRank(services.save.buildPlaced).level;
+    services.save.buildPlaced += 1;
+    const after = builderRank(services.save.buildPlaced);
+    renderRank();
+    if (after.level > before) {
+      confetti(30);
+      floatNote(`${after.icon} ${after.title}!`, window.innerWidth / 2, window.innerHeight * 0.35);
+      void services.speakText(`${after.title}!`).done;
+      services.analytics.log('builder_rank_up', { level: after.level, title: after.title });
+    }
+  };
+
   // ── The grid ──
   const grid = el('div', 'build-grid');
   grid.style.setProperty('--cols', String(GRID_W));
@@ -54,6 +104,7 @@ export async function openBuild(services: Services): Promise<void> {
       services.save.build[key] = selected;
       cell.textContent = iconOf(selected);
       cell.classList.add('filled');
+      registerPlacement(); // cumulative — drives Builder rank
     }
     services.persist();
   };
@@ -161,6 +212,7 @@ export async function openBuild(services: Services): Promise<void> {
   };
 
   renderPalette();
+  renderRank();
   panel.appendChild(palette);
 
   const hint = el('div', 'subtitle', 'Drag to build! Read a 🔒 word to unlock more blocks.');

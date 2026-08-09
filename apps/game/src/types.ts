@@ -50,6 +50,7 @@ export interface SaveData {
   booksRead: string[]; // Library book ids finished at least once (reward paid)
   blocksUnlocked: string[]; // Build Mode block ids unlocked by reading their word
   build: Record<string, string>; // Build Mode grid: "col,row" → blockId
+  buildPlaced: number; // cumulative blocks ever placed — drives Builder rank
   taught: SkillId[];
   evidence: Evidence[];
   events: GameEvent[];

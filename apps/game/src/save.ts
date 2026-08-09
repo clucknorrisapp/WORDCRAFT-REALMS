@@ -24,6 +24,7 @@ export function freshSave(): SaveData {
     booksRead: [],
     blocksUnlocked: [],
     build: {},
+    buildPlaced: 0,
     taught: [...curriculum.initialTaught],
     evidence: [],
     events: [],

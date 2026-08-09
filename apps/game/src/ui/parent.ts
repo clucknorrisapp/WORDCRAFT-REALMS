@@ -4,6 +4,7 @@ import { COUNTABLE_TYPES } from '@readquest/shared';
 import { voiceDiagnostics } from '@readquest/voice';
 import type { Services } from '../services';
 import { applyAccessibility, applyTextScale, el, openLayer } from './dom';
+import { builderRank } from './build';
 import { wipeSave } from '../save';
 
 const SKILL_LABELS: Record<string, string> = {
@@ -83,6 +84,8 @@ export function openParentScreen(services: Services): void {
     ['Read with help', String(withHelp.length)],
     ['Magic words spoken (mic)', `${micMatched.length} of ${micAttempts.length} tries`],
     ['Eggs collected', String(services.save.eggs)],
+    ['Books read', String(services.save.booksRead.length)],
+    ['Builder rank', `${builderRank(services.save.buildPlaced).icon} ${builderRank(services.save.buildPlaced).title} (${services.save.buildPlaced} blocks)`],
   ];
   for (const [k, v] of stats) {
     const row = el('div', 'stat-row');

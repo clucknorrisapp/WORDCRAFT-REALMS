@@ -104,6 +104,14 @@ const gained = Object.keys((await readSave()).build).length - before;
 console.log(`drag stroke painted ${gained} new cells (want >= 4)`);
 if (gained < 4) errors.push(`drag-to-paint laid too few cells: ${gained} (expected >= 4 across the stroke)`);
 
+// Building levels up a Builder rank: cumulative placements are tracked and the
+// header shows a rank/progress. We've placed ~8 blocks → past the first rank-up.
+const placed = (await readSave()).buildPlaced;
+const rankText = await page.locator('.builder-title').innerText();
+console.log(`buildPlaced=${placed}, rank header="${rankText}"`);
+if (placed < 8) errors.push(`buildPlaced should count every placement, got ${placed}`);
+if (!/Builder|Maker/.test(rankText)) errors.push(`builder rank header not shown: "${rankText}"`);
+
 await browser.close();
 const fatal = errors.filter((e) => !e.includes('Failed to load resource'));
 if (fatal.length) {
