@@ -5,8 +5,9 @@ import { allBooks } from '@readquest/content';
 import type { Book } from '@readquest/shared';
 import type { Services } from '../services';
 import type { Hud } from './hud';
-import { el, floatNote, openLayer } from './dom';
+import { bottomLeftCluster, castEffect, el, floatNote, openLayer } from './dom';
 import { openBook, REWARD_ICON } from './book-reader';
+import { spellUnlockedByBook } from './spellbook';
 import { QuestStep } from '../types';
 
 const REWARD_FIELD: Record<Book['reward'], 'wood' | 'stone' | 'eggs' | 'gems'> = {
@@ -19,14 +20,12 @@ const REWARD_FIELD: Record<Book['reward'], 'wood' | 'stone' | 'eggs' | 'gems'> =
 /** Mount the floating 📚 button that opens the Library. Kid-facing: a single
  *  tap (unlike the grown-up gate, which is press-and-hold). */
 export function mountLibraryButton(services: Services, hud: Hud): void {
-  const wrap = el('div', 'hud-left');
   const btn = el('button', 'btn ghost round', '📚');
   btn.title = 'Read a book';
-  wrap.appendChild(btn);
   // A soft "new!" dot until they have opened the Library at least once.
   const dot = el('span', 'lib-dot');
   if (services.save.booksRead.length === 0) btn.appendChild(dot);
-  document.getElementById('overlay')!.appendChild(wrap);
+  bottomLeftCluster().appendChild(btn);
 
   btn.addEventListener('click', () => {
     dot.remove();
@@ -91,6 +90,14 @@ async function readBook(
     services.persist();
     syncHud(services, hud);
     floatNote(`+1 ${REWARD_ICON[book.reward]}`, window.innerWidth / 2, window.innerHeight * 0.4);
+
+    // Finishing a book also teaches a new spell — the reading→magic loop.
+    const spell = spellUnlockedByBook(services.save.booksRead.length);
+    if (spell) {
+      castEffect(spell.particle, spell.hue, 24);
+      floatNote(`New spell! ${spell.icon} ${spell.word.toUpperCase()}`, window.innerWidth / 2, window.innerHeight * 0.55);
+      await services.speakText('You learned a new spell!').done;
+    }
   }
   // Re-reads are free and unrewarded — no branch needed.
   rerender();

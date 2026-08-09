@@ -1,0 +1,8 @@
+[
+  { "word": "sun", "icon": "☀️", "particle": "✨", "hue": "#ffd166" },
+  { "word": "big", "icon": "🫧", "particle": "🫧", "hue": "#a78bfa" },
+  { "word": "wet", "icon": "💧", "particle": "💧", "hue": "#4dabf7" },
+  { "word": "hot", "icon": "🔥", "particle": "🔥", "hue": "#ff6b6b" },
+  { "word": "zap", "icon": "⚡", "particle": "⚡", "hue": "#ffe066" },
+  { "word": "hop", "icon": "⭐", "particle": "⭐", "hue": "#63e6be" }
+]

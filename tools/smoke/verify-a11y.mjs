@@ -48,7 +48,7 @@ console.log('boot classes:', cls.filter((c) => c.startsWith('a11y')).join(', '))
 
 // 2. Calm mode suppresses confetti: finishing a book calls confetti(40);
 //    read one and assert not a single bit spawns.
-await page.locator('.hud-left .round').click();
+await page.locator('.hud-left button:has-text("📚")').click();
 await page.waitForSelector('.shelf', { timeout: 8000 });
 await page.locator('.book-spine').first().click();
 await page.waitForSelector('.book-cover', { timeout: 8000 });

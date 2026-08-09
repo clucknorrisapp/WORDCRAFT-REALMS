@@ -48,7 +48,7 @@ await page.waitForTimeout(1200);
 
 // Read a book cover-to-cover, clicking through every page.
 async function readFirstBook(tag) {
-  await page.locator('.hud-left .round').click();
+  await page.locator('.hud-left button:has-text("📚")').click();
   await page.waitForSelector('.shelf', { timeout: 8000 });
   const firstTitle = await page.locator('.book-spine-title').first().innerText();
   await page.screenshot({ path: `${OUT}/40-shelf-${tag}.png` });

@@ -6,9 +6,9 @@
 //   - celebration fires on every success (the dragon's animation is load-bearing)
 
 import { buildChallenge, line as getLine, word as getWord } from '@readquest/content';
-import { seededShuffle } from '@readquest/shared';
+import { seededShuffle, type Spell } from '@readquest/shared';
 import type { Services } from '../services';
-import { confetti, el, isUiOpen, openLayer, speakerButton, wait } from './dom';
+import { castEffect, confetti, el, isUiOpen, openLayer, speakerButton, wait } from './dom';
 
 export { isUiOpen };
 
@@ -468,6 +468,117 @@ export async function magicWordDoor(services: Services, wordText: string): Promi
         } else {
           await services.speakLine('ln_almost').done;
           await openDoor(true, true); // two misses → the door opens anyway
+        }
+      })();
+    });
+  });
+}
+
+// ── Spell casting — reading as magic power ──────────────────────────────────
+/**
+ * Cast a spell by reading its power word. Voice-first (say it into the mic)
+ * but never blocking: no mic, or a miss, still casts — spells should feel
+ * empowering, not like a test. Fires the themed effect + dragon celebration
+ * and logs `spell_cast` production evidence. Resolves true once cast.
+ */
+export async function castSpell(services: Services, sp: Spell): Promise<boolean> {
+  const started = Date.now();
+  const w = getWord(sp.word);
+  const layer = openLayer();
+  const panel = el('div', 'panel spellcast');
+  panel.style.setProperty('--hue', sp.hue);
+  panel.appendChild(el('div', 'spell-emoji', sp.icon));
+  panel.appendChild(el('div', 'subtitle', 'Read it to cast it!'));
+  const { wrap, spans } = graphemeSpans(sp.word);
+  wrap.classList.add('word-big');
+  panel.appendChild(wrap);
+  const status = el('div', 'subtitle', ' ');
+  panel.appendChild(status);
+  const row = el('div', 'cards');
+  const replay = speakerButton(() => void services.speakWord(w.text).done);
+  row.appendChild(replay);
+  panel.appendChild(row);
+  layer.root.appendChild(panel);
+
+  let misses = 0;
+  const record = (spoken: boolean, correct: boolean, extra: Partial<Parameters<Services['recordEvidence']>[0]> = {}) =>
+    services.recordEvidence({
+      challengeType: 'spell_cast',
+      skillIds: w.skills,
+      wordId: w.id,
+      channel: 'production',
+      correct,
+      attemptIndex: misses + 1,
+      hintsUsed: 0,
+      audioRequested: false,
+      micUsed: spoken,
+      responseMs: Date.now() - started,
+      ...extra,
+    });
+
+  const fire = async (spoken: boolean): Promise<boolean> => {
+    spans.forEach((s) => s.classList.add('glow'));
+    layer.close();
+    castEffect(sp.particle, sp.hue);
+    await celebrate(services, true);
+    return spoken;
+  };
+
+  // Say-it-out-loud ritual: read the word, tap it, cast. Always available.
+  const ritual = async (): Promise<boolean> => {
+    status.textContent = 'Say it out loud, then tap the word!';
+    wrap.style.cursor = 'pointer';
+    wrap.classList.add('pulse');
+    const tapped = new Promise<void>((r) => wrap.addEventListener('click', () => r(), { once: true }));
+    void services.speakWord(w.text).done;
+    await tapped;
+    record(false, true);
+    return fire(false);
+  };
+
+  const availability = await services.speech.available();
+  const micAllowed = services.save.settings.micEnabled && availability.supported;
+  if (!micAllowed) return ritual();
+
+  const mic = el('button', 'mic-btn', '🎤');
+  status.textContent = 'Tap the mic and say the word!';
+  panel.appendChild(mic);
+
+  return new Promise<boolean>((resolve) => {
+    mic.addEventListener('click', () => {
+      void (async () => {
+        if (mic.disabled) return;
+        mic.disabled = true;
+        mic.classList.add('listening');
+        status.textContent = '🎤 I am listening…';
+        services.analytics.log('spell_mic_attempt', { word: w.text });
+        const result = await services.speech.listen({ expected: w.text, timeoutMs: 6500 });
+        mic.classList.remove('listening');
+
+        if (result.status === 'match') {
+          record(true, true, {
+            speech: { expected: w.text, recognized: result.recognized, confidence: result.confidence },
+          });
+          resolve(await fire(true));
+          return;
+        }
+        if (result.status === 'permission_denied' || result.status === 'unsupported' || result.status === 'error') {
+          mic.remove();
+          resolve(await ritual());
+          return;
+        }
+        // no_speech / timeout / no_match — one warm nudge, then cast anyway:
+        // a spell must never leave a child stuck.
+        misses += 1;
+        if (misses === 1) {
+          status.textContent = 'Good try! Listen…';
+          await services.speakLine('ln_almost').done;
+          await slowBlend(services, w.text, spans);
+          status.textContent = 'Your turn — tap the mic!';
+          mic.disabled = false;
+        } else {
+          record(false, true);
+          resolve(await fire(false));
         }
       })();
     });

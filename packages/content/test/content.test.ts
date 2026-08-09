@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   allBooks,
   allLines,
+  allSpells,
   allWords,
   buildChallenge,
   curriculum,
@@ -126,5 +127,24 @@ describe('decodable books (the Library)', () => {
       expect(['egg', 'gem', 'wood', 'stone'], `${b.id} reward`).toContain(b.reward);
       expect(b.pages.every((p) => p.trim().length > 0), `${b.id} empty page`).toBe(true);
     }
+  });
+});
+
+describe('spells (power words)', () => {
+  it('every spell word is a single decodable corpus word (the iron rule holds for magic)', () => {
+    for (const s of allSpells()) {
+      const report = validateText(s.word, taught);
+      expect(report.ok, `spell "${s.word}" is not decodable: ${JSON.stringify(report.violations)}`).toBe(true);
+      // A spell is one word — never a phrase a child couldn't blend in a breath.
+      expect(s.word.trim().split(/\s+/).length, `spell "${s.word}" must be one word`).toBe(1);
+      expect(word(s.word).heart, `spell "${s.word}" should be a decodable word, not a heart word`).toBe(false);
+      expect(s.icon.length, `spell "${s.word}" needs an icon`).toBeGreaterThan(0);
+      expect(s.particle.length, `spell "${s.word}" needs a particle`).toBeGreaterThan(0);
+    }
+  });
+
+  it('spell words are unique', () => {
+    const ws = allSpells().map((s) => s.word);
+    expect(new Set(ws).size).toBe(ws.length);
   });
 });

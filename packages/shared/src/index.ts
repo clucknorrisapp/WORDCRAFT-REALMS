@@ -132,6 +132,17 @@ export interface Book {
   pages: string[]; // one decodable string per page (4-7 pages)
 }
 
+// ── Spells ──────────────────────────────────────────────────────────────────
+/** A spell is a decodable "power word" the child reads/says to cast a magical
+ *  effect. The word itself is always decodable (the iron rule holds even for
+ *  magic) — so the fantasy of "reading is power" never shows untaught text. */
+export interface Spell {
+  word: string; // decodable corpus word, e.g. 'sun'
+  icon: string; // emoji on the spell card
+  particle: string; // emoji sprayed by the cast effect
+  hue: string; // glow color for the card + effect
+}
+
 export interface DecodabilityViolation {
   token: string;
   missingSkills: SkillId[];

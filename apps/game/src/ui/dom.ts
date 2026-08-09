@@ -80,6 +80,49 @@ export function confetti(count = 26): void {
   }
 }
 
+/** Shared bottom-left button cluster (Library 📚 + Spellbook ✨ live here). */
+export function bottomLeftCluster(): HTMLElement {
+  let c = document.querySelector<HTMLElement>('.hud-left');
+  if (!c) {
+    c = el('div', 'hud-left');
+    overlay().appendChild(c);
+  }
+  return c;
+}
+
+/** A spell's cast effect: a burst of themed particles with a hued glow. Calm
+ *  mode replaces the burst with a single soft flash (no flying motion). */
+export function castEffect(particle: string, hue: string, count = 18): void {
+  if (motionReduced) {
+    const flash = el('div', 'cast-flash');
+    flash.style.background = hue;
+    overlay().appendChild(flash);
+    flash.animate([{ opacity: 0.45 }, { opacity: 0 }], { duration: 550, easing: 'ease-out' }).onfinish = () =>
+      flash.remove();
+    return;
+  }
+  const cx = window.innerWidth / 2;
+  const cy = window.innerHeight * 0.44;
+  for (let i = 0; i < count; i++) {
+    const bit = el('div', 'cast-bit', particle);
+    bit.style.left = `${cx}px`;
+    bit.style.top = `${cy}px`;
+    bit.style.textShadow = `0 0 12px ${hue}, 0 0 24px ${hue}`;
+    overlay().appendChild(bit);
+    const ang = (Math.PI * 2 * i) / count + (Math.random() - 0.5) * 0.5;
+    const dist = 120 + Math.random() * 170;
+    const dx = Math.cos(ang) * dist;
+    const dy = Math.sin(ang) * dist - 40;
+    bit.animate(
+      [
+        { transform: 'translate(-50%, -50%) scale(0.4)', opacity: 1 },
+        { transform: `translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px)) scale(1.4)`, opacity: 0 },
+      ],
+      { duration: 900 + Math.random() * 500, easing: 'cubic-bezier(0.2, 0.7, 0.3, 1)' },
+    ).onfinish = () => bit.remove();
+  }
+}
+
 export function floatNote(text: string, x: number, y: number): void {
   const note = el('div', 'float-note', text);
   note.style.left = `${x}px`;

@@ -5,12 +5,14 @@ import type {
   DecodabilityViolation,
   Line,
   SkillId,
+  Spell,
   Word,
 } from '@readquest/shared';
 import { seededShuffle } from '@readquest/shared';
 import booksJson from '../data/books.json';
 import curriculumJson from '../data/curriculum.json';
 import linesJson from '../data/lines.json';
+import spellsJson from '../data/spells.json';
 import wordsJson from '../data/words.json';
 
 // Grapheme → skill mapping. Single consonants (and early-taught ck/ff/gg/x)
@@ -78,6 +80,7 @@ const lines: Line[] = linesJson as Line[];
 const linesById = new Map<string, Line>(lines.map((l) => [l.id, l]));
 const books: Book[] = booksJson as Book[];
 const booksById = new Map<string, Book>(books.map((b) => [b.id, b]));
+const spells: Spell[] = spellsJson as Spell[];
 
 export function allWords(): Word[] {
   return words;
@@ -122,6 +125,16 @@ export function validateBook(b: Book, taught: Iterable<SkillId>): {
   const taughtSet = new Set(taught);
   const pages = [b.title, ...b.pages].map((t) => validateText(t, taughtSet));
   return { ok: pages.every((p) => p.ok), pages };
+}
+
+export function allSpells(): Spell[] {
+  return spells;
+}
+
+export function spell(word: string): Spell {
+  const s = spells.find((x) => x.word === word.toLowerCase());
+  if (!s) throw new Error(`Unknown spell "${word}"`);
+  return s;
 }
 
 const TOKEN_RE = /[a-z]+/g;
