@@ -73,7 +73,11 @@ export function wantedClips() {
   // Word-card audio: priority words + book words + spell words + block words.
   const allWords = [...new Set([...PRIORITY_WORDS, ...bookWords(), ...spellWords(), ...blockWords()])];
   for (const w of allWords) {
-    clips.push({ id: `w_${w}`, speaker: 'narrator', text: `${w[0].toUpperCase()}${w.slice(1)}.` });
+    // Common words are spoken LOWERCASE: a capitalized isolated token makes
+    // ElevenLabs treat it as a name/foreign word (capitalized "Hut." was read
+    // as the German word → "hoot"). Only the dragon names stay capitalized.
+    const say = DRAGON_NAMES.includes(w) ? `${w[0].toUpperCase()}${w.slice(1)}` : w;
+    clips.push({ id: `w_${w}`, speaker: 'narrator', text: `${say}.` });
   }
   clips.push(...bookPageClips());
   // Dedupe by id (a book word may also be a priority word).

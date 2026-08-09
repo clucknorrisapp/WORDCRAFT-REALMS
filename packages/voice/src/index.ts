@@ -180,6 +180,13 @@ class WebAudioClip {
     void (async () => {
       try {
         if (ctx.state === 'suspended') await ctx.resume();
+        // If the context is STILL not running (iOS sometimes won't resume until
+        // the next gesture), playing now would be silent — hand off to HTMLAudio
+        // instead of pretending we spoke.
+        if (ctx.state !== 'running') {
+          this.fallback();
+          return;
+        }
         const buf = await loadBuffer(ctx, this.url);
         if (this.state.ended) return;
         const src = ctx.createBufferSource();
@@ -455,6 +462,12 @@ export function createVoiceService(manifest: VoiceManifest): VoiceService {
     },
     speak(req: SpeakRequest): SpeakHandle {
       // Contract: speak() never throws, and every handle always reaches onEnd.
+      // speak() is nearly always called from a user gesture (a 🔊 tap, a card
+      // tap, a "Keep going" press). Resume the AudioContext RIGHT HERE, inside
+      // that gesture's synchronous turn, so the premium clip actually plays
+      // instead of silently failing and falling back to robotic synthesis
+      // (the "speaker wasn't working, then it said the word wrong" bug).
+      unlockAudio();
       current?.stop();
       const { handle, state } = makeHandle();
       current = handle;
