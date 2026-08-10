@@ -144,13 +144,17 @@ export interface Spell {
 }
 
 // ── Build blocks ────────────────────────────────────────────────────────────
-/** A block the child can place in Build Mode. Reading its (decodable) word is
- *  what unlocks it — building literally grows out of reading. */
+/** A block the child can place in Build Mode. A plain block is unlocked by
+ *  reading its (decodable) word. A CRAFT block is made by combining two blocks
+ *  the child already has and reading a short decodable recipe phrase — building
+ *  literally grows out of reading, and crafting steps reading up to phrases. */
 export interface BuildBlock {
   id: string; // stable id used in saved builds
-  word: string; // decodable corpus word read to unlock the block
+  word: string; // decodable word read to unlock a plain block (or spoken label for a craft block)
   icon: string; // emoji shown in the palette + on the grid
   starter?: boolean; // available from the start (no reading needed)
+  recipe?: string; // craft block: the decodable phrase read to craft it (e.g. "hot rock")
+  from?: string[]; // craft block: the two block ids that must be unlocked first
 }
 
 export interface DecodabilityViolation {

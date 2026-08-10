@@ -19,5 +19,10 @@
   { "id": "map",  "word": "map",  "icon": "🗺️" },
   { "id": "sand", "word": "sand", "icon": "🟨" },
   { "id": "tin",  "word": "tin",  "icon": "⬜" },
-  { "id": "net",  "word": "net",  "icon": "🕸️" }
+  { "id": "net",  "word": "net",  "icon": "🕸️" },
+
+  { "id": "magma", "word": "hot",  "icon": "🌋", "recipe": "hot rock", "from": ["rock", "sun"] },
+  { "id": "brick", "word": "red",  "icon": "🧱", "recipe": "red rock", "from": ["rock", "mud"] },
+  { "id": "tree",  "word": "big",  "icon": "🌲", "recipe": "big bush", "from": ["bush", "log"] },
+  { "id": "glass", "word": "sand", "icon": "🪟", "recipe": "hot sand", "from": ["sand", "sun"] }
 ]

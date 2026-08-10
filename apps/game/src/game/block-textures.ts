@@ -180,6 +180,46 @@ const PAINTERS: Record<string, (c: Ctx) => void> = {
     for (const y of [2, 6, 10, 14]) rect(c, 1, y, 14, 1, '#8b93a1');
     for (const x of [2, 5, 8, 11, 14]) for (const y of [2, 6, 10, 14]) px(c, x, y, '#c2c9d2');
   },
+  magma: (c) => {
+    noise(c, ['#7a1f10', '#5c1608', '#8a2a14', '#6b1c0d'], 21);
+    // glowing cracks
+    for (const [x, y] of [[2, 3], [3, 4], [8, 2], [9, 3], [5, 9], [12, 11], [6, 13]] as Array<[number, number]>) {
+      px(c, x, y, '#ff8a3c');
+      px(c, x + 1, y, '#ffd166');
+    }
+    for (let i = 0; i < 6; i++) px(c, Math.floor(hash(i, 5, 21) * G), Math.floor(hash(i, 6, 21) * G), '#ffb347');
+  },
+  brick: (c) => {
+    fill(c, '#a83232');
+    for (const y of [3, 7, 11, 15]) rect(c, 0, y, G, 1, '#7d2020'); // mortar rows
+    // offset vertical mortar
+    for (const [x, y] of [[4, 0], [11, 0], [7, 4], [14, 4], [4, 8], [11, 8], [7, 12], [14, 12]] as Array<[number, number]>)
+      rect(c, x, y, 1, 4, '#7d2020');
+    for (let i = 0; i < 8; i++) px(c, Math.floor(hash(i, 1, 22) * G), Math.floor(hash(i, 2, 22) * G), '#c04b4b');
+  },
+  tree: (c) => {
+    fill(c, '#5fae3a'); // grass base
+    rect(c, 7, 9, 2, 6, '#6e4a24'); // trunk
+    // round leafy canopy
+    for (let y = 0; y < 10; y++)
+      for (let x = 0; x < G; x++) {
+        const dx = x - 7.5, dy = y - 4.5;
+        if (dx * dx + dy * dy < 26) px(c, x, y, hash(x, y, 23) > 0.5 ? '#2f7d2f' : '#3f9a3a');
+      }
+    for (let i = 0; i < 6; i++) px(c, 3 + Math.floor(hash(i, 1, 23) * 9), Math.floor(hash(i, 2, 23) * 8), '#54c24a');
+  },
+  glass: (c) => {
+    fill(c, '#bfe3f5');
+    rect(c, 0, 0, G, 1, '#8fc7e8');
+    rect(c, 0, 0, 1, G, '#8fc7e8');
+    rect(c, 0, 15, G, 1, '#8fc7e8');
+    rect(c, 15, 0, 1, G, '#8fc7e8');
+    // diagonal shine
+    for (let i = 0; i < G; i++) {
+      if (i + 3 < G) px(c, i, i + 3, '#eaf6fd');
+      if (i + 5 < G) px(c, i, i + 5, '#d6eefb');
+    }
+  },
   map: (c) => {
     fill(c, '#e8d8a8');
     rect(c, 0, 0, G, 1, '#c9b57e');

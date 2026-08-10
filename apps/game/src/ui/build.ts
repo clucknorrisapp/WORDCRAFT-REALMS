@@ -2,14 +2,15 @@
 // The child paints blocks onto a grid to build their own little world. New
 // blocks aren't bought — they're UNLOCKED BY READING the block's word, so the
 // toolbox literally grows out of reading. Builds persist across sessions.
-import { allBlocks } from '@readquest/content';
+import { allBlocks, word as getWord } from '@readquest/content';
 import type { BuildBlock } from '@readquest/shared';
 import type { Services } from '../services';
-import { bottomLeftCluster, confetti, el, floatNote, openLayer } from './dom';
+import { bottomLeftCluster, confetti, el, floatNote, openLayer, speakerButton, wait } from './dom';
 import { readWordCard, renderBuildInWorld } from './widgets';
 import { blockTextureURL } from '../game/block-textures';
 
 const tex = (id: string) => `url("${blockTextureURL(id)}")`;
+const blockById = (id: string): BuildBlock | undefined => allBlocks().find((b) => b.id === id);
 
 export const GRID_W = 12;
 export const GRID_H = 8;
@@ -169,6 +170,26 @@ export async function openBuild(services: Services): Promise<void> {
     for (const [pid, b] of paletteButtons) b.classList.toggle('sel', pid === id);
   };
 
+  const addTool = (b: BuildBlock) => {
+    const tool = el('button', 'build-tool tex') as HTMLButtonElement;
+    tool.style.backgroundImage = tex(b.id);
+    tool.title = b.word;
+    tool.addEventListener('click', () => selectTool(b.id));
+    palette.appendChild(tool);
+    paletteButtons.set(b.id, tool);
+  };
+
+  const addLockedWord = (b: BuildBlock) => {
+    // Locked plain block: 🔒 + the word; tap to read one word and earn it.
+    const locked = el('button', 'build-tool locked') as HTMLButtonElement;
+    locked.appendChild(el('span', 'lock-ico', '🔒'));
+    locked.appendChild(el('span', 'lock-word', b.word.toUpperCase()));
+    locked.title = `Read "${b.word}" to unlock`;
+    locked.addEventListener('click', () => void unlock(b));
+    palette.appendChild(locked);
+    paletteButtons.set(b.id, locked);
+  };
+
   const renderPalette = () => {
     palette.innerHTML = '';
     paletteButtons.clear();
@@ -180,24 +201,47 @@ export async function openBuild(services: Services): Promise<void> {
     palette.appendChild(eraser);
     paletteButtons.set(ERASER, eraser);
 
+    // Plain blocks: unlocked → paintable tool; locked → read one word to earn.
     for (const b of allBlocks()) {
-      if (isUnlocked(services, b)) {
-        const tool = el('button', 'build-tool tex') as HTMLButtonElement;
-        tool.style.backgroundImage = tex(b.id);
-        tool.title = b.word;
-        tool.addEventListener('click', () => selectTool(b.id));
-        palette.appendChild(tool);
-        paletteButtons.set(b.id, tool);
-      } else {
-        // Locked: show 🔒 + the word; tap to read-to-unlock.
-        const locked = el('button', 'build-tool locked') as HTMLButtonElement;
-        locked.appendChild(el('span', 'lock-ico', '🔒'));
-        locked.appendChild(el('span', 'lock-word', b.word.toUpperCase()));
-        locked.addEventListener('click', () => void unlock(b));
-        palette.appendChild(locked);
-        paletteButtons.set(b.id, locked);
+      if (b.recipe) continue; // craft blocks handled in their own section below
+      if (isUnlocked(services, b)) addTool(b);
+      else addLockedWord(b);
+    }
+
+    // ── Craft blocks ── forged by reading a recipe PHRASE, but only once BOTH
+    // ingredient blocks are unlocked. This is where reading steps up from single
+    // words to short phrases — building literally grows the reading demand.
+    const craftList = allBlocks().filter((b) => b.recipe);
+    if (craftList.length) {
+      const div = el('div', 'build-craft-div', '🛠');
+      div.title = 'Crafting — combine two blocks by reading a recipe';
+      palette.appendChild(div);
+
+      for (const b of craftList) {
+        if (isUnlocked(services, b)) {
+          addTool(b); // already crafted — it's just a block now
+        } else if (ingredientsReady(services, b)) {
+          // Craftable now: 🛠 + the recipe phrase; tap to read-and-craft.
+          const craftBtn = el('button', 'build-tool craftable') as HTMLButtonElement;
+          craftBtn.appendChild(el('span', 'lock-ico', '🛠'));
+          craftBtn.appendChild(el('span', 'craft-phrase', b.recipe!.toUpperCase()));
+          craftBtn.title = `Craft by reading: ${b.recipe}`;
+          craftBtn.addEventListener('click', () => void craft(b));
+          palette.appendChild(craftBtn);
+          paletteButtons.set(b.id, craftBtn);
+        } else {
+          // Not yet: show the two ingredient icons still to unlock as a hint.
+          const locked = el('button', 'build-tool locked') as HTMLButtonElement;
+          locked.appendChild(el('span', 'lock-ico', '🔒'));
+          const need = (b.from ?? []).map((id) => blockById(id)?.icon ?? '?').join(' ');
+          locked.appendChild(el('span', 'lock-word', need));
+          locked.title = `Unlock ${(b.from ?? []).map((id) => blockById(id)?.word ?? id).join(' + ')} first`;
+          palette.appendChild(locked);
+          paletteButtons.set(b.id, locked);
+        }
       }
     }
+
     selectTool(selected);
   };
 
@@ -212,6 +256,23 @@ export async function openBuild(services: Services): Promise<void> {
       services.analytics.log('block_unlocked', { block: b.id, word: b.word });
     }
     selected = b.id; // hand them the new block, ready to place
+    renderPalette();
+  };
+
+  const craft = async (b: BuildBlock) => {
+    panel.style.visibility = 'hidden';
+    // Reading moment: read the whole recipe phrase to forge the new block.
+    await readPhraseToCraft(services, b);
+    panel.style.visibility = 'visible';
+    if (!services.save.blocksUnlocked.includes(b.id)) {
+      services.save.blocksUnlocked.push(b.id);
+      services.persist();
+      services.analytics.log('block_crafted', { block: b.id, recipe: b.recipe });
+      confetti(28);
+      floatNote(`${b.icon} ${b.word.toUpperCase()}!`, window.innerWidth / 2, window.innerHeight * 0.38);
+      void services.speakText('You made it!').done;
+    }
+    selected = b.id; // hand them the freshly crafted block, ready to place
     renderPalette();
   };
 
@@ -251,4 +312,82 @@ export async function openBuild(services: Services): Promise<void> {
 function firstUnlockedId(services: Services): string {
   const first = allBlocks().find((b) => isUnlocked(services, b));
   return first ? first.id : ERASER;
+}
+
+/** A craft block is craftable once BOTH of its ingredient blocks are unlocked. */
+function ingredientsReady(services: Services, b: BuildBlock): boolean {
+  return (b.from ?? []).every((id) => {
+    const ing = blockById(id);
+    return ing ? isUnlocked(services, ing) : false;
+  });
+}
+
+/** Phonics skills exercised by a decodable phrase (union over its words). */
+function skillsOfPhrase(phrase: string): string[] {
+  const skills = new Set<string>();
+  for (const tok of phrase.toLowerCase().match(/[a-z]+/g) ?? []) {
+    try {
+      for (const s of getWord(tok).skills) if (s !== 'base') skills.add(s);
+    } catch {
+      /* token not in corpus — recipe phrases are validated, so this is defensive */
+    }
+  }
+  return [...skills];
+}
+
+// Reading moment for crafting: read a short decodable PHRASE (e.g. "hot rock")
+// to forge a new block. Logged as `sentence_read` — the same strong reading
+// signal a Library page gives, because a phrase is real connected text, not a
+// lone word. Tap any word to hear it; the 🔊 button reads the whole recipe.
+async function readPhraseToCraft(services: Services, b: BuildBlock): Promise<void> {
+  const phrase = b.recipe!;
+  const started = Date.now();
+  let audioRequested = false;
+  const readWhole = () => services.speakLine(`craft_${b.id}`, phrase).done;
+
+  const layer = openLayer();
+  const panel = el('div', 'panel');
+  panel.appendChild(el('div', 'subtitle', '🛠 Read it to craft it!'));
+
+  const wrap = el('div', 'craft-read');
+  for (const wtext of phrase.split(/\s+/)) {
+    const card = el('button', 'craft-word', wtext.toUpperCase()) as HTMLButtonElement;
+    card.addEventListener('click', () => {
+      audioRequested = true;
+      void services.speakWord(wtext).done;
+    });
+    wrap.appendChild(card);
+  }
+  panel.appendChild(wrap);
+  panel.appendChild(el('div', 'craft-result', `= ${b.icon}`));
+
+  const row = el('div', 'cards');
+  const replay = speakerButton(() => {
+    audioRequested = true;
+    void readWhole();
+  });
+  const ok = el('button', 'btn', '✨ Craft it!');
+  row.appendChild(replay);
+  row.appendChild(ok);
+  panel.appendChild(row);
+  layer.root.appendChild(panel);
+
+  // Wire the confirm listener before the auto-read so an eager tap still counts.
+  const okClicked = new Promise<void>((r) => ok.addEventListener('click', () => r(), { once: true }));
+  await wait(650); // let them look at the phrase first
+  await readWhole();
+  await okClicked;
+  layer.close();
+
+  services.recordEvidence({
+    challengeType: 'sentence_read',
+    skillIds: skillsOfPhrase(phrase),
+    channel: 'recognition',
+    correct: true,
+    attemptIndex: 1,
+    hintsUsed: 0,
+    audioRequested,
+    micUsed: false,
+    responseMs: Date.now() - started,
+  });
 }

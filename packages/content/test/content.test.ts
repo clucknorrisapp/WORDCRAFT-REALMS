@@ -165,4 +165,19 @@ describe('build blocks', () => {
     expect(new Set(ids).size).toBe(ids.length);
     expect(allBlocks().some((b) => b.starter)).toBe(true);
   });
+
+  it('craft recipes are decodable phrases whose ingredients exist', () => {
+    const ids = new Set(allBlocks().map((b) => b.id));
+    const craft = allBlocks().filter((b) => b.recipe);
+    expect(craft.length, 'expected some craft blocks').toBeGreaterThan(0);
+    for (const b of craft) {
+      const report = validateText(b.recipe!, taught);
+      expect(report.ok, `recipe "${b.recipe}" not decodable: ${JSON.stringify(report.violations)}`).toBe(true);
+      expect(b.recipe!.trim().split(/\s+/).length, `recipe "${b.recipe}" should be a short phrase`).toBeGreaterThanOrEqual(2);
+      expect(b.from?.length, `craft block "${b.id}" needs two ingredients`).toBe(2);
+      for (const ing of b.from ?? []) {
+        expect(ids.has(ing), `craft block "${b.id}" ingredient "${ing}" is not a block`).toBe(true);
+      }
+    }
+  });
 });

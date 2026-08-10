@@ -265,6 +265,24 @@
     .build-tool.locked { border-style: dashed; border-color: #c8c3b6; background: #f4f2ec; filter: grayscale(0.2); }
     .build-tool .lock-ico { font-size: 18px; }
     .build-tool .lock-word { font-size: 11px; font-weight: 900; letter-spacing: 1px; color: var(--accent2); }
+    /* Crafting: a divider, then craftable tools glow green with their recipe. */
+    .build-craft-div {
+      flex: 0 0 auto; align-self: center; display: flex; align-items: center; justify-content: center;
+      height: 40px; padding: 0 8px 0 6px; margin-left: 2px; font-size: 18px; opacity: 0.75;
+      border-left: 3px dashed #d9d4c6;
+    }
+    .build-tool.craftable { border-style: solid; border-color: var(--good, #2ecc71); background: #edfbe6; }
+    .build-tool.craftable .lock-ico { font-size: 15px; }
+    .build-tool .craft-phrase { font-size: 8.5px; font-weight: 900; letter-spacing: 0.2px; line-height: 1.05; text-align: center; color: #3f9b2f; }
+    /* Craft reading moment: read the recipe phrase as big tappable word-cards. */
+    .craft-read { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; margin: 14px 0 6px; }
+    .craft-word {
+      font-size: 30px; font-weight: 900; letter-spacing: 2px; padding: 10px 16px; border-radius: 14px;
+      border: 3px solid #e7e3d8; background: var(--card); color: inherit; cursor: pointer;
+      box-shadow: 0 3px 0 rgba(0,0,0,0.12); touch-action: manipulation;
+    }
+    .craft-word:active { transform: scale(0.94); }
+    .craft-result { font-size: 34px; margin: 2px 0 10px; }
 
     /* ── Accessibility: dyslexia-friendly typography ──
        Evidence points to generous spacing helping more than any single font,

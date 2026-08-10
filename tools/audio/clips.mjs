@@ -43,6 +43,16 @@ function blockWords() {
   return blocks.map((b) => b.word);
 }
 
+/** One narrator clip per craft recipe phrase (id: craft_<blockId>), so reading
+ *  a recipe to forge a block is premium audio. The individual recipe words are
+ *  already covered by the block/word clips above (for tap-a-word playback). */
+function craftRecipeClips() {
+  const blocks = JSON.parse(fs.readFileSync('packages/content/data/blocks.json', 'utf8'));
+  return blocks
+    .filter((b) => b.recipe)
+    .map((b) => ({ id: `craft_${b.id}`, speaker: 'narrator', text: b.recipe }));
+}
+
 /** One narrator clip per book page, so "Read to me" is premium storytelling
  *  audio. Word highlighting still works: the voice layer estimates per-word
  *  timings from the clip's duration. */
@@ -84,6 +94,7 @@ export function wantedClips() {
     clips.push({ id: `w_${w}`, speaker: 'narrator', text: `${say}.` });
   }
   clips.push(...bookPageClips());
+  clips.push(...craftRecipeClips());
   // Dedupe by id (a book word may also be a priority word).
   const byId = new Map();
   for (const c of clips) if (!byId.has(c.id)) byId.set(c.id, c);
