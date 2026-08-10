@@ -9,6 +9,7 @@ import { floatNote, isUiOpen, reducedMotion } from '../ui/dom';
 import { setBuildRenderer, setDragonCelebrate } from '../ui/widgets';
 import { openBuild, GRID_W, GRID_H } from '../ui/build';
 import { blockTextureCanvas } from './block-textures';
+import { hasPropTexture, propTextureCanvas, PIXEL_PROP_KEYS } from './world-textures';
 
 // Where the child's Build-Mode creation is shown in the world (open grass in
 // the south-east, clear of the village, forest, and cave).
@@ -84,13 +85,17 @@ export class WorldScene extends Phaser.Scene {
   }
 
   preload(): void {
-    for (const key of SPRITES) this.load.image(key, `assets/sprites/${key}.png`);
+    for (const key of SPRITES) {
+      if (hasPropTexture(key)) continue; // replaced by a pixel-art painter in create()
+      this.load.image(key, `assets/sprites/${key}.png`);
+    }
   }
 
   create(): void {
     this.physics.world.setBounds(0, 0, W, H);
     this.makeProceduralTextures();
     this.registerBlockTextures();
+    this.registerPropTextures();
     this.paintGround();
     this.obstacles = this.physics.add.staticGroup();
 
@@ -399,6 +404,16 @@ export class WorldScene extends Phaser.Scene {
       const key = `blk_${id}`;
       if (this.textures.exists(key)) continue;
       this.textures.addCanvas(key, blockTextureCanvas(id));
+      this.textures.get(key).setFilter(Phaser.Textures.FilterMode.NEAREST);
+    }
+  }
+
+  /** Pixel-art world props (house, stall, tree, sign, coop) under the same
+   *  texture keys the PNG sprites used — so the world looks blocky end to end. */
+  private registerPropTextures(): void {
+    for (const key of PIXEL_PROP_KEYS) {
+      if (this.textures.exists(key)) continue;
+      this.textures.addCanvas(key, propTextureCanvas(key));
       this.textures.get(key).setFilter(Phaser.Textures.FilterMode.NEAREST);
     }
   }
