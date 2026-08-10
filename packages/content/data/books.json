@@ -138,5 +138,76 @@
       "Is Fox sad? No, not Fox!",
       "Hop, Fox, hop! Fox has so much fun."
     ]
+  },
+
+  {
+    "id": "best-nest",
+    "title": "The Best Nest",
+    "cover": "🪺",
+    "reward": "egg",
+    "gate": "blend_st",
+    "pages": [
+      "A hen has a nest.",
+      "The nest is on a big log.",
+      "The hen sat on the nest.",
+      "The nest is the best nest!",
+      "A red egg is in the nest. Yes!"
+    ]
+  },
+  {
+    "id": "red-flag",
+    "title": "The Red Flag",
+    "cover": "🚩",
+    "reward": "gem",
+    "gate": "blend_l",
+    "pages": [
+      "The pup has a red flag.",
+      "The flag is not flat.",
+      "The pup is so glad.",
+      "The pup ran fast. The flag can flip!",
+      "The pup and the flag nap in the sun."
+    ]
+  },
+  {
+    "id": "frog-and-crab",
+    "title": "Frog and Crab",
+    "cover": "🐸",
+    "reward": "wood",
+    "gate": "blend_r",
+    "pages": [
+      "A frog sat on a log.",
+      "The frog has a drum.",
+      "A crab ran to the frog.",
+      "The crab can grab the drum.",
+      "The frog has a big grin!"
+    ]
+  },
+  {
+    "id": "twin-fish",
+    "title": "The Twin Fish",
+    "cover": "🐟",
+    "reward": "gem",
+    "gate": "blend_s",
+    "pages": [
+      "The twin fish can swim.",
+      "The twin fish swim fast.",
+      "The fish can spin and skip.",
+      "A fish has a red spot.",
+      "The twin fish swim to a big rock."
+    ]
+  },
+  {
+    "id": "big-tent",
+    "title": "The Big Tent",
+    "cover": "⛺",
+    "reward": "stone",
+    "gate": "blend_end",
+    "pages": [
+      "The big tent is on the sand.",
+      "A frog can jump in the pond.",
+      "The lamp is red. It is not hot.",
+      "I get a gift! Yes!",
+      "The gift is a big drum!"
+    ]
   }
 ]

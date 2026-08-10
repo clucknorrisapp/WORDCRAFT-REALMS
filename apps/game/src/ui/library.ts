@@ -1,7 +1,7 @@
 // The Library — a shelf of decodable books the child can read any time.
 // Finishing a book the first time pays its reward into the world economy, so
 // reading is directly, visibly rewarded (roadmap: reading IS the mechanic).
-import { allBooks } from '@readquest/content';
+import { allBooks, validateBook } from '@readquest/content';
 import type { Book } from '@readquest/shared';
 import type { Services } from '../services';
 import type { Hud } from './hud';
@@ -50,7 +50,11 @@ export async function openLibrary(services: Services, hud: Hud): Promise<void> {
 
   const renderShelf = () => {
     shelf.innerHTML = '';
-    for (const b of allBooks()) {
+    // Iron rule on the shelf: a book only appears once every word on every page
+    // is decodable at the child's taught set. Higher-tier books surface as new
+    // sounds unlock — the Library grows out of reading, just like the toolbox.
+    const available = allBooks().filter((b) => validateBook(b, services.save.taught).ok);
+    for (const b of available) {
       const read = services.save.booksRead.includes(b.id);
       const card = el('button', 'book-spine' + (read ? ' read' : ''));
       card.appendChild(el('div', 'book-emoji', b.cover));
@@ -60,6 +64,12 @@ export async function openLibrary(services: Services, hud: Hud): Promise<void> {
       card.appendChild(badge);
       card.addEventListener('click', () => void readBook(services, hud, b, renderShelf, panel));
       shelf.appendChild(card);
+    }
+    const locked = allBooks().length - available.length;
+    if (locked > 0) {
+      shelf.appendChild(
+        el('div', 'shelf-locked-hint', `🔒 ${locked} more book${locked > 1 ? 's' : ''} unlock as you learn new sounds!`),
+      );
     }
   };
   renderShelf();

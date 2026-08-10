@@ -46,6 +46,20 @@ await page.goto(BASE);
 await page.waitForSelector('canvas', { timeout: 15000 });
 await page.waitForTimeout(1200);
 
+// Library gating: with only the initial band taught, blend-tier books are hidden
+// (their pages contain untaught sounds) and a locked-count hint shows instead.
+await page.locator('.hud-left button:has-text("📚")').click();
+await page.waitForSelector('.shelf', { timeout: 8000 });
+const shelfTitles = await page.locator('.book-spine-title').allInnerTexts();
+const lockedHint = await page.locator('.shelf-locked-hint').count();
+console.log(`shelf at initial band: ${shelfTitles.length} books shown, lockedHint=${lockedHint}`);
+if (shelfTitles.some((t) => /Red Flag|Twin Fish|Big Tent|Best Nest|Frog and Crab/i.test(t))) {
+  errors.push(`a blend-tier book is visible at the initial band: ${shelfTitles.join(', ')}`);
+}
+if (lockedHint < 1) errors.push('expected a locked-books hint at the initial band');
+await page.locator('.panel.library button:has-text("Close")').click();
+await page.waitForTimeout(200);
+
 // Read a book cover-to-cover, clicking through every page.
 async function readFirstBook(tag) {
   await page.locator('.hud-left button:has-text("📚")').click();

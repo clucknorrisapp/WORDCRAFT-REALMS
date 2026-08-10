@@ -130,6 +130,9 @@ export interface Book {
   cover: string; // emoji shown on the shelf + cover page
   reward: BookReward; // paid once, the first time the book is finished
   pages: string[]; // one decodable string per page (4-7 pages)
+  gate?: SkillId; // highest phonics tier the book needs; the Library keeps the
+  // book off the shelf until that skill is taught (iron rule). Absent = the
+  // initial band, so the book is available from the very first session.
 }
 
 // ── Spells ──────────────────────────────────────────────────────────────────

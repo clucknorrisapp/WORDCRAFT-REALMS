@@ -106,13 +106,24 @@ describe('challenge builder', () => {
 });
 
 describe('decodable books (the Library)', () => {
-  it('every book is fully decodable at the first curriculum band (iron rule)', () => {
-    // This is the gate: a child opens any Library book with only the initial
-    // skills taught, so every title and page must contain only decodable words.
+  it('every book is fully decodable at its gate tier (iron rule)', () => {
+    // A book without a gate opens at the initial band; a gated book opens once
+    // its tier is taught. Either way every title and page must be decodable at
+    // the point the Library is allowed to show it.
     for (const b of allBooks()) {
-      const report = validateBook(b, taught);
+      const taughtAt = b.gate ? curriculum.order.slice(0, curriculum.order.indexOf(b.gate) + 1) : taught;
+      const report = validateBook(b, taughtAt);
       const bad = report.pages.flatMap((p) => p.violations.map((v) => v.token));
-      expect(report.ok, `book "${b.id}" has undecodable words: ${bad.join(', ')}`).toBe(true);
+      expect(report.ok, `book "${b.id}" (gate ${b.gate ?? 'initial'}) undecodable: ${bad.join(', ')}`).toBe(true);
+    }
+  });
+
+  it('gated books need their tier: decodable at the gate, blocked at the initial band', () => {
+    for (const b of allBooks().filter((x) => x.gate)) {
+      expect(curriculum.order.includes(b.gate!), `book "${b.id}" gate "${b.gate}" not in curriculum`).toBe(true);
+      // The whole point of gating: the book is NOT fully decodable at the start,
+      // so the Library rightly keeps it off the shelf until the tier unlocks.
+      expect(validateBook(b, taught).ok, `gated book "${b.id}" should be blocked at initial`).toBe(false);
     }
   });
 
