@@ -34,5 +34,8 @@
 
   { "id": "cave", "word": "cave", "icon": "🕳️" },
   { "id": "gate", "word": "gate", "icon": "🚪" },
-  { "id": "cake", "word": "cake", "icon": "🎂" }
+  { "id": "cake", "word": "cake", "icon": "🎂" },
+
+  { "id": "boat", "word": "boat", "icon": "🛶" },
+  { "id": "hay",  "word": "hay",  "icon": "🌾" }
 ]

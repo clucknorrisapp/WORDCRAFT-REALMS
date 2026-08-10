@@ -15,7 +15,8 @@
     "blend_r",
     "blend_s",
     "blend_end",
-    "magic_e"
+    "magic_e",
+    "vowel_team"
   ],
   "initialTaught": [
     "base",

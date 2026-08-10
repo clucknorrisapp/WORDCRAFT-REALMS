@@ -283,3 +283,31 @@ describe('magic-e (long-vowel) tier', () => {
     }
   });
 });
+
+describe('vowel-team tier (ai/ay/ee/oa)', () => {
+  const vtWords = ['rain', 'wait', 'play', 'day', 'tree', 'green', 'feet', 'boat', 'goat', 'road', 'sheep', 'toast'];
+
+  it('vowel_team is the last (hardest) tier in curriculum order', () => {
+    const idx = (s: string) => curriculum.order.indexOf(s);
+    expect(idx('vowel_team')).toBeGreaterThan(idx('magic_e'));
+  });
+
+  it('vowel-team words exercise the vowel_team skill and recompose (linear grapheme, no override)', () => {
+    for (const t of vtWords) {
+      const w = word(t);
+      expect(w.skills, `${t} skills`).toContain('vowel_team');
+      expect(w.skills.some((s) => s.startsWith('short_')), `${t} must not teach a short vowel`).toBe(false);
+      expect(w.graphemes.join(''), `${t} graphemes`).toBe(t);
+    }
+  });
+
+  it('vowel-team words are blocked at the initial band and decode once vowel_team is taught', () => {
+    // Uses the full curriculum as "taught" so lower-tier blends (green/sheep)
+    // are available — vowel_team is the last thing standing between them and readable.
+    const upToBlends = curriculum.order.slice(0, curriculum.order.indexOf('vowel_team'));
+    for (const t of vtWords) {
+      expect(validateText(t, taught).ok, `${t} must be blocked before vowel_team`).toBe(false);
+      expect(validateText(t, [...upToBlends, 'vowel_team']).ok, `${t} must decode once vowel_team is taught`).toBe(true);
+    }
+  });
+});

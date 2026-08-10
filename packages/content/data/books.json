@@ -223,5 +223,19 @@
       "The pig ate the cake!",
       "The pig is so glad."
     ]
+  },
+  {
+    "id": "green-boat",
+    "title": "The Green Boat",
+    "cover": "🛶",
+    "reward": "gem",
+    "gate": "vowel_team",
+    "pages": [
+      "I see a green boat.",
+      "The boat is in the rain.",
+      "A goat is in the boat.",
+      "The goat can see the hay.",
+      "The goat can stay in the boat."
+    ]
   }
 ]

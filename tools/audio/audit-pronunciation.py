@@ -50,6 +50,12 @@ LONG_VOWEL = {
     "u": {"UW"},
 }
 
+# Vowel teams — two vowels, one long sound. Each team grapheme should produce
+# its long vowel and a single vowel phoneme (only the unambiguous teams ship).
+VOWEL_TEAM = {
+    "ai": {"EY"}, "ay": {"EY"}, "ee": {"IY"}, "oa": {"OW"},
+}
+
 # Dragon names / made-up tokens that are legitimately not dictionary words.
 KNOWN_NAMES = {"rex", "ash", "chip", "dash", "chomp", "zap", "yak", "yum"}
 
@@ -121,6 +127,21 @@ def audit():
                 flags.append((
                     w,
                     f"magic-e mismatch: teaches long {long_letter!r} ({'|'.join(sorted(want))}) "
+                    f"but dictionary has {[' '.join(p) for p in prons]}",
+                ))
+            continue
+
+        team = next((g for g in graphemes if g in VOWEL_TEAM), None)
+        if team is not None:
+            # Vowel team: one long vowel phoneme for the whole team.
+            want = VOWEL_TEAM[team]
+            got_ok = any(len(vowels_of(p)) == 1 and vowels_of(p)[0] in want for p in prons)
+            if got_ok:
+                verified.append(w)
+            else:
+                flags.append((
+                    w,
+                    f"vowel-team mismatch: {team!r} teaches ({'|'.join(sorted(want))}) "
                     f"but dictionary has {[' '.join(p) for p in prons]}",
                 ))
             continue

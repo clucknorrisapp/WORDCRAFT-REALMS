@@ -267,6 +267,20 @@ const PAINTERS: Record<string, (c: Ctx) => void> = {
     rect(c, 6, 9, 4, 1, '#c0392b'); // smile
     px(c, 5, 8, '#c0392b'); px(c, 10, 8, '#c0392b');
   },
+  boat: (c) => {
+    noise(c, WATER, 61);
+    rect(c, 3, 9, 10, 3, '#8a5a2c'); // hull
+    rect(c, 2, 10, 12, 2, '#6e4520');
+    rect(c, 4, 8, 8, 1, '#a5793f');
+    rect(c, 8, 3, 1, 6, '#6e4520'); // mast
+    rect(c, 4, 4, 4, 4, '#f3ead6'); // sail
+  },
+  hay: (c) => {
+    fill(c, '#e0b83e');
+    for (let y = 1; y < G; y += 3) rect(c, 0, y, G, 1, '#c99a2e'); // twine bands
+    rect(c, 0, 0, 1, G, '#caa23a'); rect(c, 15, 0, 1, G, '#a8801f');
+    for (let i = 0; i < 12; i++) px(c, Math.floor(hash(i, 1, 62) * G), Math.floor(hash(i, 2, 62) * G), '#f4d968'); // strands
+  },
   lamp: (c) => {
     fill(c, '#2a2f3a'); // dim room, so the shade reads as glowing
     rect(c, 6, 2, 4, 1, '#6e4a24'); // finial
