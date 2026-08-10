@@ -151,12 +151,21 @@ describe('spells (power words)', () => {
 });
 
 describe('build blocks', () => {
-  it('every block unlock word is a single decodable corpus word', () => {
+  it('every block unlock word is a single decodable corpus word at some taught tier', () => {
     for (const b of allBlocks()) {
-      const report = validateText(b.word, taught);
+      // Decodable once the whole curriculum is taught — a real word whose sounds
+      // all live somewhere in the sequence. A higher-tier block is simply hidden
+      // until its tier unlocks (the Build palette enforces that at runtime).
+      const report = validateText(b.word, curriculum.order);
       expect(report.ok, `block "${b.id}" word not decodable: ${JSON.stringify(report.violations)}`).toBe(true);
       expect(b.word.trim().split(/\s+/).length, `block "${b.id}" must unlock with one word`).toBe(1);
       expect(b.icon.length, `block "${b.id}" needs an icon`).toBeGreaterThan(0);
+    }
+  });
+
+  it('starter blocks are decodable from the very first lesson', () => {
+    for (const b of allBlocks().filter((x) => x.starter)) {
+      expect(validateText(b.word, taught).ok, `starter block "${b.id}" must decode at start`).toBe(true);
     }
   });
 
@@ -164,6 +173,17 @@ describe('build blocks', () => {
     const ids = allBlocks().map((b) => b.id);
     expect(new Set(ids).size).toBe(ids.length);
     expect(allBlocks().some((b) => b.starter)).toBe(true);
+  });
+
+  it('craft recipes stay decodable once their gating sounds are taught', () => {
+    // A craft recipe need only be readable at the tier that surfaces it — the
+    // Build palette hides a recipe until validateText(recipe, taught) passes.
+    for (const b of allBlocks().filter((x) => x.recipe)) {
+      // Every recipe word is a real corpus word (so a tier exists that unlocks it).
+      for (const tok of b.recipe!.toLowerCase().split(/\s+/)) {
+        expect(() => word(tok), `recipe word "${tok}"`).not.toThrow();
+      }
+    }
   });
 
   it('craft recipes are decodable phrases whose ingredients exist', () => {
@@ -178,6 +198,49 @@ describe('build blocks', () => {
       for (const ing of b.from ?? []) {
         expect(ids.has(ing), `craft block "${b.id}" ingredient "${ing}" is not a block`).toBe(true);
       }
+    }
+  });
+});
+
+describe('curriculum progression (blend tiers)', () => {
+  const blendTiers: Array<{ skill: string; words: string[]; example: string }> = [
+    { skill: 'blend_st', words: ['nest', 'best', 'fast', 'list'], example: 'nest' },
+    { skill: 'blend_l', words: ['flag', 'clip', 'glad', 'plot', 'slip'], example: 'flag' },
+    { skill: 'blend_r', words: ['frog', 'crab', 'drum', 'grin', 'trap'], example: 'frog' },
+    { skill: 'blend_s', words: ['skip', 'spin', 'desk', 'mask', 'twin'], example: 'skip' },
+    { skill: 'blend_end', words: ['lamp', 'tent', 'pond', 'jump', 'milk'], example: 'lamp' },
+  ];
+
+  it('each blend tier sits in curriculum order, after the initial set, monotonically', () => {
+    const idx = (s: string) => curriculum.order.indexOf(s);
+    for (const t of blendTiers) expect(idx(t.skill), `${t.skill} missing from order`).toBeGreaterThan(-1);
+    // Every blend tier comes after the whole initial (scripted) curriculum.
+    const lastInitial = Math.max(...curriculum.initialTaught.map(idx));
+    for (const t of blendTiers) expect(idx(t.skill), `${t.skill} before initial set`).toBeGreaterThan(lastInitial);
+    // Unlock order: st < l < r < s < end (each tier follows the previous one).
+    expect(idx('blend_st')).toBeLessThan(idx('blend_l'));
+    expect(idx('blend_l')).toBeLessThan(idx('blend_r'));
+    expect(idx('blend_r')).toBeLessThan(idx('blend_s'));
+    expect(idx('blend_s')).toBeLessThan(idx('blend_end'));
+  });
+
+  it('blend words are blocked at the initial set but decode once their tier is taught', () => {
+    // This is the whole point of progression: the harder words are simply not
+    // shown yet (iron rule), then become readable the moment the tier unlocks.
+    for (const t of blendTiers) {
+      for (const w of t.words) {
+        expect(validateText(w, taught).ok, `${w} must be blocked before ${t.skill}`).toBe(false);
+        expect(validateText(w, [...taught, t.skill]).ok, `${w} must decode once ${t.skill} is taught`).toBe(true);
+      }
+    }
+  });
+
+  it('every "New Sounds" example word exercises the tier it celebrates', () => {
+    // Mirrors SKILL_INTRO in apps/game/src/ui/progression.ts — the example word
+    // shown when a tier unlocks must actually require that tier's skill.
+    for (const t of blendTiers) {
+      expect(word(t.example).skills.includes(t.skill), `${t.example} should exercise ${t.skill}`).toBe(true);
+      expect(validateText(t.example, [...taught, t.skill]).ok, `${t.example} decodable at its tier`).toBe(true);
     }
   });
 });

@@ -14,7 +14,7 @@ The first playable build of the SLICE ("The Magic Door") exists and runs in a br
 - 4 Reading Moments: narrated dialogue with word-by-word highlighting, sign reading, word match, magic-word door with the pronunciation hint ladder
 - Warm failure everywhere ("Almost! Listen…"), **two-miss-and-the-door-opens-anyway**, and a no-mic ritual fallback — the mic can never block
 - Evidence + mastery live (production weighted 2×), parent/facilitator screen with gate metrics and JSON export
-- ~205-word decodable corpus enforced by a build-time validator (the iron rule)
+- ~250-word decodable corpus enforced by a build-time validator (the iron rule)
 
 **Beyond the slice — the reading loop that keeps growing:**
 
@@ -22,6 +22,8 @@ The first playable build of the SLICE ("The Magic Door") exists and runs in a br
 - 📚 **Library** — a shelf of **10 decodable readers** (multi-agent authored, every page gated through the real validator). Page-turn reader, tap-any-word audio, "Read to me" with word highlighting; finishing a book pays a reward once. Reading a page logs `sentence_read` — the strongest reading signal the game collects.
 - ✨ **Spellbook** — **10 decodable "power words"** the child casts by *reading* them (voice-first, but a miss never blocks). Each cast fires a themed effect + the dragon's celebration. Spells unlock through reading: a starter + one per book, so the Library and Spellbook are one loop (read a book → learn a spell).
 - ♿ **Accessibility** — easy-read (dyslexia-friendly spacing) font, high-contrast palette, and calm-motion mode (auto-on when the OS requests reduced motion), all in the grown-up screen.
+- 🔨 **Build Mode (it becomes Minecraft as you go)** — a grid you paint with **procedural pixel-art blocks** (no art assets; the same crisp tile is a CSS background and a Phaser texture). New blocks aren't bought — they're **unlocked by reading** the block's word, so the toolbox literally grows out of reading. Builds persist and appear in the actual world; building levels up a **Builder rank**. 🛠 **Crafting** combines two owned blocks by reading a short decodable **recipe phrase** ("hot rock", "red rock") — the step from reading single words up to connected text, logged as `sentence_read`.
+- 📈 **Curriculum progression (it gets more advanced as you go)** — the invisible engine watches free-play mastery and, once the current frontier of sounds is solid, **unlocks the next phonics tier** (ST → L-blends → R-blends → S-blends → end-blends). A **"New Sounds Unlocked!"** moment names the new sound and an example word the child can now read — and new decodable words, blocks and recipes surface in the world. Reading better literally levels up what you can read and build next.
 
 ## Quickstart
 
@@ -37,12 +39,15 @@ Smoke tests (need Chromium; used in this repo's verification):
 
 ```bash
 pnpm build && pnpm preview &
-pnpm smoke                          # the full browser suite (9 flows), or run one:
-node tools/smoke/verify.mjs         # select → naming → world → sign read
-node tools/smoke/verify-door.mjs    # the magic door: stubbed "ship" → evidence
-node tools/smoke/verify-library.mjs # read a book → reward paid once → sentence_read
-node tools/smoke/verify-spells.mjs  # reading unlocks spells → cast logs production evidence
-node tools/smoke/verify-a11y.mjs    # a11y modes apply on boot; calm mode kills confetti
+pnpm smoke                              # the full browser suite (13 flows), or run one:
+node tools/smoke/verify.mjs             # select → naming → world → sign read
+node tools/smoke/verify-door.mjs        # the magic door: stubbed "ship" → evidence
+node tools/smoke/verify-library.mjs     # read a book → reward paid once → sentence_read
+node tools/smoke/verify-spells.mjs      # reading unlocks spells → cast logs production evidence
+node tools/smoke/verify-a11y.mjs        # a11y modes apply on boot; calm mode kills confetti
+node tools/smoke/verify-build.mjs       # paint blocks; read a word to unlock a new block
+node tools/smoke/verify-craft.mjs       # two blocks + read a recipe phrase → a new block
+node tools/smoke/verify-progression.mjs # master a sound → next tier unlocks → new blocks appear
 ```
 
 ## Deploy (Railway)

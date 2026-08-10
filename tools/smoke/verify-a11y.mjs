@@ -83,7 +83,11 @@ await page.waitForSelector('.panel.parent', { timeout: 6000 });
 const hasA11ySection = await page.locator('.panel.parent h2:has-text("Accessibility")').count();
 if (!hasA11ySection) errors.push('parent screen missing Accessibility section');
 await page.locator('.panel.parent button:has-text("Calm motion")').click();
-await page.waitForTimeout(200);
+// persistSave debounces (~250ms) — poll for the persisted value instead of
+// racing a fixed wait (same debounce-aware pattern as verify-build).
+await page
+  .waitForFunction(() => JSON.parse(localStorage.getItem('readquest_save_v1')).settings.reducedMotion === false, undefined, { timeout: 6000 })
+  .catch(() => {});
 const after = await page.evaluate(() => ({
   cls: [...document.documentElement.classList].filter((c) => c.startsWith('a11y')),
   saved: JSON.parse(localStorage.getItem('readquest_save_v1')).settings.reducedMotion,

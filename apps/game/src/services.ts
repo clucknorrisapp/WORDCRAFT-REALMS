@@ -8,6 +8,7 @@ import {
   newEventId,
   type ChallengeType,
   type Evidence,
+  type SkillId,
   type SpeakHandle,
   type SpeechService,
   type VoiceService,
@@ -15,6 +16,7 @@ import {
 import { createSpeechService } from '@readquest/speech';
 import { createVoiceService, type VoiceManifest } from '@readquest/voice';
 import { persistSave } from './save';
+import { QuestStep } from './types';
 import type { SaveData } from './types';
 
 export interface Services {
@@ -31,6 +33,9 @@ export interface Services {
   speakWord(text: string, rate?: number): { handle: SpeakHandle; done: Promise<void> };
   recordEvidence(partial: EvidencePartial): Evidence;
   readingInteractions(): number;
+  /** Register the handler fired when free-play mastery unlocks a new phonics
+   *  tier (curriculum progression). The host shows the "New Sounds!" moment. */
+  setAdvanceHandler(cb: (skill: SkillId) => void): void;
 }
 
 export interface EvidencePartial {
@@ -67,6 +72,23 @@ export async function createServices(save: SaveData): Promise<Services> {
   // Mastery state is a projection of the evidence log — replay it (architecture §7).
   const engine = LearningEngine.replay(save.taught, save.evidence);
   engine.setCurriculum(curriculum.order); // enables adaptive 70/20/10 selection
+
+  // Curriculum progression: once free play begins, mastering the current
+  // frontier of sounds unlocks the next tier (blends → …), which in turn opens
+  // new decodable words, blocks and books. The world literally grows out of
+  // reading better. Checked after every reading interaction; teaches at most
+  // one new tier at a time, and only in free play (the scripted quest owns the
+  // early curriculum, including the ST blend at the chest).
+  let advanceCb: ((skill: SkillId) => void) | null = null;
+  const maybeAdvanceCurriculum = () => {
+    if (save.questStep !== QuestStep.FREE_PLAY) return;
+    const skill = engine.nextSkillToUnlock();
+    if (!skill || save.taught.includes(skill)) return;
+    save.taught.push(skill);
+    engine.markTaught(skill);
+    analytics.log('curriculum_advanced', { skill, taughtCount: save.taught.length });
+    advanceCb?.(skill);
+  };
 
   const services: Services = {
     save,
@@ -125,11 +147,15 @@ export async function createServices(save: SaveData): Promise<Services> {
       };
       engine.record(e);
       save.evidence.push(e);
+      maybeAdvanceCurriculum(); // reading mastery may unlock the next phonics tier
       persistSave(save);
       return e;
     },
     readingInteractions() {
       return save.evidence.filter((e) => COUNTABLE_TYPES.includes(e.challengeType)).length;
+    },
+    setAdvanceHandler(cb) {
+      advanceCb = cb;
     },
   };
   return services;

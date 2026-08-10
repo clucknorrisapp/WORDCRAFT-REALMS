@@ -10,7 +10,11 @@
     "digraph_sh",
     "digraph_ch",
     "digraph_th",
-    "blend_st"
+    "blend_st",
+    "blend_l",
+    "blend_r",
+    "blend_s",
+    "blend_end"
   ],
   "initialTaught": [
     "base",

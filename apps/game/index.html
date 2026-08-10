@@ -284,6 +284,12 @@
     .craft-word:active { transform: scale(0.94); }
     .craft-result { font-size: 34px; margin: 2px 0 10px; }
 
+    /* "New Sounds Unlocked!" — the reading-levels-up celebration. */
+    .panel.newsound { background: linear-gradient(160deg, #fffdf6, #fff2d8); border: 3px solid var(--accent, #ff9f43); }
+    .newsound-badge { font-size: 56px; line-height: 1; margin: 6px 0 2px; filter: drop-shadow(0 3px 6px rgba(0,0,0,0.18)); animation: newsound-pop 0.5s cubic-bezier(0.2,0.9,0.3,1.3); }
+    .newsound-name { font-size: 26px; font-weight: 900; letter-spacing: 1px; color: var(--accent2, #6c5ce7); margin-bottom: 2px; }
+    @keyframes newsound-pop { from { transform: scale(0.3); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+
     /* ── Accessibility: dyslexia-friendly typography ──
        Evidence points to generous spacing helping more than any single font,
        so calm the letter/word/line spacing across all reading surfaces. */

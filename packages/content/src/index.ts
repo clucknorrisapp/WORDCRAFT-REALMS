@@ -31,6 +31,15 @@ const GRAPHEME_SKILLS: Record<string, SkillId> = {
   ch: 'digraph_ch',
   th: 'digraph_th',
   st: 'blend_st',
+  // Consonant blends — each cluster is one grapheme requiring a blend skill
+  // (blending adjacent consonants is a taught step, not free once you know the
+  // letters). Grouped into the families of a standard scope & sequence.
+  bl: 'blend_l', cl: 'blend_l', fl: 'blend_l', gl: 'blend_l', pl: 'blend_l', sl: 'blend_l',
+  br: 'blend_r', cr: 'blend_r', dr: 'blend_r', fr: 'blend_r', gr: 'blend_r', pr: 'blend_r', tr: 'blend_r',
+  sk: 'blend_s', sp: 'blend_s', sn: 'blend_s', sm: 'blend_s', sw: 'blend_s', sc: 'blend_s', tw: 'blend_s',
+  // Final blends: nasal/liquid + stop clusters that close a word.
+  nd: 'blend_end', nt: 'blend_end', mp: 'blend_end', nk: 'blend_end',
+  ft: 'blend_end', lt: 'blend_end', lk: 'blend_end', lf: 'blend_end', ld: 'blend_end', lp: 'blend_end', ct: 'blend_end',
 };
 
 const BASE_GRAPHEMES = new Set([

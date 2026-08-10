@@ -37,6 +37,9 @@ const MAX_REVIEW_MS = 32 * 24 * 60 * 60 * 1000; // 32 days
 const MASTERED_SCORE = 81;
 const REVIEW_CONFIDENCE = 0.5;
 
+/** Mastery bands from weakest to strongest — used to compare band thresholds. */
+const BAND_ORDER: MasteryBand[] = ['new', 'learning', 'developing', 'proficient', 'mastered'];
+
 export function band(score: number): MasteryBand {
   if (score <= 20) return 'new';
   if (score <= 40) return 'learning';
@@ -161,6 +164,33 @@ export class LearningEngine {
 
     const targetSkill = pool[Math.floor(rand() * pool.length)] ?? 'short_a';
     return { targetSkill, bucket, taughtSkills: this.taughtSkills(), weaveReviews: due };
+  }
+
+  /**
+   * Curriculum progression (roadmap §5.2: "taught" is a curriculum event, not a
+   * score). Returns the next untaught skill in curriculum order the child is
+   * READY to learn — but only once the current frontier (the hardest skill they
+   * are already working on) is solid enough that adding a new sound won't
+   * swamp them. Returns null when nothing new is ready, or the curriculum is
+   * exhausted. Pure query: the host decides when to act (teach + celebrate).
+   *
+   * We gate on the FRONTIER (the taught skill sitting latest in the sequence),
+   * not the whole taught set — the early short vowels master almost instantly
+   * and would otherwise wave every later tier through at once.
+   */
+  nextSkillToUnlock(opts: { minBand?: MasteryBand; minAttempts?: number } = {}): SkillId | null {
+    const nextNew = this.curriculumOrder.find((s) => !this.taught.has(s));
+    if (!nextNew) return null; // curriculum exhausted
+    const rank = new Map(this.curriculumOrder.map((s, i) => [s, i] as const));
+    const contentTaught = [...this.taught].filter((s) => s !== 'base' && s !== 'heart');
+    if (contentTaught.length === 0) return nextNew; // nothing gating → allow
+    const frontier = contentTaught.reduce((a, b) => ((rank.get(b) ?? -1) > (rank.get(a) ?? -1) ? b : a));
+    const m = this.mastery(frontier);
+    const minAttempts = opts.minAttempts ?? 4;
+    const minBand = opts.minBand ?? 'developing';
+    if (m.attempts < minAttempts) return null;
+    if (BAND_ORDER.indexOf(m.band) < BAND_ORDER.indexOf(minBand)) return null;
+    return nextNew;
   }
 
   mastery(skillId: SkillId): MasteryState {

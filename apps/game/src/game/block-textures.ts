@@ -232,6 +232,51 @@ const PAINTERS: Record<string, (c: Ctx) => void> = {
     px(c, 12, 10, '#c0392b');
     px(c, 11, 11, '#c0392b');
   },
+  // ── Blend-tier blocks — appear in the toolbox as reading unlocks their sounds.
+  nest: (c) => {
+    fill(c, SKY);
+    rect(c, 2, 9, 12, 5, '#6e4a24'); // twig bowl
+    rect(c, 1, 10, 14, 2, '#5b3d1e');
+    rect(c, 3, 8, 10, 1, '#875c37');
+    for (let i = 0; i < 12; i++) px(c, 2 + Math.floor(hash(i, 1, 31) * 12), 9 + Math.floor(hash(i, 2, 31) * 4), '#875c37');
+    for (const ex of [5, 8, 11]) { rect(c, ex - 1, 7, 2, 2, '#f3ead6'); px(c, ex - 1, 7, '#fff8ea'); } // eggs
+  },
+  flag: (c) => {
+    fill(c, SKY);
+    rect(c, 0, 13, G, 3, '#5fae3a'); // grass
+    rect(c, 4, 2, 1, 12, '#6e4a24'); // pole
+    rect(c, 5, 3, 8, 5, '#c0392b'); // cloth
+    rect(c, 5, 3, 8, 1, '#e0503f');
+    rect(c, 5, 7, 8, 1, '#9e2a20');
+  },
+  frog: (c) => {
+    fill(c, SKY);
+    rect(c, 3, 6, 10, 7, '#3f9a3a'); // body
+    rect(c, 3, 4, 3, 3, '#46a046'); // eye mounds
+    rect(c, 10, 4, 3, 3, '#46a046');
+    px(c, 4, 5, '#1a1a1a'); px(c, 11, 5, '#1a1a1a'); // eyes
+    rect(c, 6, 10, 4, 1, '#215c20'); // mouth
+    rect(c, 2, 12, 2, 2, '#3f9a3a'); rect(c, 12, 12, 2, 2, '#3f9a3a'); // feet
+  },
+  mask: (c) => {
+    fill(c, SKY);
+    rect(c, 4, 3, 8, 9, '#f2c531'); // face
+    rect(c, 4, 3, 8, 1, '#d9ad22');
+    rect(c, 3, 6, 1, 3, '#d9ad22'); rect(c, 12, 6, 1, 3, '#d9ad22'); // ties
+    px(c, 6, 6, '#1a1a1a'); px(c, 9, 6, '#1a1a1a'); // eyes
+    rect(c, 6, 9, 4, 1, '#c0392b'); // smile
+    px(c, 5, 8, '#c0392b'); px(c, 10, 8, '#c0392b');
+  },
+  lamp: (c) => {
+    fill(c, '#2a2f3a'); // dim room, so the shade reads as glowing
+    rect(c, 6, 2, 4, 1, '#6e4a24'); // finial
+    rect(c, 5, 3, 6, 6, '#f4d968'); // shade
+    rect(c, 5, 3, 6, 1, '#fff3b0');
+    rect(c, 4, 8, 8, 1, '#e0b83e');
+    rect(c, 7, 9, 2, 4, '#6e4a24'); // stem
+    rect(c, 5, 13, 6, 1, '#5b3d1e'); // base
+    for (let i = 0; i < 6; i++) px(c, 3 + Math.floor(hash(i, 1, 41) * 10), 3 + Math.floor(hash(i, 2, 41) * 6), '#fff3b0');
+  },
 };
 
 const cache = new Map<string, HTMLCanvasElement>();

@@ -24,5 +24,11 @@
   { "id": "magma", "word": "hot",  "icon": "🌋", "recipe": "hot rock", "from": ["rock", "sun"] },
   { "id": "brick", "word": "red",  "icon": "🧱", "recipe": "red rock", "from": ["rock", "mud"] },
   { "id": "tree",  "word": "big",  "icon": "🌲", "recipe": "big bush", "from": ["bush", "log"] },
-  { "id": "glass", "word": "sand", "icon": "🪟", "recipe": "hot sand", "from": ["sand", "sun"] }
+  { "id": "glass", "word": "sand", "icon": "🪟", "recipe": "hot sand", "from": ["sand", "sun"] },
+
+  { "id": "nest", "word": "nest", "icon": "🪺" },
+  { "id": "flag", "word": "flag", "icon": "🚩" },
+  { "id": "frog", "word": "frog", "icon": "🐸" },
+  { "id": "mask", "word": "mask", "icon": "🎭" },
+  { "id": "lamp", "word": "lamp", "icon": "💡" }
 ]

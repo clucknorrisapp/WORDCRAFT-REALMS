@@ -161,3 +161,55 @@ describe('adaptive selection', () => {
     expect(a).toEqual(b);
   });
 });
+
+describe('curriculum progression (nextSkillToUnlock)', () => {
+  const ORDER = ['base', 'short_a', 'heart', 'digraph_sh', 'blend_st', 'blend_l', 'blend_r'];
+  function drive(e: LearningEngine, skill: string, n: number, correct = true) {
+    for (let i = 0; i < n; i++) e.record(ev({ skillIds: [skill], channel: 'production', correct }));
+  }
+
+  it('does not unlock the next tier until the frontier has been practiced enough', () => {
+    const e = new LearningEngine(['base', 'short_a', 'heart', 'digraph_sh', 'blend_st']);
+    e.setCurriculum(ORDER);
+    expect(e.nextSkillToUnlock()).toBeNull(); // frontier blend_st unpracticed
+    drive(e, 'blend_st', 2); // a couple of reps < the minAttempts gate
+    expect(e.nextSkillToUnlock()).toBeNull();
+  });
+
+  it('unlocks the next untaught skill once the frontier is solid', () => {
+    const e = new LearningEngine(['base', 'short_a', 'heart', 'digraph_sh', 'blend_st']);
+    e.setCurriculum(ORDER);
+    drive(e, 'blend_st', 6);
+    expect(e.mastery('blend_st').attempts).toBeGreaterThanOrEqual(4);
+    expect(['developing', 'proficient', 'mastered']).toContain(e.mastery('blend_st').band);
+    expect(e.nextSkillToUnlock()).toBe('blend_l');
+  });
+
+  it('gates on the FRONTIER, not the easy early skills that master instantly', () => {
+    const e = new LearningEngine(['base', 'short_a', 'heart', 'digraph_sh']);
+    e.setCurriculum(ORDER);
+    drive(e, 'short_a', 30); // mastered — but it is not the frontier
+    expect(e.mastery('short_a').band).toBe('mastered');
+    expect(e.nextSkillToUnlock()).toBeNull(); // digraph_sh (frontier) barely practiced
+    drive(e, 'digraph_sh', 6);
+    expect(e.nextSkillToUnlock()).toBe('blend_st');
+  });
+
+  it('advances one tier at a time (a freshly taught frontier re-gates the next)', () => {
+    const e = new LearningEngine(['base', 'short_a', 'heart', 'digraph_sh', 'blend_st']);
+    e.setCurriculum(ORDER);
+    drive(e, 'blend_st', 6);
+    const next = e.nextSkillToUnlock();
+    expect(next).toBe('blend_l');
+    e.markTaught(next!); // the host teaches it
+    expect(e.nextSkillToUnlock()).toBeNull(); // new frontier blend_l unpracticed
+    drive(e, 'blend_l', 6);
+    expect(e.nextSkillToUnlock()).toBe('blend_r');
+  });
+
+  it('returns null when the curriculum is exhausted', () => {
+    const e = new LearningEngine(ORDER);
+    e.setCurriculum(ORDER);
+    expect(e.nextSkillToUnlock()).toBeNull();
+  });
+});

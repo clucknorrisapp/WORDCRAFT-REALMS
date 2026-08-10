@@ -2,7 +2,7 @@
 // The child paints blocks onto a grid to build their own little world. New
 // blocks aren't bought — they're UNLOCKED BY READING the block's word, so the
 // toolbox literally grows out of reading. Builds persist across sessions.
-import { allBlocks, word as getWord } from '@readquest/content';
+import { allBlocks, validateText, word as getWord } from '@readquest/content';
 import type { BuildBlock } from '@readquest/shared';
 import type { Services } from '../services';
 import { bottomLeftCluster, confetti, el, floatNote, openLayer, speakerButton, wait } from './dom';
@@ -202,10 +202,14 @@ export async function openBuild(services: Services): Promise<void> {
     paletteButtons.set(ERASER, eraser);
 
     // Plain blocks: unlocked → paintable tool; locked → read one word to earn.
+    // A locked block only appears once its word is decodable at the child's
+    // current taught set — so the toolbox visibly GROWS as reading advances
+    // (a blend-word block surfaces the moment its blend is unlocked), and the
+    // iron rule holds: we never show a 🔒 word the child can't yet sound out.
     for (const b of allBlocks()) {
       if (b.recipe) continue; // craft blocks handled in their own section below
       if (isUnlocked(services, b)) addTool(b);
-      else addLockedWord(b);
+      else if (validateText(b.word, services.save.taught).ok) addLockedWord(b);
     }
 
     // ── Craft blocks ── forged by reading a recipe PHRASE, but only once BOTH
@@ -218,6 +222,9 @@ export async function openBuild(services: Services): Promise<void> {
       palette.appendChild(div);
 
       for (const b of craftList) {
+        // Hide a not-yet-crafted recipe until its phrase is decodable — a
+        // higher-tier recipe only appears once its sounds are unlocked.
+        if (!isUnlocked(services, b) && !validateText(b.recipe!, services.save.taught).ok) continue;
         if (isUnlocked(services, b)) {
           addTool(b); // already crafted — it's just a block now
         } else if (ingredientsReady(services, b)) {
