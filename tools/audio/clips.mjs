@@ -57,6 +57,13 @@ function vowelTeamWords() {
   return words.filter((w) => !w.heart && (w.g ?? []).some((g) => teams.includes(g))).map((w) => w.text);
 }
 
+/** Every r-controlled word (ar/or/er/ir/ur), premium + audited. */
+function rControlledWords() {
+  const words = JSON.parse(fs.readFileSync('packages/content/data/words.json', 'utf8'));
+  const teams = ['ar', 'or', 'er', 'ir', 'ur'];
+  return words.filter((w) => !w.heart && (w.g ?? []).some((g) => teams.includes(g))).map((w) => w.text);
+}
+
 /** One narrator clip per craft recipe phrase (id: craft_<blockId>), so reading
  *  a recipe to forge a block is premium audio. The individual recipe words are
  *  already covered by the block/word clips above (for tap-a-word playback). */
@@ -99,7 +106,7 @@ export function wantedClips() {
   }
   // Word-card audio: priority words + book words + spell words + block words +
   // the full magic-e tier.
-  const allWords = [...new Set([...PRIORITY_WORDS, ...bookWords(), ...spellWords(), ...blockWords(), ...magicEWords(), ...vowelTeamWords()])];
+  const allWords = [...new Set([...PRIORITY_WORDS, ...bookWords(), ...spellWords(), ...blockWords(), ...magicEWords(), ...vowelTeamWords(), ...rControlledWords()])];
   for (const w of allWords) {
     // Common words are spoken LOWERCASE: a capitalized isolated token makes
     // ElevenLabs treat it as a name/foreign word (capitalized "Hut." was read

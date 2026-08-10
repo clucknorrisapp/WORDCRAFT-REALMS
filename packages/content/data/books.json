@@ -237,5 +237,19 @@
       "The goat can see the hay.",
       "The goat can stay in the boat."
     ]
+  },
+  {
+    "id": "big-farm",
+    "title": "The Big Farm",
+    "cover": "🚜",
+    "reward": "gem",
+    "gate": "r_controlled",
+    "pages": [
+      "I see a big red barn.",
+      "A car is in the yard.",
+      "Corn is in the farm.",
+      "A bird is on the barn.",
+      "The bird can see a star."
+    ]
   }
 ]

@@ -37,5 +37,8 @@
   { "id": "cake", "word": "cake", "icon": "🎂" },
 
   { "id": "boat", "word": "boat", "icon": "🛶" },
-  { "id": "hay",  "word": "hay",  "icon": "🌾" }
+  { "id": "hay",  "word": "hay",  "icon": "🌾" },
+
+  { "id": "corn", "word": "corn", "icon": "🌽" },
+  { "id": "star", "word": "star", "icon": "⭐" }
 ]

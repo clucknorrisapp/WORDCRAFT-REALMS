@@ -313,6 +313,33 @@ describe('vowel-team tier (ai/ay/ee/oa)', () => {
   });
 });
 
+describe('r-controlled "Bossy R" tier (ar/or/er/ir/ur)', () => {
+  const rcWords = ['car', 'star', 'park', 'barn', 'fork', 'corn', 'short', 'her', 'bird', 'girl', 'third', 'fur', 'turn', 'surf'];
+
+  it('r_controlled is the final tier, capping the phonics ladder', () => {
+    const idx = (s: string) => curriculum.order.indexOf(s);
+    expect(idx('r_controlled')).toBeGreaterThan(idx('vowel_team'));
+    expect(idx('r_controlled')).toBe(curriculum.order.length - 1);
+  });
+
+  it('r-controlled words exercise r_controlled (not a short vowel) and recompose', () => {
+    for (const t of rcWords) {
+      const w = word(t);
+      expect(w.skills, `${t} skills`).toContain('r_controlled');
+      expect(w.skills.some((s) => s.startsWith('short_')), `${t} must not teach a short vowel`).toBe(false);
+      expect(w.graphemes.join(''), `${t} graphemes`).toBe(t);
+    }
+  });
+
+  it('r-controlled words are blocked at the initial band and decode once taught', () => {
+    const upToVt = curriculum.order.slice(0, curriculum.order.indexOf('r_controlled'));
+    for (const t of rcWords) {
+      expect(validateText(t, taught).ok, `${t} must be blocked before r_controlled`).toBe(false);
+      expect(validateText(t, [...upToVt, 'r_controlled']).ok, `${t} must decode once r_controlled is taught`).toBe(true);
+    }
+  });
+});
+
 describe('Reader Level', () => {
   it('the initial band is level 1, and each unlocked tier is one level up to Word Wizard', () => {
     expect(readerLevel(curriculum.initialTaught).level).toBe(1); // Sound Starter
@@ -323,6 +350,7 @@ describe('Reader Level', () => {
       [['blend_st', 'blend_l', 'blend_r', 'blend_s', 'blend_end'], 6, 'Blend Master'],
       [['blend_st', 'blend_l', 'blend_r', 'blend_s', 'blend_end', 'magic_e'], 7, 'Magic Reader'],
       [['blend_st', 'blend_l', 'blend_r', 'blend_s', 'blend_end', 'magic_e', 'vowel_team'], 8, 'Word Wizard'],
+      [['blend_st', 'blend_l', 'blend_r', 'blend_s', 'blend_end', 'magic_e', 'vowel_team', 'r_controlled'], 9, 'Reading Legend'],
     ];
     for (const [extra, lvl, title] of steps) {
       const rl = readerLevel([...curriculum.initialTaught, ...extra]);
@@ -333,7 +361,7 @@ describe('Reader Level', () => {
 
   it('the top level has no next title; the max matches the milestone count', () => {
     const top = readerLevel([...curriculum.order]);
-    expect(top.title).toBe('Word Wizard');
+    expect(top.title).toBe('Reading Legend');
     expect(top.nextTitle).toBeNull();
     expect(top.level).toBe(top.max);
     expect(readerLevel(curriculum.initialTaught).nextTitle).toBe('Blend Beginner');

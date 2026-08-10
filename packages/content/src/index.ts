@@ -45,6 +45,9 @@ const GRAPHEME_SKILLS: Record<string, SkillId> = {
   // magic-e). Only the unambiguous long-vowel teams; heart words (said/see/you)
   // bypass this via `heart` and keep their irregular pronunciations.
   ai: 'vowel_team', ay: 'vowel_team', ee: 'vowel_team', oa: 'vowel_team',
+  // R-controlled ("Bossy R") — the r changes the vowel ("car", "fork", "bird").
+  // Each is one grapheme. ('for' stays a heart word and bypasses this.)
+  ar: 'r_controlled', or: 'r_controlled', er: 'r_controlled', ir: 'r_controlled', ur: 'r_controlled',
 };
 
 const BASE_GRAPHEMES = new Set([
@@ -117,13 +120,13 @@ export interface ReaderLevel {
 }
 
 const READER_MILESTONES: SkillId[] = [
-  'base', 'blend_st', 'blend_l', 'blend_r', 'blend_s', 'blend_end', 'magic_e', 'vowel_team',
+  'base', 'blend_st', 'blend_l', 'blend_r', 'blend_s', 'blend_end', 'magic_e', 'vowel_team', 'r_controlled',
 ];
 const READER_TITLES = [
   'Sound Starter', 'Blend Beginner', 'Blend Builder', 'Blend Blaster',
-  'Blend Star', 'Blend Master', 'Magic Reader', 'Word Wizard',
+  'Blend Star', 'Blend Master', 'Magic Reader', 'Word Wizard', 'Reading Legend',
 ];
-const READER_ICONS = ['🌱', '🔗', '🧩', '🚀', '⭐', '🏆', '✨', '🌈'];
+const READER_ICONS = ['🌱', '🔗', '🧩', '🚀', '⭐', '🏆', '✨', '🌈', '🌟'];
 
 /** The child's Reader Level from their taught set — one level per milestone tier
  *  reached (base = level 1, up to Word Wizard once vowel teams are unlocked). */

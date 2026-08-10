@@ -56,6 +56,12 @@ VOWEL_TEAM = {
     "ai": {"EY"}, "ay": {"EY"}, "ee": {"IY"}, "oa": {"OW"},
 }
 
+# R-controlled ("Bossy R") — the vowel the r produces. CMU drops the R as a
+# separate consonant except for er/ir/ur which become the r-colored vowel ER.
+R_CONTROLLED = {
+    "ar": {"AA"}, "or": {"AO"}, "er": {"ER"}, "ir": {"ER"}, "ur": {"ER"},
+}
+
 # Dragon names / made-up tokens that are legitimately not dictionary words.
 KNOWN_NAMES = {"rex", "ash", "chip", "dash", "chomp", "zap", "yak", "yum"}
 
@@ -142,6 +148,21 @@ def audit():
                 flags.append((
                     w,
                     f"vowel-team mismatch: {team!r} teaches ({'|'.join(sorted(want))}) "
+                    f"but dictionary has {[' '.join(p) for p in prons]}",
+                ))
+            continue
+
+        rc = next((g for g in graphemes if g in R_CONTROLLED), None)
+        if rc is not None:
+            # R-controlled: one r-shaped vowel phoneme for the whole word.
+            want = R_CONTROLLED[rc]
+            got_ok = any(len(vowels_of(p)) == 1 and vowels_of(p)[0] in want for p in prons)
+            if got_ok:
+                verified.append(w)
+            else:
+                flags.append((
+                    w,
+                    f"r-controlled mismatch: {rc!r} teaches ({'|'.join(sorted(want))}) "
                     f"but dictionary has {[' '.join(p) for p in prons]}",
                 ))
             continue

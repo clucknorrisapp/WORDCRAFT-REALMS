@@ -27,6 +27,7 @@ const SKILL_INTRO: Record<string, SkillIntro> = {
   blend_end: { title: 'End Blends', blurb: '-nd · -nt · -mp · -nk', example: 'lamp', icon: '💡' },
   magic_e: { title: 'Magic E ✨', blurb: 'the e makes the vowel say its name', example: 'cake', icon: '✨' },
   vowel_team: { title: 'Vowel Teams 👫', blurb: 'two vowels, one sound · ai · ay · ee · oa', example: 'rain', icon: '🌈' },
+  r_controlled: { title: 'Bossy R 🤠', blurb: 'the r bosses the vowel · ar · or · er · ir · ur', example: 'star', icon: '⭐' },
 };
 
 /** Wire the "New Sounds!" celebration + Reader Level bump to the progression

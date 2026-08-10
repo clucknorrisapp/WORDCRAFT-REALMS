@@ -267,6 +267,21 @@ const PAINTERS: Record<string, (c: Ctx) => void> = {
     rect(c, 6, 9, 4, 1, '#c0392b'); // smile
     px(c, 5, 8, '#c0392b'); px(c, 10, 8, '#c0392b');
   },
+  corn: (c) => {
+    fill(c, SKY);
+    rect(c, 6, 2, 4, 12, '#3f9a3a'); // husk leaves behind
+    rect(c, 5, 4, 6, 9, '#f2c531'); // cob
+    for (let y = 4; y < 13; y += 2) for (let x = 5; x < 11; x += 2) px(c, x, y, '#e0b020'); // kernels
+    rect(c, 4, 5, 2, 6, '#54c24a'); rect(c, 10, 5, 2, 6, '#54c24a'); // leaves
+  },
+  star: (c) => {
+    fill(c, '#2a2f4a'); // night sky
+    rect(c, 7, 2, 2, 12, '#ffe45e'); rect(c, 2, 7, 12, 2, '#ffe45e'); // plus arms
+    rect(c, 5, 5, 6, 6, '#ffd633'); // body
+    rect(c, 6, 4, 4, 8, '#ffe45e'); rect(c, 4, 6, 8, 4, '#ffe45e');
+    px(c, 7, 6, '#fff3b0'); px(c, 8, 7, '#fff3b0'); // sparkle
+    for (let i = 0; i < 5; i++) px(c, Math.floor(hash(i, 1, 71) * G), Math.floor(hash(i, 2, 71) * G), '#c9d4ff');
+  },
   boat: (c) => {
     noise(c, WATER, 61);
     rect(c, 3, 9, 10, 3, '#8a5a2c'); // hull
