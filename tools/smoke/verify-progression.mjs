@@ -44,6 +44,12 @@ await page.goto(BASE);
 await page.waitForSelector('canvas', { timeout: 15000 });
 await page.waitForTimeout(1000);
 const readSave = () => page.evaluate(() => JSON.parse(localStorage.getItem('readquest_save_v1')));
+const readerBadge = () => page.locator('.chip.reader-lv').innerText();
+
+// Reader Level BEFORE: base + ST taught → Level 2.
+const lvlBefore = await readerBadge();
+console.log(`reader badge before: "${lvlBefore}" (expect Lv 2)`);
+if (!/Lv\s*2/.test(lvlBefore)) errors.push(`reader badge should show Lv 2 initially, got "${lvlBefore}"`);
 
 // Toolbox BEFORE: the ST-tier block (NEST) is available, the L-tier block
 // (FLAG) is hidden because blend_l is not yet taught (iron rule in the palette).
@@ -77,6 +83,7 @@ const newsoundText = (await page.locator('.panel.newsound').innerText()).replace
 console.log(`New Sounds moment: "${newsoundText}"`);
 if (!/L Blends/i.test(newsoundText)) errors.push(`New Sounds moment should name "L Blends": "${newsoundText}"`);
 if (!/FLAG/i.test(newsoundText)) errors.push(`New Sounds moment should show example FLAG: "${newsoundText}"`);
+if (!/Reader Level 3/i.test(newsoundText)) errors.push(`New Sounds should show the Reader Level-up (Lv 3): "${newsoundText}"`);
 await page.screenshot({ path: `${OUT}/77-new-sounds.png` });
 
 const afterSave = await readSave();
@@ -90,6 +97,11 @@ if (advanced < 1) errors.push('curriculum_advanced analytics event was not logge
 // Dismiss the celebration.
 await page.locator('.panel.newsound button:has-text("Let")').click();
 await page.waitForSelector('.panel.newsound', { state: 'detached', timeout: 8000 });
+
+// Reader Level AFTER: the badge advanced to Level 3 (reading leveled up).
+const lvlAfter = await readerBadge();
+console.log(`reader badge after: "${lvlAfter}" (expect Lv 3)`);
+if (!/Lv\s*3/.test(lvlAfter)) errors.push(`reader badge should advance to Lv 3, got "${lvlAfter}"`);
 
 // Toolbox AFTER: FLAG (blend_l) now appears in the palette — reading advanced,
 // and the world grew. This is the whole loop.

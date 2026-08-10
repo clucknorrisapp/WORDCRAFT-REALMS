@@ -103,6 +103,45 @@ export interface Curriculum {
 
 export const curriculum: Curriculum = curriculumJson as Curriculum;
 
+// ── Reader Level ────────────────────────────────────────────────────────────
+// The phonics progression is invisible during play, but a child loves to SEE
+// themselves level up. Reader Level turns each unlocked tier into a rank with a
+// name — the reading counterpart to the Builder rank. One level per milestone
+// tier taught, so every "New Sounds!" unlock is also a level-up.
+export interface ReaderLevel {
+  level: number;
+  title: string;
+  icon: string;
+  max: number;
+  nextTitle: string | null;
+}
+
+const READER_MILESTONES: SkillId[] = [
+  'base', 'blend_st', 'blend_l', 'blend_r', 'blend_s', 'blend_end', 'magic_e', 'vowel_team',
+];
+const READER_TITLES = [
+  'Sound Starter', 'Blend Beginner', 'Blend Builder', 'Blend Blaster',
+  'Blend Star', 'Blend Master', 'Magic Reader', 'Word Wizard',
+];
+const READER_ICONS = ['🌱', '🔗', '🧩', '🚀', '⭐', '🏆', '✨', '🌈'];
+
+/** The child's Reader Level from their taught set — one level per milestone tier
+ *  reached (base = level 1, up to Word Wizard once vowel teams are unlocked). */
+export function readerLevel(taught: Iterable<SkillId>): ReaderLevel {
+  const set = new Set(taught);
+  let n = 0;
+  for (const m of READER_MILESTONES) if (set.has(m)) n += 1;
+  n = Math.max(1, n);
+  const i = n - 1;
+  return {
+    level: n,
+    title: READER_TITLES[i]!,
+    icon: READER_ICONS[i]!,
+    max: READER_MILESTONES.length,
+    nextTitle: READER_TITLES[i + 1] ?? null,
+  };
+}
+
 const words: Word[] = (wordsJson as RawWord[]).map(toWord);
 const byText = new Map<string, Word>(words.map((w) => [w.text, w]));
 const lines: Line[] = linesJson as Line[];

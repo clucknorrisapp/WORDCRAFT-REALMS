@@ -1,6 +1,7 @@
 // One-screen parent/facilitator view (slice scope): real information, the
 // privacy headline, gate instrumentation, and a data export for playtests.
 import { COUNTABLE_TYPES } from '@readquest/shared';
+import { readerLevel } from '@readquest/content';
 import { voiceDiagnostics } from '@readquest/voice';
 import type { Services } from '../services';
 import { applyAccessibility, applyTextScale, el, openLayer } from './dom';
@@ -77,7 +78,9 @@ export function openParentScreen(services: Services): void {
   const micMatched = micAttempts.filter((e) => e.correct);
   const minutes = Math.max(1, Math.round(performance.now() / 60000));
 
+  const rl = readerLevel(services.save.taught);
   const stats: Array<[string, string]> = [
+    ['Reading level', `${rl.icon} Lv ${rl.level} · ${rl.title}${rl.nextTitle ? ` (next: ${rl.nextTitle})` : ' — top rank!'}`],
     ['This session', `${minutes} min`],
     ['Reading interactions', String(countable.length)],
     ['Read on their own', String(independent.length)],

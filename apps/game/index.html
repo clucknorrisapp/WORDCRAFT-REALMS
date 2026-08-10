@@ -290,6 +290,15 @@
     .newsound-badge { font-size: 56px; line-height: 1; margin: 6px 0 2px; filter: drop-shadow(0 3px 6px rgba(0,0,0,0.18)); animation: newsound-pop 0.5s cubic-bezier(0.2,0.9,0.3,1.3); }
     .newsound-name { font-size: 26px; font-weight: 900; letter-spacing: 1px; color: var(--accent2, #6c5ce7); margin-bottom: 2px; }
     @keyframes newsound-pop { from { transform: scale(0.3); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+    .newsound-levelup { margin: 10px 0 2px; font-size: 18px; font-weight: 900; color: var(--good, #2ecc71); }
+
+    /* Reader Level — the reading rank badge + its little level card. */
+    .chip.reader-lv { background: linear-gradient(160deg, #fff6de, #ffe4a8); border: 2px solid var(--accent, #ff9f43); font-weight: 900; cursor: pointer; color: #7a5a1e; }
+    .chip.reader-lv:active { transform: scale(0.94); }
+    .reader-card { text-align: center; }
+    .reader-ladder { display: flex; gap: 6px; justify-content: center; margin: 14px 0; flex-wrap: wrap; }
+    .reader-pip { width: 16px; height: 16px; border-radius: 50%; background: #e6e2d5; box-shadow: inset 0 0 0 2px #d3cdbd; }
+    .reader-pip.on { background: linear-gradient(160deg, var(--accent, #ff9f43), var(--good, #2ecc71)); box-shadow: 0 1px 3px rgba(0,0,0,0.2); }
 
     /* ── Accessibility: dyslexia-friendly typography ──
        Evidence points to generous spacing helping more than any single font,

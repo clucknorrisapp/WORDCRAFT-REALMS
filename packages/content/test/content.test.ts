@@ -7,6 +7,7 @@ import {
   allWords,
   buildChallenge,
   curriculum,
+  readerLevel,
   validateBook,
   validateLine,
   validateText,
@@ -309,5 +310,32 @@ describe('vowel-team tier (ai/ay/ee/oa)', () => {
       expect(validateText(t, taught).ok, `${t} must be blocked before vowel_team`).toBe(false);
       expect(validateText(t, [...upToBlends, 'vowel_team']).ok, `${t} must decode once vowel_team is taught`).toBe(true);
     }
+  });
+});
+
+describe('Reader Level', () => {
+  it('the initial band is level 1, and each unlocked tier is one level up to Word Wizard', () => {
+    expect(readerLevel(curriculum.initialTaught).level).toBe(1); // Sound Starter
+    // Walk the milestone tiers; every one taught bumps the level by one.
+    const steps: Array<[string[], number, string]> = [
+      [['blend_st'], 2, 'Blend Beginner'],
+      [['blend_st', 'blend_l'], 3, 'Blend Builder'],
+      [['blend_st', 'blend_l', 'blend_r', 'blend_s', 'blend_end'], 6, 'Blend Master'],
+      [['blend_st', 'blend_l', 'blend_r', 'blend_s', 'blend_end', 'magic_e'], 7, 'Magic Reader'],
+      [['blend_st', 'blend_l', 'blend_r', 'blend_s', 'blend_end', 'magic_e', 'vowel_team'], 8, 'Word Wizard'],
+    ];
+    for (const [extra, lvl, title] of steps) {
+      const rl = readerLevel([...curriculum.initialTaught, ...extra]);
+      expect(rl.level, title).toBe(lvl);
+      expect(rl.title).toBe(title);
+    }
+  });
+
+  it('the top level has no next title; the max matches the milestone count', () => {
+    const top = readerLevel([...curriculum.order]);
+    expect(top.title).toBe('Word Wizard');
+    expect(top.nextTitle).toBeNull();
+    expect(top.level).toBe(top.max);
+    expect(readerLevel(curriculum.initialTaught).nextTitle).toBe('Blend Beginner');
   });
 });

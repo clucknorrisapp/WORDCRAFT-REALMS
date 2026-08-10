@@ -4,9 +4,10 @@
 // sound, show an example word the child can now read, and say it aloud. This is
 // how the game "gets more advanced as we go" — reading better literally levels
 // up what you can read, build and unlock next.
-import { word as getWord } from '@readquest/content';
+import { readerLevel, word as getWord } from '@readquest/content';
 import type { SkillId } from '@readquest/shared';
 import type { Services } from '../services';
+import type { Hud } from './hud';
 import { confetti, el, isUiOpen, openLayer, speakerButton, wait } from './dom';
 
 interface SkillIntro {
@@ -28,9 +29,13 @@ const SKILL_INTRO: Record<string, SkillIntro> = {
   vowel_team: { title: 'Vowel Teams 👫', blurb: 'two vowels, one sound · ai · ay · ee · oa', example: 'rain', icon: '🌈' },
 };
 
-/** Wire the "New Sounds!" celebration to the services progression hook. */
-export function mountProgression(services: Services): void {
-  services.setAdvanceHandler((skill) => void showNewSounds(services, skill));
+/** Wire the "New Sounds!" celebration + Reader Level bump to the progression
+ *  hook. Each tier unlock refreshes the HUD badge and throws the celebration. */
+export function mountProgression(services: Services, hud: Hud): void {
+  services.setAdvanceHandler((skill) => {
+    hud.refreshReaderLevel();
+    void showNewSounds(services, skill);
+  });
 }
 
 export async function showNewSounds(services: Services, skill: SkillId): Promise<void> {
@@ -56,6 +61,10 @@ export async function showNewSounds(services: Services, skill: SkillId): Promise
     spans.push(s);
   }
   panel.appendChild(wrap);
+
+  // Reading levels up with the new sound — the tier is already taught here.
+  const rl = readerLevel(services.save.taught);
+  panel.appendChild(el('div', 'newsound-levelup', `⬆️ Reader Level ${rl.level} · ${rl.title}!`));
 
   const row = el('div', 'cards');
   row.appendChild(speakerButton(() => void services.speakWord(intro.example).done));

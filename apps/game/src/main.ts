@@ -38,7 +38,7 @@ async function boot(): Promise<void> {
   mountLibraryButton(services, hud);
   mountSpellbookButton(services);
   mountBuildButton(services);
-  mountProgression(services); // "New Sounds!" when free-play mastery unlocks a tier
+  mountProgression(services, hud); // "New Sounds!" + Reader Level-up on tier unlock
 
   const game = new Phaser.Game({
     type: Phaser.AUTO,
