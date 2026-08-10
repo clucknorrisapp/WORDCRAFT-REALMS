@@ -2,7 +2,7 @@
 // Reading Moments. The world scene forwards every interaction here; this file
 // decides what happens. No pedagogy: word choices come from content, mastery
 // from the engine, and all reading UI from the widgets.
-import { word as getWord } from '@readquest/content';
+import { queryWords, word as getWord } from '@readquest/content';
 import type { Services } from '../services';
 import type { Hud } from '../ui/hud';
 import {
@@ -423,18 +423,35 @@ export class QuestDirector {
         seed,
         Date.now(),
       );
-      const forSkill = FEED_FOODS.filter((f) => getWord(f).skills.includes(plan.targetSkill));
-      const target = (forSkill.length ? forSkill : FEED_FOODS)[seed % (forSkill.length || FEED_FOODS.length)]!;
+      // Draw the practice word from the child's GROWING decodable vocabulary at
+      // the skill the engine picked — so free-play practice actually drills the
+      // tier they're working on (blends, magic-e, r-controlled, …), not just a
+      // fixed food list. The dragon eats WORDS: reading feeds it (theme + loop).
+      const pool = queryWords({
+        withinSkills: this.services.save.taught,
+        requireSkill: plan.targetSkill,
+        count: 40,
+      }).filter((w) => !w.heart);
+      let target: string;
+      let distractors: string[];
+      if (pool.length >= 3) {
+        target = pool[seed % pool.length]!.text;
+        distractors = pool.filter((w) => w.text !== target).slice(0, 2).map((w) => w.text);
+      } else {
+        // Fallback: the classic snack words (e.g. when the target skill is base).
+        const forSkill = FEED_FOODS.filter((f) => getWord(f).skills.includes(plan.targetSkill));
+        target = (forSkill.length ? forSkill : FEED_FOODS)[seed % (forSkill.length || FEED_FOODS.length)]!;
+        distractors = FEED_FOODS.filter((f) => f !== target).slice(0, 2);
+      }
       this.feedIdx += 1;
-      this.services.analytics.log('adaptive_target', { skill: plan.targetSkill, bucket: plan.bucket, food: target });
-      const distractors = FEED_FOODS.filter((f) => f !== target).slice(0, 2);
+      this.services.analytics.log('adaptive_target', { skill: plan.targetSkill, bucket: plan.bucket, word: target });
       await toast(this.services, 'ln_feed_dragon');
       await choiceBoard(this.services, {
         challengeType: 'word_match',
         targetWord: target,
         distractors,
-        spokenPrompt: `Your dragon wants: ${target}!`,
-        emoji: '🐉🍽️',
+        spokenPrompt: `Feed your dragon the word: ${target}!`,
+        emoji: '🐉📖',
       });
       const w = getWord(target);
       this.services.analytics.log('pet_fed', { food: w.id });

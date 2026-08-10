@@ -38,12 +38,12 @@ await page.waitForTimeout(1200);
 const FOODS = ['egg', 'nut', 'jam', 'ham', 'fig', 'bun'];
 await page.evaluate(() => window.__readquest.game.scene.keys.world.director.onDragonTapped());
 await page.waitForSelector('.word-card', { timeout: 8000 });
-// Feeding is adaptive now — the correct food is whatever the engine targeted;
-// read it from the analytics event the director logged.
+// Feeding is adaptive now — the correct word is whatever the engine targeted
+// (drawn from the child's growing vocabulary); read it from the analytics event.
 const target = await page.evaluate(() => {
   const evs = window.__readquest.services.analytics.all();
   const last = [...evs].reverse().find((e) => e.type === 'adaptive_target');
-  return last?.payload?.food;
+  return last?.payload?.word;
 });
 
 // The excited double-tap: tap the CORRECT card twice, fast, inside the 450ms
@@ -55,7 +55,9 @@ await card.click({ force: true }).catch(() => {});
 await page.waitForTimeout(900);
 
 const ev = await page.evaluate(() => JSON.parse(localStorage.getItem('readquest_save_v1')).evidence);
-const foodRows = ev.filter((e) => FOODS.includes(e.wordId));
+// The fed word is adaptive (drawn from the child's vocabulary) — filter by the
+// actual target, not a fixed food list.
+const foodRows = ev.filter((e) => e.challengeType === 'word_match' && e.wordId === target);
 console.log(`target=${target}, feed rows: ${JSON.stringify(foodRows.map((e) => ({ w: e.wordId, ok: e.correct, n: e.attemptIndex })))}`);
 
 await browser.close();
