@@ -148,6 +148,32 @@ export class WorldScene extends Phaser.Scene {
     g.fillTriangle(6, 12, 10, 2, 14, 12);
     g.generateTexture('tuft', 14, 12);
     g.clear();
+    // ── Pixel-art ground details (a wildflower meadow that matches the blocky
+    //    ground). Built blocky (fillRect) so they read as pixel-art, not vector. ──
+    const flower = (key: string, petal: number, center: number) => {
+      g.fillStyle(0x3f8a26, 1); g.fillRect(5, 6, 2, 8); // stem
+      g.fillStyle(0x67b33e, 1); g.fillRect(2, 9, 3, 2); g.fillRect(7, 10, 3, 2); // leaves
+      g.fillStyle(petal, 1); g.fillRect(3, 1, 6, 6); // petal block
+      g.fillStyle(center, 1); g.fillRect(5, 3, 2, 2); // center
+      g.generateTexture(key, 12, 15); g.clear();
+    };
+    flower('flower_y', 0xf4d34a, 0xe8873a);
+    flower('flower_p', 0xe86fa0, 0xf4d34a);
+    flower('flower_w', 0xf3f0e8, 0xf4d34a);
+    // pebbles
+    g.fillStyle(0x8a8a8a, 1); g.fillRect(0, 3, 5, 4); g.fillRect(6, 2, 4, 4); g.fillRect(10, 4, 4, 3);
+    g.fillStyle(0xa8a8a8, 1); g.fillRect(1, 3, 2, 1); g.fillRect(7, 2, 2, 1);
+    g.generateTexture('pebble', 14, 8); g.clear();
+    // mushroom
+    g.fillStyle(0xf3ead6, 1); g.fillRect(4, 6, 3, 6); // stem
+    g.fillStyle(0xc0392b, 1); g.fillRect(1, 3, 9, 4); g.fillRect(2, 2, 7, 1); // cap
+    g.fillStyle(0xffffff, 1); g.fillRect(3, 4, 1, 1); g.fillRect(6, 4, 1, 1); // spots
+    g.generateTexture('mushroom', 11, 12); g.clear();
+    // sapling
+    g.fillStyle(0x6e4a24, 1); g.fillRect(5, 9, 2, 7); // trunk
+    g.fillStyle(0x2f7d2f, 1); g.fillRect(2, 2, 8, 8); // canopy
+    g.fillStyle(0x54c24a, 1); g.fillRect(3, 3, 3, 3); // highlight
+    g.generateTexture('sapling', 12, 16); g.clear();
     // wooden wall piece
     g.fillStyle(0xa9743f, 1);
     g.fillRoundedRect(0, 0, 58, 46, 6);
@@ -189,12 +215,20 @@ export class WorldScene extends Phaser.Scene {
     this.add.tileSprite(1280, 660, 2280, 86, 'blk_mud').setDepth(-90).setTileScale(S, S);
     this.add.tileSprite(680, 520, 90, 420, 'blk_mud').setDepth(-90).setTileScale(S, S);
     this.add.tileSprite(445, 905, 400, 290, 'blk_mud').setDepth(-90).setTileScale(S, S).setAlpha(0.85); // village plot dirt
-    // grass tufts
+    // Scatter a wildflower-meadow mix of pixel-art ground details. Grass tufts
+    // stay the majority; flowers/pebbles/mushrooms/saplings add Minecraft-y
+    // richness. Deterministic seed → identical every load (no flicker).
     const rnd = new Phaser.Math.RandomDataGenerator(['readquest']);
-    for (let i = 0; i < 90; i++) {
+    const detail = ['tuft', 'tuft', 'tuft', 'tuft', 'flower_y', 'flower_p', 'flower_w', 'pebble', 'mushroom', 'sapling'];
+    // Keep the dirt crossroads legible: skip scatter on the path bands.
+    const onPath = (x: number, y: number) =>
+      (y > 612 && y < 708) || (x > 632 && x < 728 && y < 720);
+    for (let i = 0; i < 150; i++) {
       const x = rnd.between(60, W - 60);
       const y = rnd.between(60, 1080);
-      this.add.image(x, y, 'tuft').setDepth(-80).setAlpha(0.8);
+      if (onPath(x, y)) continue;
+      const key = detail[rnd.between(0, detail.length - 1)]!;
+      this.add.image(x, y, key).setDepth(-80).setAlpha(key === 'tuft' ? 0.8 : 0.95);
     }
     // wall between overworld and cave room
     const divider = this.add.rectangle(W / 2, 1160, W, 40, 0x000000, 0);
