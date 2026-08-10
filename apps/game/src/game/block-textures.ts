@@ -277,6 +277,35 @@ const PAINTERS: Record<string, (c: Ctx) => void> = {
     rect(c, 5, 13, 6, 1, '#5b3d1e'); // base
     for (let i = 0; i < 6; i++) px(c, 3 + Math.floor(hash(i, 1, 41) * 10), 3 + Math.floor(hash(i, 2, 41) * 6), '#fff3b0');
   },
+  // ── Magic-E tier blocks ──
+  cave: (c) => {
+    noise(c, ['#6f6f6f', '#5c5c5c', '#7a7a7a', '#4f4f4f', '#666666'], 51); // rock face
+    // dark arch mouth (widens toward the floor)
+    const rows: Array<[number, number]> = [[7, 2], [6, 4], [5, 6], [5, 6], [5, 6], [5, 6], [5, 6]];
+    let y = 5;
+    for (const [x, w] of rows) { rect(c, x, y, w, 1, '#0e0e0e'); y++; }
+    rect(c, 5, 11, 6, 4, '#050505'); // black depth
+    for (let i = 0; i < 5; i++) px(c, Math.floor(hash(i, 1, 51) * G), Math.floor(hash(i, 2, 51) * 4), '#9a9a9a'); // flecks
+  },
+  gate: (c) => {
+    fill(c, SKY);
+    rect(c, 0, 13, G, 3, '#5fae3a'); // grass
+    rect(c, 2, 3, 2, 11, '#6e4a24'); // posts
+    rect(c, 12, 3, 2, 11, '#6e4a24');
+    rect(c, 2, 5, 12, 2, '#8a6a3a'); // rails
+    rect(c, 2, 9, 12, 2, '#8a6a3a');
+    for (let i = 0; i < 8; i++) px(c, 4 + i, 12 - i, '#9c7a46'); // diagonal brace
+  },
+  cake: (c) => {
+    fill(c, SKY);
+    rect(c, 3, 8, 10, 5, '#e8c39a'); // sponge
+    rect(c, 3, 8, 10, 2, '#f6ead2'); // frosting
+    rect(c, 3, 10, 10, 1, '#e08cae'); // pink filling
+    rect(c, 3, 13, 10, 1, '#c99a6a'); // plate line
+    rect(c, 7, 4, 2, 4, '#f2c531'); // candle
+    rect(c, 7, 3, 2, 1, '#e8873a'); // flame
+    for (const x of [4, 8, 11]) px(c, x, 9, '#c0392b'); // cherries
+  },
 };
 
 const cache = new Map<string, HTMLCanvasElement>();

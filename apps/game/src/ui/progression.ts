@@ -24,6 +24,7 @@ const SKILL_INTRO: Record<string, SkillIntro> = {
   blend_r: { title: 'R Blends', blurb: 'br · cr · dr · fr · gr · pr · tr', example: 'frog', icon: '🐸' },
   blend_s: { title: 'S Blends', blurb: 'sk · sp · sn · sm · sw · sc', example: 'skip', icon: '💨' },
   blend_end: { title: 'End Blends', blurb: '-nd · -nt · -mp · -nk', example: 'lamp', icon: '💡' },
+  magic_e: { title: 'Magic E ✨', blurb: 'the e makes the vowel say its name', example: 'cake', icon: '✨' },
 };
 
 /** Wire the "New Sounds!" celebration to the services progression hook. */

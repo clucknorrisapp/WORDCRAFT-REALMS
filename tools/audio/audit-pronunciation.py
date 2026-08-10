@@ -38,6 +38,18 @@ EXPECTED_VOWEL = {
 }
 VOWEL_GRAPHEMES = set(EXPECTED_VOWEL)
 
+# Magic-e (split digraph): the vowel says its NAME (long) and the final e is
+# silent, so we expect the long vowel and a single vowel phoneme. (For u, CMU
+# gives "Y UW" for cute/mule — the Y is a glide, not a vowel, so vowels_of drops
+# it and we still see just UW.)
+LONG_VOWEL = {
+    "a": {"EY"},
+    "e": {"IY"},
+    "i": {"AY"},
+    "o": {"OW"},
+    "u": {"UW"},
+}
+
 # Dragon names / made-up tokens that are legitimately not dictionary words.
 KNOWN_NAMES = {"rex", "ash", "chip", "dash", "chomp", "zap", "yak", "yum"}
 
@@ -93,6 +105,26 @@ def audit():
         # mispronunciations.) Only a word where NO pronunciation matches the
         # taught vowel is a real problem.
         graphemes = words.get(w, {}).get("g", [])
+        word_skills = words.get(w, {}).get("s", [])
+
+        if "magic_e" in word_skills:
+            # The first vowel grapheme is the long vowel; the final e is silent.
+            long_letter = next((g for g in graphemes if g in VOWEL_GRAPHEMES), None)
+            if long_letter is None:
+                verified.append(w)
+                continue
+            want = LONG_VOWEL[long_letter]
+            got_ok = any(len(vowels_of(p)) == 1 and vowels_of(p)[0] in want for p in prons)
+            if got_ok:
+                verified.append(w)
+            else:
+                flags.append((
+                    w,
+                    f"magic-e mismatch: teaches long {long_letter!r} ({'|'.join(sorted(want))}) "
+                    f"but dictionary has {[' '.join(p) for p in prons]}",
+                ))
+            continue
+
         expected = [EXPECTED_VOWEL[g] for g in graphemes if g in VOWEL_GRAPHEMES]
         if not expected:
             verified.append(w)  # no short-vowel grapheme to check (rare)

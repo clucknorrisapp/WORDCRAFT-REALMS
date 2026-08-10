@@ -14,7 +14,8 @@
     "blend_l",
     "blend_r",
     "blend_s",
-    "blend_end"
+    "blend_end",
+    "magic_e"
   ],
   "initialTaught": [
     "base",

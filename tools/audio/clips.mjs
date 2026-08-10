@@ -43,6 +43,13 @@ function blockWords() {
   return blocks.map((b) => b.word);
 }
 
+/** Every magic-e (long-vowel) word, so the whole tier has premium clips and is
+ *  covered by the pronunciation audit — not just the ones used in books/blocks. */
+function magicEWords() {
+  const words = JSON.parse(fs.readFileSync('packages/content/data/words.json', 'utf8'));
+  return words.filter((w) => (w.s ?? []).includes('magic_e')).map((w) => w.text);
+}
+
 /** One narrator clip per craft recipe phrase (id: craft_<blockId>), so reading
  *  a recipe to forge a block is premium audio. The individual recipe words are
  *  already covered by the block/word clips above (for tap-a-word playback). */
@@ -83,8 +90,9 @@ export function wantedClips() {
     }
     clips.push({ id: l.id, speaker: l.speaker === 'sign' ? 'narrator' : l.speaker, text: l.text });
   }
-  // Word-card audio: priority words + book words + spell words + block words.
-  const allWords = [...new Set([...PRIORITY_WORDS, ...bookWords(), ...spellWords(), ...blockWords()])];
+  // Word-card audio: priority words + book words + spell words + block words +
+  // the full magic-e tier.
+  const allWords = [...new Set([...PRIORITY_WORDS, ...bookWords(), ...spellWords(), ...blockWords(), ...magicEWords()])];
   for (const w of allWords) {
     // Common words are spoken LOWERCASE: a capitalized isolated token makes
     // ElevenLabs treat it as a name/foreign word (capitalized "Hut." was read

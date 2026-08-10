@@ -52,10 +52,22 @@ interface RawWord {
   g: string[];
   c?: string[];
   heart?: boolean;
+  s?: SkillId[]; // explicit skill override for patterns the linear grapheme rule
+  // can't express — notably magic-e (split digraph): "cake" is c-a-k-e on the
+  // page (graphemes still recompose for the hint ladder) but the a…e together
+  // teach one long-vowel skill, not short-a + short-e. 'base' is added
+  // automatically. Heart words use `heart` instead.
 }
 
 function deriveSkills(raw: RawWord): SkillId[] {
   if (raw.heart) return ['heart'];
+  if (raw.s) {
+    // Explicit override (e.g. magic-e). Trust the authored skills; still add
+    // 'base' for the ordinary consonants the word also contains.
+    const skills = [...raw.s];
+    if (!skills.includes('base')) skills.push('base');
+    return skills;
+  }
   const skills: SkillId[] = [];
   for (const g of raw.g) {
     const skill = BASE_GRAPHEMES.has(g) ? 'base' : GRAPHEME_SKILLS[g];

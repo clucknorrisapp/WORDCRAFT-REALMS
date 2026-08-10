@@ -255,3 +255,31 @@ describe('curriculum progression (blend tiers)', () => {
     }
   });
 });
+
+describe('magic-e (long-vowel) tier', () => {
+  const meWords = ['cake', 'gate', 'make', 'came', 'ate', 'bike', 'time', 'ride', 'home', 'nose', 'cube', 'mule', 'tune'];
+
+  it('magic_e is the tier after the blends in curriculum order', () => {
+    const idx = (s: string) => curriculum.order.indexOf(s);
+    expect(idx('magic_e')).toBeGreaterThan(idx('blend_end'));
+  });
+
+  it('magic-e words derive the magic_e skill (not two short vowels) yet still recompose on the page', () => {
+    for (const t of meWords) {
+      const w = word(t);
+      expect(w.skills, `${t} skills`).toContain('magic_e');
+      // The split digraph must NOT decompose into short vowels — that is exactly
+      // the "cake → cack-eh" bug the override prevents.
+      expect(w.skills.some((s) => s.startsWith('short_')), `${t} must not teach a short vowel`).toBe(false);
+      // Graphemes still spell the word, so the hint ladder shows c-a-k-e.
+      expect(w.graphemes.join(''), `${t} graphemes`).toBe(t);
+    }
+  });
+
+  it('magic-e words are blocked at the initial band and decode once magic_e is taught', () => {
+    for (const t of meWords) {
+      expect(validateText(t, taught).ok, `${t} must be blocked before magic_e`).toBe(false);
+      expect(validateText(t, [...taught, 'magic_e']).ok, `${t} must decode once magic_e is taught`).toBe(true);
+    }
+  });
+});

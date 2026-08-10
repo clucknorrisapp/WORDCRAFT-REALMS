@@ -209,5 +209,19 @@
       "I get a gift! Yes!",
       "The gift is a big drum!"
     ]
+  },
+  {
+    "id": "the-cake",
+    "title": "The Cake",
+    "cover": "🎂",
+    "reward": "gem",
+    "gate": "magic_e",
+    "pages": [
+      "I can make a cake.",
+      "I made a big cake.",
+      "A pig came to the cake.",
+      "The pig ate the cake!",
+      "The pig is so glad."
+    ]
   }
 ]

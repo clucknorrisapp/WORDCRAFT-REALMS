@@ -30,5 +30,9 @@
   { "id": "flag", "word": "flag", "icon": "🚩" },
   { "id": "frog", "word": "frog", "icon": "🐸" },
   { "id": "mask", "word": "mask", "icon": "🎭" },
-  { "id": "lamp", "word": "lamp", "icon": "💡" }
+  { "id": "lamp", "word": "lamp", "icon": "💡" },
+
+  { "id": "cave", "word": "cave", "icon": "🕳️" },
+  { "id": "gate", "word": "gate", "icon": "🚪" },
+  { "id": "cake", "word": "cake", "icon": "🎂" }
 ]
