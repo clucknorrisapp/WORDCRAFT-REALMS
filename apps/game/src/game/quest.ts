@@ -3,6 +3,7 @@
 // decides what happens. No pedagogy: word choices come from content, mastery
 // from the engine, and all reading UI from the widgets.
 import { queryWords, word as getWord } from '@readquest/content';
+import { sfxHit, sfxPop, sfxReward } from './sfx';
 import type { Services } from '../services';
 import type { Hud } from '../ui/hud';
 import {
@@ -234,6 +235,8 @@ export class QuestDirector {
 
   onTreeTapped(giveWood: () => void): void {
     if (this.busy) return;
+    sfxHit();
+    sfxPop();
     giveWood();
     this.services.save.wood += 1;
     this.services.analytics.log('gathered', { kind: 'wood' });
@@ -243,6 +246,8 @@ export class QuestDirector {
 
   onRockTapped(giveStone: () => void): void {
     if (this.busy) return;
+    sfxHit();
+    sfxPop();
     giveStone();
     this.services.save.stone += 1;
     this.services.analytics.log('gathered', { kind: 'stone' });
@@ -463,6 +468,7 @@ export class QuestDirector {
   }
 
   onEggCollected(): void {
+    sfxReward();
     this.services.save.eggs += 1;
     this.services.analytics.log('egg_collected');
     this.services.persist();

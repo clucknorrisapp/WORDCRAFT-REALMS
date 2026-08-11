@@ -21,6 +21,9 @@ export interface SettingsData {
   micStrictness: 'gentle' | 'strict';
   narrationRate: number; // 0.7–1.3
   textScale: number; // 0.9–1.4
+  /** Game sound effects (procedural Web Audio thocks/pops/chimes). Narration is
+   *  separate and always on. */
+  sfxEnabled: boolean;
   // ── Accessibility ──
   /** Dyslexia-friendly typography: generous letter/word/line spacing. */
   dyslexiaFont: boolean;

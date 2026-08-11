@@ -8,6 +8,7 @@ import type { Services } from '../services';
 import { bottomLeftCluster, confetti, el, floatNote, openLayer, speakerButton, wait } from './dom';
 import { readWordCard, renderBuildInWorld } from './widgets';
 import { blockTextureURL } from '../game/block-textures';
+import { sfxPlace, sfxShatter, sfxUnlock } from '../game/sfx';
 
 const tex = (id: string) => `url("${blockTextureURL(id)}")`;
 const blockById = (id: string): BuildBlock | undefined => allBlocks().find((b) => b.id === id);
@@ -103,11 +104,13 @@ export async function openBuild(services: Services): Promise<void> {
       delete services.save.build[key];
       cell.style.backgroundImage = '';
       cell.classList.remove('filled');
+      sfxShatter();
     } else {
       if (services.save.build[key] === selected) return; // already this block
       services.save.build[key] = selected;
       cell.style.backgroundImage = tex(selected);
       cell.classList.add('filled');
+      sfxPlace();
       registerPlacement(); // cumulative — drives Builder rank
     }
     services.persist();
@@ -260,6 +263,7 @@ export async function openBuild(services: Services): Promise<void> {
     if (!services.save.blocksUnlocked.includes(b.id)) {
       services.save.blocksUnlocked.push(b.id);
       services.persist();
+      sfxUnlock();
       services.analytics.log('block_unlocked', { block: b.id, word: b.word });
     }
     selected = b.id; // hand them the new block, ready to place
@@ -275,6 +279,7 @@ export async function openBuild(services: Services): Promise<void> {
       services.save.blocksUnlocked.push(b.id);
       services.persist();
       services.analytics.log('block_crafted', { block: b.id, recipe: b.recipe });
+      sfxUnlock();
       confetti(28);
       floatNote(`${b.icon} ${b.word.toUpperCase()}!`, window.innerWidth / 2, window.innerHeight * 0.38);
       void services.speakText('You made it!').done;

@@ -9,6 +9,7 @@ import { buildChallenge, line as getLine, word as getWord } from '@readquest/con
 import { seededShuffle, type Spell } from '@readquest/shared';
 import type { Services } from '../services';
 import { castEffect, confetti, el, isUiOpen, openLayer, speakerButton, wait } from './dom';
+import { resetReadStreak, sfxDragon, sfxFanfare, sfxMiss, sfxReadWin, sfxUnlock } from '../game/sfx';
 
 export { isUiOpen };
 
@@ -41,6 +42,8 @@ let celebrateIdx = 0;
 
 export async function celebrate(services: Services, big = false, lineId?: string): Promise<void> {
   confetti(big ? 44 : 22);
+  if (big) sfxFanfare();
+  else sfxDragon();
   dragonCelebrate(big);
   const id = lineId ?? CELEBRATE_LINES[celebrateIdx++ % CELEBRATE_LINES.length]!;
   await services.speakLine(id).done;
@@ -193,6 +196,7 @@ export async function readWordCard(
     await services.speakWord(w.text).done;
   }
   await okClicked;
+  sfxReadWin(); // reading the word to earn it is a reading win — climb the chime
   layer.close();
 
   services.recordEvidence({
@@ -283,6 +287,8 @@ export async function choiceBoard(services: Services, opts: ChoiceOpts): Promise
           resolved = true;
           buttons.forEach((b) => (b.disabled = true));
           card.classList.add('right');
+          if (attempt === 1) sfxReadWin(); // the climbing reading chime — first-try only
+          else resetReadStreak();
           services.recordEvidence({
             challengeType: opts.challengeType,
             skillIds: target.skills,
@@ -300,6 +306,8 @@ export async function choiceBoard(services: Services, opts: ChoiceOpts): Promise
           setTimeout(resolve, 450);
         } else {
           // Warm failure: "Almost!" + hint ladder, never "wrong" (pillar 4).
+          sfxMiss();
+          resetReadStreak();
           card.classList.add('wiggle');
           card.disabled = true;
           card.style.opacity = '0.5';

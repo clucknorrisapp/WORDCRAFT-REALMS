@@ -9,12 +9,14 @@ import { mountLibraryButton } from './ui/library';
 import { mountSpellbookButton } from './ui/spellbook';
 import { mountBuildButton } from './ui/build';
 import { mountProgression } from './ui/progression';
+import { configureSfx } from './game/sfx';
 import { applyTextScale, applyAccessibility } from './ui/dom';
 
 async function boot(): Promise<void> {
   const save = loadSave();
   applyTextScale(save.settings.textScale);
   applyAccessibility(save.settings);
+  configureSfx({ enabled: save.settings.sfxEnabled });
   const services = await createServices(save);
 
   // Grown-up pronunciation review: <url>#pronounce speaks every word through

@@ -6,6 +6,7 @@ import { voiceDiagnostics } from '@readquest/voice';
 import type { Services } from '../services';
 import { applyAccessibility, applyTextScale, el, openLayer } from './dom';
 import { builderRank } from './build';
+import { configureSfx, sfxReward } from '../game/sfx';
 import { wipeSave } from '../save';
 
 const SKILL_LABELS: Record<string, string> = {
@@ -118,6 +119,16 @@ export function openParentScreen(services: Services): void {
     services.persist();
   });
   settingsRow.appendChild(micToggle);
+
+  const sfxToggle = el('button', 'btn ghost', services.save.settings.sfxEnabled ? '🔊 Sounds: ON' : '🔊 Sounds: OFF');
+  sfxToggle.addEventListener('click', () => {
+    services.save.settings.sfxEnabled = !services.save.settings.sfxEnabled;
+    sfxToggle.textContent = services.save.settings.sfxEnabled ? '🔊 Sounds: ON' : '🔊 Sounds: OFF';
+    configureSfx({ enabled: services.save.settings.sfxEnabled });
+    if (services.save.settings.sfxEnabled) sfxReward(); // a little "you turned me on!" chirp
+    services.persist();
+  });
+  settingsRow.appendChild(sfxToggle);
 
   const strictLabel = () =>
     services.save.settings.micStrictness === 'strict' ? '✨ Door: must say it' : '✨ Door: gentle';

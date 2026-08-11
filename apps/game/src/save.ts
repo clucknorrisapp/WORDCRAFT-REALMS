@@ -34,6 +34,7 @@ export function freshSave(): SaveData {
       micStrictness: 'gentle',
       narrationRate: 1,
       textScale: 1,
+      sfxEnabled: true,
       dyslexiaFont: false,
       highContrast: false,
       // Honor the OS "reduce motion" preference out of the box.

@@ -9,6 +9,7 @@ import type { SkillId } from '@readquest/shared';
 import type { Services } from '../services';
 import type { Hud } from './hud';
 import { confetti, el, isUiOpen, openLayer, speakerButton, wait } from './dom';
+import { sfxFanfare } from '../game/sfx';
 
 interface SkillIntro {
   title: string; // friendly name of the sound family
@@ -75,6 +76,7 @@ export async function showNewSounds(services: Services, skill: SkillId): Promise
   layer.root.appendChild(panel);
 
   confetti(44);
+  sfxFanfare(); // a tier unlock is a big reading milestone
   const okClicked = new Promise<void>((r) => ok.addEventListener('click', () => r(), { once: true }));
   void services.speakText('New sounds unlocked!').done;
   await wait(700);

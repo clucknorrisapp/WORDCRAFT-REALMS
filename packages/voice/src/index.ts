@@ -127,6 +127,13 @@ let sharedCtx: AudioCtx | null = null;
 const bufferCache = new Map<string, AudioBuffer>();
 const inflight = new Map<string, Promise<AudioBuffer>>();
 
+/** The shared, gesture-unlocked AudioContext — reused by the SFX kit so game
+ *  sounds and narration share one context (and one iOS unlock). May be null on
+ *  servers or before the first user gesture. */
+export function sharedAudioContext(): AudioContext | null {
+  return getAudioContext();
+}
+
 function getAudioContext(): AudioCtx | null {
   if (typeof window === 'undefined') return null;
   if (sharedCtx) return sharedCtx;
