@@ -10,7 +10,7 @@ import { setBuildRenderer, setDragonCelebrate, setNextHandler, setPlaceModeToggl
 import { openBuild, GRID_W, GRID_H } from '../ui/build';
 import { checkDeeds } from '../ui/deeds';
 import { openWorldPalette, firstWorldBlock, WORLD_ERASER, type WorldPalette } from '../ui/worldbuild';
-import { sfxPlace, sfxShatter } from './sfx';
+import { sfxChirp, sfxPlace, sfxShatter } from './sfx';
 import { blockTextureCanvas } from './block-textures';
 import { hasPropTexture, propTextureCanvas, PIXEL_PROP_KEYS } from './world-textures';
 
@@ -122,6 +122,7 @@ export class WorldScene extends Phaser.Scene {
     this.spawnPlayerAndDragon();
     this.restoreFromSave();
     this.spawnCritters();
+    this.spawnPets(); // babies hatched from eggs in earlier sessions
 
     this.cameras.main.setBounds(0, 0, W, H);
     this.cameras.main.startFollow(this.player, true, 0.12, 0.12);
@@ -841,6 +842,77 @@ export class WorldScene extends Phaser.Scene {
     });
   }
 
+  // ── Eggs hatch into creatures (Phase 2.4) ─────────────────────────────────
+  private babyEmoji: Record<string, string> = { chick: '🐤', pup: '🐶', cub: '🐻', kid: '🐐' };
+
+  /** Respawn every baby the child has hatched — they live near the coop and
+   *  amble around the meadow like the hens (the first living creatures). */
+  private spawnPets(): void {
+    const pets = this.services.save.pets ?? [];
+    pets.forEach((sp, i) => {
+      const x = 380 + (i % 6) * 42 + Phaser.Math.Between(-14, 14);
+      const y = 980 + Math.floor(i / 6) * 34 + Phaser.Math.Between(-12, 12);
+      this.spawnBaby(sp, x, y);
+    });
+  }
+
+  private babies: Phaser.GameObjects.Text[] = [];
+  private spawnBaby(species: string, x: number, y: number): void {
+    const emoji = this.babyEmoji[species] ?? '🐤';
+    const baby = this.add.text(x, y, emoji, { fontSize: '30px' }).setOrigin(0.5).setDepth(y);
+    this.tweens.add({ targets: baby, y: y - 4, duration: 560 + Phaser.Math.Between(0, 300), yoyo: true, repeat: -1, ease: 'sine.inOut' });
+    this.babies.push(baby);
+    this.wanderBaby(baby);
+  }
+
+  /** Test/facilitator hook: how many hatched babies are alive in the world. */
+  petCount(): number {
+    return this.babies.length;
+  }
+
+  private wanderBaby(c: Phaser.GameObjects.Text): void {
+    const nx = Phaser.Math.Clamp(c.x + Phaser.Math.Between(-130, 130), 120, W - 120);
+    const ny = Phaser.Math.Clamp(c.y + Phaser.Math.Between(-90, 90), 260, 1080);
+    c.setFlipX(nx < c.x);
+    this.tweens.add({
+      targets: c,
+      x: nx,
+      y: ny,
+      duration: 2600 + Phaser.Math.Between(0, 2400),
+      ease: 'sine.inOut',
+      onUpdate: () => c.setDepth(c.y),
+      onComplete: () => this.time.delayedCall(600 + Phaser.Math.Between(0, 2400), () => c.active && this.wanderBaby(c)),
+    });
+  }
+
+  /** The hatch moment: an egg at the coop shudders, cracks open in a burst of
+   *  shell, and a procedural baby pops out with a squeaky chirp. */
+  private hatchBaby(species: string): void {
+    const nx = 445 + Phaser.Math.Between(-40, 40);
+    const ny = 980;
+    const egg = this.add.image(nx, ny, 'egg').setDepth(9000).setScale(1.1);
+    if (!reducedMotion()) {
+      this.tweens.add({ targets: egg, angle: { from: -9, to: 9 }, duration: 70, yoyo: true, repeat: 5 });
+    }
+    this.time.delayedCall(reducedMotion() ? 120 : 520, () => {
+      egg.destroy();
+      for (let i = 0; i < 7; i++) {
+        const shell = this.add.text(nx, ny, '🥚', { fontSize: '14px' }).setOrigin(0.5).setDepth(9001);
+        this.tweens.add({
+          targets: shell,
+          x: nx + Phaser.Math.Between(-56, 56),
+          y: ny - Phaser.Math.Between(20, 78),
+          alpha: 0,
+          duration: 650,
+          onComplete: () => shell.destroy(),
+        });
+      }
+      this.spawnBaby(species, nx, ny);
+      sfxChirp();
+      this.dragonCelebrateAnim(false);
+    });
+  }
+
   private dragonCelebrateAnim(big: boolean): void {
     // Calm mode: keep the floating hearts (gentle, celebratory) but skip the
     // spin and big jumps that WCAG flags as vestibular triggers.
@@ -1084,6 +1156,7 @@ export class WorldScene extends Phaser.Scene {
       },
       refreshMarkers: () => this.refreshMarkers(),
       playerPos: () => ({ x: this.player.x, y: this.player.y }),
+      hatchBaby: (species: string) => this.hatchBaby(species),
     };
   }
 
@@ -1103,7 +1176,8 @@ export class WorldScene extends Phaser.Scene {
     show('spot_shed', step === QuestStep.HUNT && !found.includes('shed'));
     show('spot_rock', step === QuestStep.HUNT && !found.includes('rock'));
     show('spot_log', step === QuestStep.HUNT && !found.includes('log'));
-    show('coop', step === QuestStep.BUILD_COOP);
+    // Free play: the coop invites a tap to HATCH whenever the child holds an egg.
+    show('coop', step === QuestStep.BUILD_COOP || (fp && this.services.save.eggs > 0));
     show('chest', step === QuestStep.CHEST);
     show('cave_enter', step === QuestStep.CHEST);
   }

@@ -31,6 +31,7 @@ export function freshSave(): SaveData {
     lastGiftDay: null,
     job: null,
     jobsDone: 0,
+    pets: [],
     taught: [...curriculum.initialTaught],
     evidence: [],
     events: [],

@@ -2,7 +2,7 @@
 // Reading Moments. The world scene forwards every interaction here; this file
 // decides what happens. No pedagogy: word choices come from content, mastery
 // from the engine, and all reading UI from the widgets.
-import { queryWords, word as getWord } from '@readquest/content';
+import { queryWords, validateText, word as getWord } from '@readquest/content';
 import { sfxCrack, sfxHit, sfxPop, sfxReward, sfxUnlock } from './sfx';
 import type { Services } from '../services';
 import type { Hud } from '../ui/hud';
@@ -32,7 +32,13 @@ export interface WorldControl {
   dragonLevelUp(level: number): void;
   refreshMarkers(): void;
   playerPos(): { x: number; y: number };
+  hatchBaby(species: string): void;
 }
+
+// Decodable baby species an egg can hatch into. The pool is filtered to what the
+// child can read at their tier (pup/cub/kid are base+short-vowel, so always
+// available; chick needs the CH digraph). Reading the species name is the crack.
+const HATCH_SPECIES = ['pup', 'cub', 'kid', 'chick'];
 
 const OBJECTIVES: Record<number, { icon: string; lineId: string | null }> = {
   [QuestStep.INTRO_SIGNS]: { icon: '🪧', lineId: 'ln_sign_hint' },
@@ -432,6 +438,10 @@ export class QuestDirector {
   onCoopTapped(): void {
     void this.run(async () => {
       const s = this.services.save;
+      if (this.step === QuestStep.FREE_PLAY) {
+        await this.hatchEgg();
+        return;
+      }
       if (this.step !== QuestStep.BUILD_COOP || s.coopStage >= 3) return;
       if (s.wood < 2) {
         await toast(this.services, 'ln_gather_hint');
@@ -519,6 +529,34 @@ export class QuestDirector {
     this.services.persist();
     this.hud.setCounts(this.counts());
     this.bumpJob('eggs');
+  }
+
+  // ── Eggs hatch into creatures (Phase 2.4) ─────────────────────────────────
+  /** Tap the coop in free play to hatch an egg: read the baby's species name
+   *  (the crack), spend one egg, and a procedural baby pops out to live here. */
+  private async hatchEgg(): Promise<void> {
+    const s = this.services.save;
+    if (s.eggs < 1) {
+      await this.services.speakText('Find an egg first, then tap the coop to hatch it!').done;
+      return;
+    }
+    const species = this.pickHatchSpecies();
+    // Reading the species name IS the crack — forgiving (the card never fails).
+    await readWordCard(this.services, species, { icon: '🥚' });
+    s.eggs -= 1;
+    s.pets.push(species);
+    this.services.analytics.log('egg_hatched', { species, pets: s.pets.length });
+    this.services.persist();
+    this.world.hatchBaby(species);
+    this.hud.setCounts(this.counts());
+    await celebrate(this.services);
+  }
+
+  private pickHatchSpecies(): string {
+    const pool = HATCH_SPECIES.filter((sp) => validateText(sp, this.services.save.taught).ok);
+    const list = pool.length ? pool : ['pup'];
+    const seed = Math.floor(Math.random() * list.length);
+    return list[seed]!;
   }
 
   // ── Quest Board / Help Wanted (Phase 2.1) ─────────────────────────────────

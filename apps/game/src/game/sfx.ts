@@ -150,6 +150,12 @@ export function sfxUnlock(): void {
   tone({ f0: 520, f1: 1040, dur: 0.32, type: 'triangle', gain: 0.22 });
   noise({ dur: 0.3, freq: 5000, gain: 0.06, type: 'highpass', delay: 0.02 });
 }
+/** A newborn's squeaky chirp — three quick rising peeps as a baby hatches. */
+export function sfxChirp(): void {
+  tone({ f0: 900, f1: 1500, dur: 0.08, type: 'sine', gain: 0.22 });
+  tone({ f0: 1100, f1: 1800, dur: 0.09, type: 'sine', gain: 0.2, delay: 0.11 });
+  tone({ f0: 1300, f1: 2050, dur: 0.11, type: 'sine', gain: 0.18, delay: 0.23 });
+}
 
 // The reading chime: a bright bell that CLIMBS a pentatonic scale, one step per
 // correct decode in a streak. A miss (or a pause) resets it — so the child

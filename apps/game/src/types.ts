@@ -71,6 +71,7 @@ export interface SaveData {
   lastGiftDay: string | null; // YYYY-MM-DD of the last claimed daily word-of-the-day gift
   job: Job | null; // the active Help-Wanted job, if any (Quest Board)
   jobsDone: number; // cumulative jobs completed — a progression tally
+  pets: string[]; // species ids of babies hatched from eggs (they live on the plot)
   taught: SkillId[];
   evidence: Evidence[];
   events: GameEvent[];
