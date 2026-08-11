@@ -63,6 +63,7 @@ export class WorldScene extends Phaser.Scene {
 
   private player!: Phaser.Physics.Arcade.Sprite;
   private dragon!: Phaser.GameObjects.Sprite;
+  private dragonRig?: Phaser.GameObjects.Container; // horns + wings added as the dragon grows
   private obstacles!: Phaser.Physics.Arcade.StaticGroup;
   private moveTarget: { x: number; y: number } | null = null;
   private pending: Tappable | null = null;
@@ -1066,7 +1067,81 @@ export class WorldScene extends Phaser.Scene {
     if (tint) this.dragon.setTint(tint);
     this.tweens.add({ targets: this.dragon, displayOriginY: this.dragon.displayOriginY + 3, duration: 700, yoyo: true, repeat: -1, ease: 'sine.inOut' });
     this.tappable(this.dragon, () => this.director.onDragonTapped(), 200);
-    if (this.services.save.dragonLevel >= 2) this.dragon.setScale((64 / this.dragon.height) * 1.18);
+    // Restore raised-dragon visuals: size + horns/wings from feeding, plus any
+    // colour the child "dressed" it in on an earlier day.
+    this.updateDragonStage();
+    if (this.services.save.dragonColor) this.applyDragonColor(this.services.save.dragonColor);
+  }
+
+  // ── Raise & dress your dragon (Phase 4.3) ─────────────────────────────────
+  // Feeding (a reading rep) grows dragonXp; at thresholds the dragon visibly
+  // grows a stage — bigger, then horned, then winged — and the child reads a
+  // colour word to recolour it. All procedural: shapes drawn over the sprite.
+  private static readonly DRAGON_COLOR_HEX: Record<string, number> = {
+    red: 0xff6b6b,
+    tan: 0xd8b48f,
+    green: 0x8fdc8f,
+  };
+
+  private dragonStage(): number {
+    const xp = this.services.save.dragonXp;
+    return xp >= 18 ? 2 : xp >= 6 ? 1 : 0;
+  }
+
+  /** Size the dragon for its current level + growth stage and (re)build the
+   *  horn/wing rig. Safe to call any time — it's the single source of truth for
+   *  how big the dragon is, so level-ups and stage-ups can't fight each other. */
+  private updateDragonStage(): void {
+    const base = 64 / this.dragon.height;
+    const lvl = this.services.save.dragonLevel;
+    const stage = this.dragonStage();
+    this.dragon.setScale(base * (1 + lvl * 0.09) * (1 + stage * 0.24));
+    this.rebuildDragonRig(stage);
+  }
+
+  /** Draw horns (stage ≥ 1) and wings (stage ≥ 2) into a container that rides
+   *  the dragon each frame. Drawn in 64px display space; the update loop scales
+   *  it to the dragon's real display height so it always fits. */
+  private rebuildDragonRig(stage: number): void {
+    this.dragonRig?.destroy();
+    this.dragonRig = undefined;
+    if (stage < 1) return;
+    const g = this.add.graphics();
+    // Horns: two short amber spikes rising off the head.
+    g.fillStyle(0xf4e1b0, 1);
+    g.lineStyle(2, 0x8a6a2a, 1);
+    for (const dir of [-1, 1]) {
+      g.beginPath();
+      g.moveTo(dir * 5, -25);
+      g.lineTo(dir * 12, -25);
+      g.lineTo(dir * 9, -40);
+      g.closePath();
+      g.fillPath();
+      g.strokePath();
+    }
+    if (stage >= 2) {
+      // Wings: membrane triangles sweeping off the back.
+      g.fillStyle(0xffd9a0, 0.95);
+      g.lineStyle(2, 0x8a6a2a, 1);
+      for (const dir of [-1, 1]) {
+        g.beginPath();
+        g.moveTo(dir * 6, -8);
+        g.lineTo(dir * 36, -24);
+        g.lineTo(dir * 32, 8);
+        g.closePath();
+        g.fillPath();
+        g.strokePath();
+      }
+    }
+    const rig = this.add.container(this.dragon.x, this.dragon.y, [g]);
+    rig.setDepth(this.dragon.y + 1);
+    this.dragonRig = rig;
+  }
+
+  applyDragonColor(word: string): void {
+    const hex = WorldScene.DRAGON_COLOR_HEX[word.toLowerCase()];
+    if (hex === undefined) return;
+    this.dragon.setTint(hex);
   }
 
   // Ambient life: a few hens amble around the meadow so the world feels alive
@@ -1369,6 +1444,11 @@ export class WorldScene extends Phaser.Scene {
   dayInfo(): { phase: number; alpha: number; isNight: boolean; fireflies: number } {
     return { phase: this.dayPhase(), alpha: this.dayTint.alpha, isNight: this.wasNight, fireflies: this.fireflies.length };
   }
+  /** Test hook for the raised dragon: current growth stage, on-screen size, the
+   *  applied colour tint, and whether the horn/wing rig is drawn. */
+  dragonInfo(): { stage: number; scale: number; tint: number; hasRig: boolean } {
+    return { stage: this.dragonStage(), scale: this.dragon.scaleX, tint: this.dragon.tintTopLeft, hasRig: !!this.dragonRig };
+  }
 
   private dragonCelebrateAnim(big: boolean): void {
     // Calm mode: keep the floating hearts (gentle, celebratory) but skip the
@@ -1596,8 +1676,8 @@ export class WorldScene extends Phaser.Scene {
           });
         }
       },
-      dragonLevelUp: (level: number) => {
-        this.dragon.setScale((64 / this.dragon.height) * (1 + level * 0.09));
+      dragonLevelUp: (_level: number) => {
+        this.updateDragonStage(); // reads save.dragonLevel (already bumped) + growth stage
         const t = this.add
           .text(this.dragon.x, this.dragon.y - 70, 'LEVEL UP!', {
             fontFamily: FONT,
@@ -1621,6 +1701,8 @@ export class WorldScene extends Phaser.Scene {
       forceDayNight: (night: boolean) => this.forceDayNight(night),
       openGate: (id: string) => this.openGate(id),
       crackSeam: (id: string) => this.crackSeam(id),
+      growDragon: () => this.updateDragonStage(),
+      applyDragonColor: (word: string) => this.applyDragonColor(word),
     };
   }
 
@@ -1796,5 +1878,14 @@ export class WorldScene extends Phaser.Scene {
     this.dragon.y += (ty - this.dragon.y) * 0.07;
     this.dragon.setFlipX(this.dragon.x > tx + 2 ? true : this.dragon.x < tx - 2 ? false : this.dragon.flipX);
     this.dragon.setDepth(this.dragon.y);
+
+    // Horns/wings ride the dragon: match its position, flip, and display size
+    // (rig is drawn in 64px space, so scale by the dragon's real display height).
+    if (this.dragonRig) {
+      const rs = this.dragon.displayHeight / 64;
+      this.dragonRig.setPosition(this.dragon.x, this.dragon.y);
+      this.dragonRig.setScale(this.dragon.flipX ? -rs : rs, rs);
+      this.dragonRig.setDepth(this.dragon.y + 1);
+    }
   }
 }

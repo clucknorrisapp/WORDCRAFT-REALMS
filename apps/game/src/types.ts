@@ -85,6 +85,7 @@ export interface SaveData {
   tamed: string[]; // creature ids tamed by reading their name (they live on the farm)
   gatesOpened: string[]; // Word-Gate ids opened — reading the tier word unrolled a new biome
   pickLevel: number; // best mining pick forged (0 = starter) — gates which ore seams crack
+  dragonColor: string | null; // a colour word read to "dress" the dragon (recolours it)
   taught: SkillId[];
   evidence: Evidence[];
   events: GameEvent[];

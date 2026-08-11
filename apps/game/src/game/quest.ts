@@ -46,6 +46,8 @@ export interface WorldControl {
   forceDayNight(night: boolean): void;
   openGate(id: string): void;
   crackSeam(id: string): void;
+  growDragon(): void;
+  applyDragonColor(word: string): void;
 }
 
 // Blocks that DO things (Phase 3.4): a placed block you tap to read a short
@@ -554,7 +556,25 @@ export class QuestDirector {
       if (target === 'egg' && this.services.save.eggs > 0) this.services.save.eggs -= 1;
       this.services.persist();
       await celebrate(this.services);
+      await this.maybeGrowDragon(); // raising: enough food and it grows a stage
     });
+  }
+
+  /** Raise & dress your dragon (Phase 4.3): feeding (reading) grows the dragon
+   *  through visible stages; at each one it grows bigger + hornier + winged, and
+   *  the child dresses it by reading a new colour word. */
+  private async maybeGrowDragon(): Promise<void> {
+    const xp = this.services.save.dragonXp;
+    if (xp !== 6 && xp !== 18) return; // stage-ups: junior (horns) → big (wings)
+    const color = xp === 6 ? 'red' : 'green';
+    this.world.growDragon();
+    this.services.analytics.log('dragon_grew', { xp, stage: xp === 6 ? 1 : 2 });
+    await celebrate(this.services, true);
+    await this.services.speakText('Your dragon grew bigger! Dress it in a new colour!').done;
+    await readWordCard(this.services, color, { icon: '🎨' }); // read the colour to dress it
+    this.services.save.dragonColor = color;
+    this.world.applyDragonColor(color);
+    this.services.persist();
   }
 
   onEggCollected(): void {

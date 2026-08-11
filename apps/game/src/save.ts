@@ -39,6 +39,7 @@ export function freshSave(): SaveData {
     tamed: [],
     gatesOpened: [],
     pickLevel: 0,
+    dragonColor: null,
     taught: [...curriculum.initialTaught],
     evidence: [],
     events: [],
