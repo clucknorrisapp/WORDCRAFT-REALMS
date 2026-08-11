@@ -10,6 +10,7 @@ import { openBook, REWARD_ICON } from './book-reader';
 import { spellUnlockedByBook } from './spellbook';
 import { checkDeeds } from './deeds';
 import { bumpCanvas } from './build';
+import { requestBeaconRefresh } from './widgets';
 import { QuestStep } from '../types';
 
 const REWARD_FIELD: Record<Book['reward'], 'wood' | 'stone' | 'eggs' | 'gems'> = {
@@ -110,6 +111,7 @@ async function readBook(
     if (bumpCanvas(services)) {
       floatNote('🗺️ New land to build on!', window.innerWidth / 2, window.innerHeight * 0.48);
     }
+    requestBeaconRefresh(); // a finished book lights another ring on the Beacon
 
     // Finishing a book also teaches a new spell — the reading→magic loop.
     const spell = spellUnlockedByBook(services.save.booksRead.length);

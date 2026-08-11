@@ -97,6 +97,17 @@ export function requestSummon(word: string): void {
   summon(word);
 }
 
+// Bridge: the world scene registers how to relight the Beacon; a Reader
+// Level-up or a finished book calls requestBeaconRefresh() so the monument
+// grows a ring the instant reading grows — no reload needed.
+let beaconRefresh: () => void = () => {};
+export function setBeaconRefresh(fn: () => void): void {
+  beaconRefresh = fn;
+}
+export function requestBeaconRefresh(): void {
+  beaconRefresh();
+}
+
 const CELEBRATE_LINES = ['ln_celebrate_1', 'ln_celebrate_2', 'ln_celebrate_3'];
 let celebrateIdx = 0;
 

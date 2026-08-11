@@ -4,9 +4,9 @@
 import Phaser from 'phaser';
 import type { Services } from '../services';
 import type { Hud } from '../ui/hud';
-import { allBlocks } from '@readquest/content';
+import { allBlocks, readerLevel } from '@readquest/content';
 import { floatNote, isUiOpen, reducedMotion } from '../ui/dom';
-import { setBuildRenderer, setDragonCelebrate, setNextHandler, setPlaceModeToggle, setCreatureRefresh, setFastTravel, setPlayerPeek, setSummon } from '../ui/widgets';
+import { setBuildRenderer, setDragonCelebrate, setNextHandler, setPlaceModeToggle, setCreatureRefresh, setFastTravel, setPlayerPeek, setSummon, setBeaconRefresh } from '../ui/widgets';
 import { regionAt } from './regions';
 import { summonableByWord, type Summonable } from '../ui/loot';
 import { creatureById, wildCreatures, type Creature } from '../ui/creatures';
@@ -137,6 +137,8 @@ export class WorldScene extends Phaser.Scene {
     this.buildCave();
     this.buildGates(); // Word-Gates at the eastern edge (+ any biomes already opened)
     this.buildMine(); // toolbench + ore seams (the pick ladder)
+    this.buildBeacon(); // the reading-journey monument on the hill (Phase 4.2)
+    this.buildGiant(); // the Waking Giant boss out south-east (Phase 4.2)
     this.setupBuildPlot();
     this.setupBlueprintTable();
     this.spawnPlayerAndDragon();
@@ -199,6 +201,7 @@ export class WorldScene extends Phaser.Scene {
     setFastTravel((x, y) => this.teleport(x, y)); // map pins whoosh the player
     setPlayerPeek(() => ({ x: this.player.x, y: this.player.y })); // map's "you are here"
     setSummon((word) => this.summonThing(word)); // Word Loot: read a word → its thing appears
+    setBeaconRefresh(() => this.updateBeacon(true)); // level-up / finished book lights a ring
     this.renderWorldBuild(); // restore blocks laid in the world last session
     this.renderBlueprint(); // restore an in-progress plan's ghosts
     // Free play only: strew the wide east with Say-to-Mine nodes + glint caches,
@@ -1056,6 +1059,194 @@ export class WorldScene extends Phaser.Scene {
     this.revealObjective(best);
   }
 
+  // ── The Beacon: the reading journey as one object (Phase 4.2) ──────────────
+  // A tall crystal on the northern hill. It lights one more ring per Reader
+  // Level and per finished book — powered ONLY by reading — so "I got better at
+  // reading" and "my tower grew" become the same visible event.
+  private static readonly BEACON = { x: 1330, y: 300 };
+  private static readonly BEACON_RINGS = 12;
+  private beaconSegs: Phaser.GameObjects.Polygon[] = [];
+  private beaconTip!: Phaser.GameObjects.Polygon;
+
+  private buildBeacon(): void {
+    const { x, y } = WorldScene.BEACON;
+    // Hill + plinth.
+    this.add.ellipse(x, y + 34, 260, 90, 0x6fae5a, 0.9).setDepth(y - 200);
+    this.add.rectangle(x, y + 18, 78, 34, 0x8a8f98).setDepth(y - 199);
+    // Stacked crystal segments, bottom → top. Each is a diamond; lit ones glow.
+    const segH = 22;
+    for (let i = 0; i < WorldScene.BEACON_RINGS; i++) {
+      const sy = y - i * segH;
+      const w = 30 - i * 0.8;
+      const seg = this.add
+        .polygon(x, sy, [0, -segH / 2, w / 2, 0, 0, segH / 2, -w / 2, 0], 0x2b3550)
+        .setDepth(y - 198 + i);
+      seg.setStrokeStyle(1.5, 0x14203a, 0.8);
+      this.beaconSegs.push(seg);
+    }
+    // The crowning tip, shines when the whole beacon is lit.
+    this.beaconTip = this.add
+      .polygon(x, y - WorldScene.BEACON_RINGS * segH, [0, -20, 10, 6, -10, 6], 0x2b3550)
+      .setDepth(y - 198 + WorldScene.BEACON_RINGS);
+    // Tap the beacon for a proud read-out of the journey so far.
+    const hit = this.add.rectangle(x, y - 120, 90, 320, 0xffffff, 0.001).setDepth(y + 2);
+    hit.setInteractive({ useHandCursor: true });
+    hit.on('pointerdown', (_p: unknown, _lx: unknown, _ly: unknown, event: Phaser.Types.Input.EventData) => {
+      if (this.placing || isUiOpen()) return;
+      event.stopPropagation();
+      const rings = this.beaconRings();
+      void this.services.speakText(
+        rings <= 1 ? 'Your reading beacon! Read and finish books to light it up!' : `Your beacon has ${rings} rings of reading light!`,
+      ).done;
+      floatNote(`✨ ${rings} rings`, window.innerWidth / 2, window.innerHeight / 2 - 60);
+    });
+    this.updateBeacon(false); // restore lit state from the save (no celebration)
+  }
+
+  private beaconRings(): number {
+    const lvl = readerLevel(this.services.save.taught).level;
+    const books = this.services.save.booksRead?.length ?? 0;
+    return Phaser.Math.Clamp(lvl + books, 0, WorldScene.BEACON_RINGS);
+  }
+
+  /** Repaint the beacon to its current ring count. When celebrateNew is set and
+   *  the count has grown past what we last showed, shoot a light beam and bank
+   *  the new high-water mark so each ring is celebrated exactly once. */
+  private updateBeacon(celebrateNew: boolean): void {
+    const lit = this.beaconRings();
+    this.beaconSegs.forEach((seg, i) => {
+      const on = i < lit;
+      seg.setFillStyle(on ? 0x7ee0ff : 0x2b3550, 1);
+      if (on) seg.setStrokeStyle(1.5, 0xffffff, 0.7);
+    });
+    const capped = lit >= WorldScene.BEACON_RINGS;
+    this.beaconTip.setFillStyle(capped ? 0xfff2a8 : 0x2b3550, 1);
+    if (celebrateNew && lit > (this.services.save.beaconLit ?? 0)) {
+      this.beaconBeam();
+      this.services.analytics.log('beacon_ring', { rings: lit });
+    }
+    this.services.save.beaconLit = Math.max(this.services.save.beaconLit ?? 0, lit);
+    this.services.persist();
+  }
+
+  private beaconBeam(): void {
+    if (reducedMotion()) return;
+    const { x, y } = WorldScene.BEACON;
+    const beam = this.add.rectangle(x, y - 150, 16, 600, 0xbdf0ff, 0.7).setDepth(9600).setBlendMode(Phaser.BlendModes.ADD);
+    this.tweens.add({ targets: beam, scaleX: 3, alpha: 0, duration: 900, ease: 'sine.out', onComplete: () => beam.destroy() });
+  }
+
+  /** Test/facilitator hook for the Beacon. */
+  beaconInfo(): { rings: number; lit: number } {
+    return { rings: this.beaconRings(), lit: this.services.save.beaconLit ?? 0 };
+  }
+
+  // ── The Waking Giant boss (Phase 4.2) ─────────────────────────────────────
+  // A huge, snoring, mossy stone giant slumps out south-east, blocking a path to
+  // fresh land. He appears at Reader Level 3. Tap him and he raises a word-shield
+  // — read it and it shatters; three shields and he yawns, stands, thanks you,
+  // and stomps aside to reveal new land. Fully non-violent.
+  private static readonly GIANT = { x: 2430, y: 1320 };
+  private static readonly GIANT_LEVEL = 3;
+  private giant?: Phaser.GameObjects.Container;
+  private giantZzz?: Phaser.GameObjects.Text;
+  private giantPips: Phaser.GameObjects.Arc[] = [];
+
+  private buildGiant(): void {
+    if (readerLevel(this.services.save.taught).level < WorldScene.GIANT_LEVEL) return;
+    const { x, y } = WorldScene.GIANT;
+    if (this.services.save.giantDefeated) {
+      this.paintGiantLand(); // already beaten: the new land is simply here
+      return;
+    }
+    const moss = 0x6b7f52;
+    const stone = 0x8f8a7e;
+    const c = this.add.container(x, y);
+    const body = this.add.rectangle(0, 0, 150, 140, stone).setStrokeStyle(4, 0x5c5849);
+    body.setData('base', stone);
+    const head = this.add.rectangle(0, -104, 96, 84, stone).setStrokeStyle(4, 0x5c5849);
+    const mossCap = this.add.ellipse(0, -140, 104, 40, moss, 0.95);
+    // Sleepy closed eyes + mouth.
+    const eyeL = this.add.rectangle(-22, -108, 22, 6, 0x2f2a22);
+    const eyeR = this.add.rectangle(22, -108, 22, 6, 0x2f2a22);
+    const mouth = this.add.ellipse(0, -84, 26, 14, 0x2f2a22, 0.85);
+    const armL = this.add.rectangle(-96, 6, 42, 96, stone).setStrokeStyle(4, 0x5c5849);
+    const armR = this.add.rectangle(96, 6, 42, 96, stone).setStrokeStyle(4, 0x5c5849);
+    c.add([armL, armR, body, mossCap, head, eyeL, eyeR, mouth]);
+    c.setDepth(y);
+    this.giant = c;
+    if (!reducedMotion()) {
+      this.tweens.add({ targets: c, y: y - 6, duration: 1800, yoyo: true, repeat: -1, ease: 'sine.inOut' }); // breathing
+    }
+    this.giantZzz = this.add.text(x + 70, y - 150, '💤', { fontSize: '30px' }).setOrigin(0.5).setDepth(y + 1);
+    this.tweens.add({ targets: this.giantZzz, y: y - 190, alpha: { from: 0.9, to: 0.2 }, duration: 2200, repeat: -1 });
+    // Three shield pips showing progress.
+    for (let i = 0; i < 3; i++) {
+      const done = i < (this.services.save.giantShields ?? 0);
+      const pip = this.add.circle(x - 30 + i * 30, y - 200, 9, done ? 0xffd166 : 0x5c5849).setStrokeStyle(2, 0x3a2f1a).setDepth(y + 2);
+      this.giantPips.push(pip);
+    }
+    const hit = this.add.rectangle(x, y - 40, 200, 260, 0xffffff, 0.001).setDepth(y + 3);
+    hit.setInteractive({ useHandCursor: true });
+    hit.on('pointerdown', (_p: unknown, _lx: unknown, _ly: unknown, event: Phaser.Types.Input.EventData) => {
+      if (this.placing || isUiOpen()) return;
+      event.stopPropagation();
+      this.director.onGiantTapped();
+    });
+  }
+
+  /** A shield shatters: shard burst + a pip lights. On the third, the caller
+   *  follows with giantStandAside(). */
+  private shatterGiantShield(count: number): void {
+    const { x, y } = WorldScene.GIANT;
+    sfxShatter();
+    if (!reducedMotion()) {
+      this.cameras.main.shake(240, 0.004);
+      for (let i = 0; i < 8; i++) {
+        const shard = this.add.rectangle(x, y - 60, 12, 12, 0x9fd0ff).setDepth(9600);
+        this.tweens.add({ targets: shard, x: x + Phaser.Math.Between(-90, 90), y: y - 60 - Phaser.Math.Between(10, 90), angle: Phaser.Math.Between(-180, 180), alpha: 0, duration: 620, onComplete: () => shard.destroy() });
+      }
+    }
+    const pip = this.giantPips[count - 1];
+    if (pip) pip.setFillStyle(0xffd166, 1);
+  }
+
+  /** The giant wakes, stands, and stomps aside — revealing the land beyond. */
+  private giantStandAside(): void {
+    const { x, y } = WorldScene.GIANT;
+    this.giantZzz?.destroy();
+    if (this.giant) {
+      const g = this.giant;
+      this.tweens.add({ targets: g, y: y - 40, duration: 500, yoyo: true, ease: 'sine.inOut' }); // a big yawn-stretch
+      this.time.delayedCall(reducedMotion() ? 120 : 700, () => {
+        this.tweens.add({ targets: g, x: x + 460, alpha: 0, duration: reducedMotion() ? 200 : 1300, ease: 'sine.in', onComplete: () => g.destroy() });
+      });
+    }
+    if (!reducedMotion()) this.cameras.main.shake(500, 0.008);
+    this.time.delayedCall(reducedMotion() ? 200 : 900, () => {
+      this.paintGiantLand();
+      this.revealObjective({ x: x + 120, y });
+    });
+  }
+
+  /** The fresh land the giant was blocking: a bright glade with a gather node. */
+  private paintGiantLand(): void {
+    const { x, y } = WorldScene.GIANT;
+    this.add.ellipse(x + 180, y, 360, 300, 0xbfe8a0, 0.6).setDepth(-60);
+    this.add
+      .text(x + 180, y - 130, 'Sunny Glade', { fontFamily: FONT, fontSize: '15px', fontStyle: '900', color: '#2f2718', backgroundColor: 'rgba(255,255,255,0.7)' })
+      .setOrigin(0.5)
+      .setPadding(4, 2, 4, 2)
+      .setDepth(y);
+    this.gatherableTree(x + 120, y + 40);
+    this.gatherableRock(x + 250, y + 70);
+  }
+
+  /** Test/facilitator hook for the giant. */
+  giantInfo(): { defeated: boolean; shields: number; alive: boolean } {
+    return { defeated: this.services.save.giantDefeated, shields: this.services.save.giantShields ?? 0, alive: !!this.giant && this.giant.active };
+  }
+
   // ── Player + dragon ───────────────────────────────────────────────────────
   private spawnPlayerAndDragon(): void {
     const avatarKey = `avatar_${this.services.save.avatar ?? 0}`;
@@ -1771,6 +1962,8 @@ export class WorldScene extends Phaser.Scene {
       crackSeam: (id: string) => this.crackSeam(id),
       growDragon: () => this.updateDragonStage(),
       applyDragonColor: (word: string) => this.applyDragonColor(word),
+      shatterGiantShield: (count: number) => this.shatterGiantShield(count),
+      giantStandAside: () => this.giantStandAside(),
     };
   }
 

@@ -89,6 +89,9 @@ export interface SaveData {
   mapSeen: string[]; // region ids the child has walked into (fog cleared)
   mapClaimed: string[]; // region ids claimed by reading their name (fast-travel pins)
   summoned: Array<{ w: string; x: number; y: number }>; // Word-Loot things read into the world
+  beaconLit: number; // highest Beacon ring count already celebrated (rings = readerLevel + books)
+  giantShields: number; // word-shields the child has shattered on the Waking Giant (0–3)
+  giantDefeated: boolean; // the giant has woken, thanked the child, and stepped aside
   taught: SkillId[];
   evidence: Evidence[];
   events: GameEvent[];

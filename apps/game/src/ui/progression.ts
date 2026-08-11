@@ -9,7 +9,7 @@ import type { SkillId } from '@readquest/shared';
 import type { Services } from '../services';
 import type { Hud } from './hud';
 import { confetti, el, isUiOpen, openLayer, speakerButton, wait } from './dom';
-import { requestCreatureRefresh } from './widgets';
+import { requestCreatureRefresh, requestBeaconRefresh } from './widgets';
 import { sfxFanfare } from '../game/sfx';
 import { bumpCanvas } from './build';
 
@@ -38,6 +38,7 @@ const SKILL_INTRO: Record<string, SkillIntro> = {
 export function mountProgression(services: Services, hud: Hud): void {
   services.setAdvanceHandler((skill) => {
     hud.refreshReaderLevel();
+    requestBeaconRefresh(); // a Reader Level-up lights another ring on the Beacon
     // New sounds → new creatures roam the land (refresh once the moment is shown).
     void showNewSounds(services, skill).then(() => requestCreatureRefresh());
   });

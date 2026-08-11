@@ -48,6 +48,8 @@ export interface WorldControl {
   crackSeam(id: string): void;
   growDragon(): void;
   applyDragonColor(word: string): void;
+  shatterGiantShield(count: number): void;
+  giantStandAside(): void;
 }
 
 // Blocks that DO things (Phase 3.4): a placed block you tap to read a short
@@ -910,6 +912,43 @@ export class QuestDirector {
       this.hud.setCounts(this.counts());
       floatNote('+1 💎', window.innerWidth / 2, window.innerHeight / 2 - 60);
       await celebrate(this.services);
+    });
+  }
+
+  /** The Waking Giant boss (Phase 4.2). Each tap raises a word-shield: reading it
+   *  (an adaptive review, always warm — readWordCard can't fail) shatters it.
+   *  Three shields and he stands, thanks the child, and stomps aside to reveal
+   *  new land, paying a gem reward. Non-violent and forgiving by construction. */
+  onGiantTapped(): void {
+    if (this.step !== QuestStep.FREE_PLAY || this.busy) return;
+    if (this.services.save.giantDefeated) {
+      this.world.dragonHappy(); // already beaten — a friendly wave, no board
+      return;
+    }
+    void this.run(async () => {
+      const { target, skill, bucket } = this.pickPracticeWord();
+      this.services.analytics.log('adaptive_target', { skill, bucket, word: target, via: 'giant' });
+      await readWordCard(this.services, target, { icon: '🛡️' });
+      const n = Math.min(3, (this.services.save.giantShields ?? 0) + 1);
+      this.services.save.giantShields = n;
+      this.world.shatterGiantShield(n);
+      this.services.analytics.log('giant_shield', { n, word: target });
+      this.services.persist();
+      if (n >= 3) {
+        // Defeated: wake, thank, step aside, and pay the reward — once.
+        this.services.save.giantDefeated = true;
+        this.services.save.gems += 3;
+        this.services.analytics.log('giant_defeated');
+        this.services.persist();
+        this.world.giantStandAside();
+        this.hud.setCounts(this.counts());
+        floatNote('+3 💎', window.innerWidth / 2, window.innerHeight / 2 - 60);
+        await celebrate(this.services, true);
+        await this.services.speakText('The giant wakes, says thank you, and steps aside — new land opens!').done;
+      } else {
+        await celebrate(this.services);
+        await this.services.speakText(`${3 - n} more ${3 - n === 1 ? 'shield' : 'shields'} to wake the giant!`).done;
+      }
     });
   }
 }
