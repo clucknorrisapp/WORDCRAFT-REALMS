@@ -10,6 +10,7 @@ import { setBuildRenderer, setDragonCelebrate, setNextHandler, setPlaceModeToggl
 import { openBuild, gridDims } from '../ui/build';
 import { checkDeeds } from '../ui/deeds';
 import { openWorldPalette, firstWorldBlock, WORLD_ERASER, type WorldPalette } from '../ui/worldbuild';
+import { blueprintById } from '../ui/blueprints';
 import { sfxChirp, sfxPlace, sfxShatter } from './sfx';
 import { blockTextureCanvas } from './block-textures';
 import { hasPropTexture, propTextureCanvas, PIXEL_PROP_KEYS } from './world-textures';
@@ -119,6 +120,7 @@ export class WorldScene extends Phaser.Scene {
     this.buildForest();
     this.buildCave();
     this.setupBuildPlot();
+    this.setupBlueprintTable();
     this.spawnPlayerAndDragon();
     this.restoreFromSave();
     this.spawnCritters();
@@ -165,6 +167,7 @@ export class WorldScene extends Phaser.Scene {
     setNextHandler(() => this.showNext()); // the "Where do I go?" compass
     setPlaceModeToggle(() => this.togglePlaceMode()); // Build Where You Stand
     this.renderWorldBuild(); // restore blocks laid in the world last session
+    this.renderBlueprint(); // restore an in-progress plan's ghosts
     // Free play only: strew the wide east with Say-to-Mine nodes + glint caches,
     // then nudge toward the nearest one so a session never opens on a blank map.
     this.seedFreePlayNodes();
@@ -508,6 +511,101 @@ export class WorldScene extends Phaser.Scene {
   /** Test/facilitator hook: how many world-build blocks are laid. */
   worldBuildCount(): number {
     return this.worldBuildTiles.size;
+  }
+
+  // ── Blueprint Quests (Phase 2.3) ──────────────────────────────────────────
+  private bpGhosts = new Map<number, Phaser.GameObjects.GameObject[]>();
+
+  private setupBlueprintTable(): void {
+    const x = 940;
+    const y = 900;
+    const table = this.prop('sign', x, y, 70, 96, { solid: false });
+    table.setDepth(y);
+    this.add.text(x, y - 20, 'PLANS', { fontFamily: FONT, fontSize: '16px', fontStyle: '900', color: '#5b4632' }).setOrigin(0.5).setDepth(y + 1);
+    this.add.text(x, y - 56, '📋', { fontSize: '26px' }).setOrigin(0.5).setDepth(y + 1);
+    this.tappable(table, () => this.director.onBlueprintTableTapped(), 190);
+    this.marker('blueprint', x, y - 86);
+  }
+
+  /** Draw the active plan: unfilled cells as faint ghost blocks you can tap,
+   *  filled cells already solid. */
+  private renderBlueprint(): void {
+    for (const objs of this.bpGhosts.values()) objs.forEach((o) => o.destroy());
+    this.bpGhosts.clear();
+    const bp = this.services.save.blueprint;
+    if (!bp) return;
+    const def = blueprintById(bp.id);
+    if (!def) return;
+    const texKey = `blk_${def.block}`;
+    def.shape.forEach(([dx, dy], i) => {
+      const tx = def.origin[0] + dx;
+      const ty = def.origin[1] + dy;
+      const cx = tx * WORLD_TILE + WORLD_TILE / 2;
+      const cy = ty * WORLD_TILE + WORLD_TILE / 2;
+      if (bp.filled[i]) {
+        this.paintWorldTile(tx, ty, def.block);
+        return;
+      }
+      const objs: Phaser.GameObjects.GameObject[] = [];
+      if (this.textures.exists(texKey)) {
+        objs.push(this.add.image(cx, cy, texKey).setDisplaySize(WORLD_TILE, WORLD_TILE).setAlpha(0.28).setDepth(cy - 7));
+      }
+      objs.push(this.add.rectangle(cx, cy, WORLD_TILE - 4, WORLD_TILE - 4).setStrokeStyle(2, 0xffffff, 0.6).setDepth(cy - 6));
+      const hit = this.add.rectangle(cx, cy, WORLD_TILE, WORLD_TILE, 0xffffff, 0.001).setDepth(cy - 5);
+      hit.setInteractive({ useHandCursor: true });
+      hit.on('pointerdown', (_p: unknown, _x: unknown, _y: unknown, event: Phaser.Types.Input.EventData) => {
+        event.stopPropagation();
+        if (isUiOpen()) return;
+        this.director.onBlueprintCellTapped(i);
+      });
+      objs.push(hit);
+      this.bpGhosts.set(i, objs);
+    });
+  }
+
+  private fillBlueprintCell(index: number): void {
+    const bp = this.services.save.blueprint;
+    if (!bp) return;
+    const def = blueprintById(bp.id);
+    if (!def) return;
+    const off = def.shape[index];
+    if (!off) return;
+    const tx = def.origin[0] + off[0];
+    const ty = def.origin[1] + off[1];
+    this.bpGhosts.get(index)?.forEach((o) => o.destroy());
+    this.bpGhosts.delete(index);
+    this.paintWorldTile(tx, ty, def.block);
+    this.pulseAt(tx * WORLD_TILE + WORLD_TILE / 2, ty * WORLD_TILE + WORLD_TILE / 2);
+    sfxPlace();
+  }
+
+  /** The plan snaps together: a poof of sparkles + a baby to live in it. */
+  private finishBlueprint(id: string, pet: string): void {
+    const def = blueprintById(id);
+    if (!def) return;
+    let sx = 0;
+    let sy = 0;
+    for (const [dx, dy] of def.shape) {
+      sx += def.origin[0] + dx;
+      sy += def.origin[1] + dy;
+    }
+    const n = def.shape.length || 1;
+    const cx = (sx / n) * WORLD_TILE + WORLD_TILE / 2;
+    const cy = (sy / n) * WORLD_TILE + WORLD_TILE / 2;
+    for (let i = 0; i < 10; i++) {
+      const s = this.add.text(cx, cy, '✨', { fontSize: '22px' }).setOrigin(0.5).setDepth(9500);
+      this.tweens.add({
+        targets: s,
+        x: cx + Phaser.Math.Between(-90, 90),
+        y: cy - Phaser.Math.Between(30, 120),
+        alpha: 0,
+        duration: 900,
+        onComplete: () => s.destroy(),
+      });
+    }
+    if (!reducedMotion()) this.cameras.main.shake(200, 0.004);
+    this.spawnBaby(pet, cx + Phaser.Math.Between(-30, 30), cy + 44);
+    sfxChirp();
   }
 
   private togglePlaceMode(): void {
@@ -1158,6 +1256,9 @@ export class WorldScene extends Phaser.Scene {
       refreshMarkers: () => this.refreshMarkers(),
       playerPos: () => ({ x: this.player.x, y: this.player.y }),
       hatchBaby: (species: string) => this.hatchBaby(species),
+      renderBlueprint: () => this.renderBlueprint(),
+      fillBlueprintCell: (index: number) => this.fillBlueprintCell(index),
+      finishBlueprint: (id: string, pet: string) => this.finishBlueprint(id, pet),
     };
   }
 
@@ -1179,6 +1280,10 @@ export class WorldScene extends Phaser.Scene {
     show('spot_log', step === QuestStep.HUNT && !found.includes('log'));
     // Free play: the coop invites a tap to HATCH whenever the child holds an egg.
     show('coop', step === QuestStep.BUILD_COOP || (fp && this.services.save.eggs > 0));
+    // Free play: the plans table beckons when a new blueprint is available.
+    const bpDone = new Set(this.services.save.blueprintsDone ?? []);
+    const bpLeft = ['den', 'pen', 'hut'].some((id) => !bpDone.has(id));
+    show('blueprint', fp && !this.services.save.blueprint && bpLeft);
     show('chest', step === QuestStep.CHEST);
     show('cave_enter', step === QuestStep.CHEST);
   }

@@ -2,7 +2,7 @@
 // Reading Moments. The world scene forwards every interaction here; this file
 // decides what happens. No pedagogy: word choices come from content, mastery
 // from the engine, and all reading UI from the widgets.
-import { queryWords, validateText, word as getWord } from '@readquest/content';
+import { allBlocks, queryWords, validateText, word as getWord } from '@readquest/content';
 import { sfxCrack, sfxHit, sfxPop, sfxReward, sfxUnlock } from './sfx';
 import type { Services } from '../services';
 import type { Hud } from '../ui/hud';
@@ -18,7 +18,10 @@ import {
 import { floatNote } from '../ui/dom';
 import { checkDeeds } from '../ui/deeds';
 import { buildJob, jobReward, showJobOffer } from '../ui/questboard';
+import { blueprintById, nextBlueprint, type BlueprintDef } from '../ui/blueprints';
 import { QuestStep } from '../types';
+
+const WORLD_TILE = 54; // keep in sync with world.ts WORLD_TILE (blueprint guidance math)
 
 export interface WorldControl {
   revealObjective(pos: { x: number; y: number }): void;
@@ -33,6 +36,9 @@ export interface WorldControl {
   refreshMarkers(): void;
   playerPos(): { x: number; y: number };
   hatchBaby(species: string): void;
+  renderBlueprint(): void;
+  fillBlueprintCell(index: number): void;
+  finishBlueprint(id: string, pet: string): void;
 }
 
 // Decodable baby species an egg can hatch into. The pool is filtered to what the
@@ -153,8 +159,22 @@ export class QuestDirector {
       case QuestStep.CHEST:
         return p.y > 1200 ? xy(POI.chest) : xy(POI.door);
       default:
-        return this.jobTarget(); // FREE_PLAY — guide only while a Help-Wanted job is active
+        // FREE_PLAY — guide to an active plan first, then a Help-Wanted job.
+        return this.blueprintTarget() ?? this.jobTarget();
     }
+  }
+
+  /** The next unfilled ghost cell of an active plan (null with no plan). */
+  private blueprintTarget(): { x: number; y: number } | null {
+    const bp = this.services.save.blueprint;
+    if (!bp) return null;
+    const def = blueprintById(bp.id);
+    if (!def) return null;
+    const idx = bp.filled.findIndex((f) => !f);
+    const off = def.shape[idx === -1 ? 0 : idx]!;
+    const tx = def.origin[0] + off[0];
+    const ty = def.origin[1] + off[1];
+    return { x: tx * WORLD_TILE + WORLD_TILE / 2, y: ty * WORLD_TILE + WORLD_TILE / 2 };
   }
 
   /** Where the active free-play job points: the resource while gathering, the
@@ -557,6 +577,83 @@ export class QuestDirector {
     const list = pool.length ? pool : ['pup'];
     const seed = Math.floor(Math.random() * list.length);
     return list[seed]!;
+  }
+
+  // ── Blueprint Quests (Phase 2.3) ──────────────────────────────────────────
+  /** Tap the plans table: pick up the next plan by READING its name, which drops
+   *  a ghost outline on the grass to fill in. */
+  onBlueprintTableTapped(): void {
+    if (this.step !== QuestStep.FREE_PLAY) {
+      this.world.dragonHappy();
+      return;
+    }
+    void this.run(async () => {
+      const s = this.services.save;
+      if (s.blueprint) {
+        await this.services.speakText('Fill in your plan! Tap the ghost blocks.').done;
+        this.pendingReveal = true;
+        return;
+      }
+      const def = nextBlueprint(this.services);
+      if (!def) {
+        await this.services.speakText('You built every plan! Amazing!').done;
+        return;
+      }
+      await readWordCard(this.services, def.name, { icon: def.icon }); // read the plan name to accept
+      s.blueprint = { id: def.id, filled: def.shape.map(() => false) };
+      this.services.analytics.log('blueprint_started', { id: def.id });
+      this.services.persist();
+      this.world.renderBlueprint();
+      this.world.refreshMarkers();
+      this.pendingReveal = true;
+      await this.services.speakText(`Now build a ${def.name}! Tap the ghost blocks.`).done;
+    });
+  }
+
+  /** Tap a ghost cell: read the block's word to earn it (once), then it snaps in.
+   *  Filling the last cell completes the plan. */
+  onBlueprintCellTapped(index: number): void {
+    void this.run(async () => {
+      const s = this.services.save;
+      const bp = s.blueprint;
+      if (!bp) return;
+      const def = blueprintById(bp.id);
+      if (!def || bp.filled[index]) return;
+      // Earn the block by reading its word (once) — the plan pulls the exact word.
+      const block = allBlocks().find((b) => b.id === def.block);
+      if (block && block.starter !== true && !s.blocksUnlocked.includes(block.id)) {
+        await readWordCard(this.services, block.word);
+        if (!s.blocksUnlocked.includes(block.id)) {
+          s.blocksUnlocked.push(block.id);
+          this.services.analytics.log('block_unlocked', { block: block.id, word: block.word, via: 'blueprint' });
+        }
+      }
+      bp.filled[index] = true;
+      const off = def.shape[index]!;
+      const tx = def.origin[0] + off[0];
+      const ty = def.origin[1] + off[1];
+      s.worldBuild[`${tx},${ty}`] = def.block;
+      s.buildPlaced += 1;
+      this.services.persist();
+      this.world.fillBlueprintCell(index);
+      if (bp.filled.every(Boolean)) await this.completeBlueprint(def);
+    });
+  }
+
+  private async completeBlueprint(def: BlueprintDef): Promise<void> {
+    const s = this.services.save;
+    s.blueprintsDone.push(def.id);
+    s.blueprint = null;
+    s.gems += def.gems;
+    s.pets.push(def.pet);
+    this.services.analytics.log('blueprint_done', { id: def.id, gems: def.gems });
+    this.services.persist();
+    this.world.finishBlueprint(def.id, def.pet); // poof + a baby to live in it
+    this.hud.setCounts(this.counts());
+    this.world.refreshMarkers();
+    floatNote(`+${def.gems} 💎`, window.innerWidth / 2, window.innerHeight / 2 - 60);
+    await celebrate(this.services, true);
+    await this.services.speakText(def.praise).done; // proud read-back
   }
 
   // ── Quest Board / Help Wanted (Phase 2.1) ─────────────────────────────────

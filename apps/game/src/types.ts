@@ -44,6 +44,12 @@ export interface Job {
   progress: number; // how many so far
 }
 
+/** A Blueprint Quest in progress: a ghost plan whose cells the child fills. */
+export interface ActiveBlueprint {
+  id: string;
+  filled: boolean[]; // aligned to the blueprint's shape order
+}
+
 export interface SaveData {
   v: 1;
   childId: string;
@@ -73,6 +79,8 @@ export interface SaveData {
   jobsDone: number; // cumulative jobs completed — a progression tally
   pets: string[]; // species ids of babies hatched from eggs (they live on the plot)
   canvasLevel: number; // Build-canvas size tier — grows with books read / sounds unlocked
+  blueprint: ActiveBlueprint | null; // the plan the child is currently filling in
+  blueprintsDone: string[]; // completed blueprint ids (each builds once)
   taught: SkillId[];
   evidence: Evidence[];
   events: GameEvent[];
