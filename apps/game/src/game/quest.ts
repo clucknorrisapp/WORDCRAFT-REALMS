@@ -750,4 +750,24 @@ export class QuestDirector {
       await celebrate(this.services);
     });
   }
+
+  /** Night firefly (Phase 3.5): a word only out after dark. Reading it catches
+   *  the firefly for a gem — a soft reason to come back at a new time of day. */
+  onFireflyTapped(onCaught: () => void): void {
+    if (this.step !== QuestStep.FREE_PLAY) return;
+    void this.run(async () => {
+      const { target, skill, bucket } = this.pickPracticeWord();
+      this.services.analytics.log('adaptive_target', { skill, bucket, word: target, via: 'firefly' });
+      await readWordCard(this.services, target, { icon: '🌙' });
+      this.services.save.gems += 1;
+      this.services.save.firefliesCaught = (this.services.save.firefliesCaught ?? 0) + 1;
+      this.services.analytics.log('firefly_caught', { word: target });
+      this.services.persist();
+      sfxReward();
+      onCaught();
+      this.hud.setCounts(this.counts());
+      floatNote('+1 💎', window.innerWidth / 2, window.innerHeight / 2 - 60);
+      await celebrate(this.services);
+    });
+  }
 }

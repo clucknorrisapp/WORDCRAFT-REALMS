@@ -35,6 +35,7 @@ export function freshSave(): SaveData {
     canvasLevel: 0,
     blueprint: null,
     blueprintsDone: [],
+    firefliesCaught: 0,
     taught: [...curriculum.initialTaught],
     evidence: [],
     events: [],

@@ -81,6 +81,7 @@ export interface SaveData {
   canvasLevel: number; // Build-canvas size tier — grows with books read / sounds unlocked
   blueprint: ActiveBlueprint | null; // the plan the child is currently filling in
   blueprintsDone: string[]; // completed blueprint ids (each builds once)
+  firefliesCaught: number; // night fireflies read-caught (a "come back after dark" tally)
   taught: SkillId[];
   evidence: Evidence[];
   events: GameEvent[];

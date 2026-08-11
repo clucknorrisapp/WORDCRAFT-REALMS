@@ -95,6 +95,12 @@ export class WorldScene extends Phaser.Scene {
   private worldPalette: WorldPalette | null = null;
   private worldBuildTiles = new Map<string, Phaser.GameObjects.Image>();
 
+  // The world breathes (Phase 3.5): a slow day→night colour grade + night bugs.
+  private dayTint!: Phaser.GameObjects.Rectangle;
+  private fireflies: Phaser.GameObjects.Arc[] = [];
+  private wasNight = false;
+  private phaseOverride: number | null = null; // test hook
+
   constructor(services: Services, hud: Hud) {
     super('world');
     this.services = services;
@@ -160,6 +166,14 @@ export class WorldScene extends Phaser.Scene {
       .setDepth(9990)
       .setVisible(false);
     this.lastInputAt = this.time.now;
+
+    // Day/night colour grade: a screen-space wash over the world (never over the
+    // DOM HUD). Non-interactive, so it never blocks a tap. Free play only.
+    this.dayTint = this.add
+      .rectangle(0, 0, 6000, 4000, 0xffffff, 0)
+      .setOrigin(0)
+      .setScrollFactor(0)
+      .setDepth(9970);
 
     this.director = new QuestDirector(this.services, this.worldControl(), this.hud);
     setDragonCelebrate((big) => this.dragonCelebrateAnim(big));
@@ -1012,6 +1026,113 @@ export class WorldScene extends Phaser.Scene {
     });
   }
 
+  // ── The world breathes: day → night (Phase 3.5) ───────────────────────────
+  // Keyframes over one cycle (t in 0..1): dawn → clear day → amber dusk → soft
+  // starry night (never scary-black) → back to dawn.
+  private static DAY_KEYS: Array<{ t: number; c: number; a: number }> = [
+    { t: 0.0, c: 0xffb26b, a: 0.16 },
+    { t: 0.12, c: 0xffffff, a: 0.0 },
+    { t: 0.48, c: 0xffffff, a: 0.0 },
+    { t: 0.62, c: 0xff8c42, a: 0.22 },
+    { t: 0.75, c: 0x1a2350, a: 0.44 },
+    { t: 0.93, c: 0x232a55, a: 0.4 },
+    { t: 1.0, c: 0xffb26b, a: 0.16 },
+  ];
+  private static CYCLE_MS = 240000; // a gentle ~4-minute day
+
+  private dayPhase(): number {
+    if (this.phaseOverride != null) return this.phaseOverride;
+    return (this.time.now % WorldScene.CYCLE_MS) / WorldScene.CYCLE_MS;
+  }
+
+  private updateDayNight(): void {
+    // The scripted intro stays bright and clear; the sky only turns in free play.
+    if (this.services.save.questStep !== QuestStep.FREE_PLAY) {
+      if (this.dayTint.alpha !== 0) this.dayTint.setAlpha(0);
+      if (this.fireflies.length) this.clearFireflies();
+      return;
+    }
+    const p = this.dayPhase();
+    const keys = WorldScene.DAY_KEYS;
+    let k0 = keys[0]!;
+    let k1 = keys[keys.length - 1]!;
+    for (let i = 0; i < keys.length - 1; i++) {
+      if (p >= keys[i]!.t && p <= keys[i + 1]!.t) {
+        k0 = keys[i]!;
+        k1 = keys[i + 1]!;
+        break;
+      }
+    }
+    const span = k1.t - k0.t || 1;
+    const f = (p - k0.t) / span;
+    const col = Phaser.Display.Color.Interpolate.ColorWithColor(
+      Phaser.Display.Color.IntegerToColor(k0.c),
+      Phaser.Display.Color.IntegerToColor(k1.c),
+      100,
+      Math.round(f * 100),
+    );
+    this.dayTint.setFillStyle(Phaser.Display.Color.GetColor(col.r, col.g, col.b), 1).setAlpha(k0.a + (k1.a - k0.a) * f);
+
+    const isNight = p >= 0.7 && p < 0.95;
+    if (isNight !== this.wasNight) {
+      this.wasNight = isNight;
+      if (isNight) this.spawnFireflies();
+      else this.clearFireflies();
+    }
+  }
+
+  private spawnFireflies(): void {
+    this.clearFireflies();
+    const px = this.player?.x ?? 800;
+    const py = this.player?.y ?? 700;
+    for (let i = 0; i < 3; i++) {
+      const x = Phaser.Math.Clamp(px + Phaser.Math.Between(-320, 320), 120, W - 120);
+      const y = Phaser.Math.Clamp(py + Phaser.Math.Between(-220, 220), 220, 1060);
+      const f = this.add.circle(x, y, 9, 0xfff2a0, 0.9).setDepth(9975);
+      f.setStrokeStyle(7, 0xfff2a0, 0.25);
+      if (!reducedMotion()) {
+        this.tweens.add({ targets: f, alpha: { from: 0.9, to: 0.35 }, duration: 700 + Phaser.Math.Between(0, 400), yoyo: true, repeat: -1 });
+      }
+      this.driftFirefly(f);
+      f.setInteractive({ useHandCursor: true });
+      f.on('pointerdown', (_p: unknown, _x: unknown, _y: unknown, event: Phaser.Types.Input.EventData) => {
+        event.stopPropagation();
+        if (isUiOpen()) return;
+        this.director.onFireflyTapped(() => {
+          f.destroy();
+          this.fireflies = this.fireflies.filter((x) => x !== f);
+        });
+      });
+      this.fireflies.push(f);
+    }
+  }
+
+  private driftFirefly(f: Phaser.GameObjects.Arc): void {
+    const nx = Phaser.Math.Clamp(f.x + Phaser.Math.Between(-120, 120), 120, W - 120);
+    const ny = Phaser.Math.Clamp(f.y + Phaser.Math.Between(-90, 90), 220, 1060);
+    this.tweens.add({
+      targets: f,
+      x: nx,
+      y: ny,
+      duration: 2200 + Phaser.Math.Between(0, 1500),
+      ease: 'sine.inOut',
+      onComplete: () => f.active && this.driftFirefly(f),
+    });
+  }
+
+  private clearFireflies(): void {
+    for (const f of this.fireflies) f.destroy();
+    this.fireflies = [];
+  }
+
+  /** Test/facilitator hooks for the day/night cycle. */
+  setDayPhaseForTest(p: number | null): void {
+    this.phaseOverride = p;
+  }
+  dayInfo(): { phase: number; alpha: number; isNight: boolean; fireflies: number } {
+    return { phase: this.dayPhase(), alpha: this.dayTint.alpha, isNight: this.wasNight, fireflies: this.fireflies.length };
+  }
+
   private dragonCelebrateAnim(big: boolean): void {
     // Calm mode: keep the floating hearts (gentle, celebratory) but skip the
     // spin and big jumps that WCAG flags as vestibular triggers.
@@ -1413,6 +1534,7 @@ export class WorldScene extends Phaser.Scene {
     }
 
     this.updateGuidance();
+    this.updateDayNight();
 
     if (body.velocity.x !== 0) this.player.setFlipX(body.velocity.x < 0);
     this.player.setDepth(this.player.y);
