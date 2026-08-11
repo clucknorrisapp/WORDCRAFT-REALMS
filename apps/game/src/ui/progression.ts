@@ -10,6 +10,7 @@ import type { Services } from '../services';
 import type { Hud } from './hud';
 import { confetti, el, isUiOpen, openLayer, speakerButton, wait } from './dom';
 import { sfxFanfare } from '../game/sfx';
+import { bumpCanvas } from './build';
 
 interface SkillIntro {
   title: string; // friendly name of the sound family
@@ -67,6 +68,11 @@ export async function showNewSounds(services: Services, skill: SkillId): Promise
   // Reading levels up with the new sound — the tier is already taught here.
   const rl = readerLevel(services.save.taught);
   panel.appendChild(el('div', 'newsound-levelup', `⬆️ Reader Level ${rl.level} · ${rl.title}!`));
+
+  // A new tier of sounds also unrolls new land to build on (Phase 2.5).
+  if (bumpCanvas(services)) {
+    panel.appendChild(el('div', 'newsound-levelup', '🗺️ New land to build on!'));
+  }
 
   const row = el('div', 'cards');
   row.appendChild(speakerButton(() => void services.speakWord(intro.example).done));

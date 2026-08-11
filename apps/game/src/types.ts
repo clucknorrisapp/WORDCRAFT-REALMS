@@ -72,6 +72,7 @@ export interface SaveData {
   job: Job | null; // the active Help-Wanted job, if any (Quest Board)
   jobsDone: number; // cumulative jobs completed — a progression tally
   pets: string[]; // species ids of babies hatched from eggs (they live on the plot)
+  canvasLevel: number; // Build-canvas size tier — grows with books read / sounds unlocked
   taught: SkillId[];
   evidence: Evidence[];
   events: GameEvent[];

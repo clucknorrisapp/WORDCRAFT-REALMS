@@ -9,6 +9,7 @@ import { bottomLeftCluster, castEffect, el, floatNote, openLayer } from './dom';
 import { openBook, REWARD_ICON } from './book-reader';
 import { spellUnlockedByBook } from './spellbook';
 import { checkDeeds } from './deeds';
+import { bumpCanvas } from './build';
 import { QuestStep } from '../types';
 
 const REWARD_FIELD: Record<Book['reward'], 'wood' | 'stone' | 'eggs' | 'gems'> = {
@@ -104,6 +105,11 @@ async function readBook(
     services.persist();
     syncHud(services, hud);
     floatNote(`+1 ${REWARD_ICON[book.reward]}`, window.innerWidth / 2, window.innerHeight * 0.4);
+
+    // Reading grows your world: a finished book widens the build canvas.
+    if (bumpCanvas(services)) {
+      floatNote('🗺️ New land to build on!', window.innerWidth / 2, window.innerHeight * 0.48);
+    }
 
     // Finishing a book also teaches a new spell — the reading→magic loop.
     const spell = spellUnlockedByBook(services.save.booksRead.length);

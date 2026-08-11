@@ -14,8 +14,28 @@ import { sfxPlace, sfxShatter, sfxUnlock } from '../game/sfx';
 const tex = (id: string) => `url("${blockTextureURL(id)}")`;
 const blockById = (id: string): BuildBlock | undefined => allBlocks().find((b) => b.id === id);
 
-export const GRID_W = 12;
-export const GRID_H = 8;
+// The build canvas is not a fixed 12×8 — it GROWS as the child reads. Every
+// finished book and every new sound tier bumps save.canvasLevel, which widens
+// and heightens the grid (Phase 2.5: "reading better = more room to build").
+const BASE_GRID_W = 12;
+const BASE_GRID_H = 8;
+const MAX_CANVAS_LEVEL = 8;
+
+export function gridDims(services: Services): { w: number; h: number } {
+  const lvl = Math.min(MAX_CANVAS_LEVEL, Math.max(0, services.save.canvasLevel ?? 0));
+  return { w: BASE_GRID_W + lvl * 2, h: BASE_GRID_H + lvl };
+}
+
+/** Grow the canvas one tier (capped). Returns true if it actually grew. */
+export function bumpCanvas(services: Services): boolean {
+  const lvl = services.save.canvasLevel ?? 0;
+  if (lvl >= MAX_CANVAS_LEVEL) return false;
+  services.save.canvasLevel = lvl + 1;
+  services.persist();
+  services.analytics.log('canvas_grew', { level: services.save.canvasLevel });
+  return true;
+}
+
 const ERASER = '__erase__';
 
 // Builder ranks — building levels you up, so the world visibly grows more
@@ -92,9 +112,10 @@ export async function openBuild(services: Services): Promise<void> {
     }
   };
 
-  // ── The grid ──
+  // ── The grid (its size grows with save.canvasLevel — reading = more room) ──
+  const { w: gridW, h: gridH } = gridDims(services);
   const grid = el('div', 'build-grid');
-  grid.style.setProperty('--cols', String(GRID_W));
+  grid.style.setProperty('--cols', String(gridW));
   let selected: string = firstUnlockedId(services); // block id, or ERASER
 
   const paintCell = (cell: HTMLElement) => {
@@ -119,8 +140,8 @@ export async function openBuild(services: Services): Promise<void> {
     services.persist();
   };
 
-  for (let r = 0; r < GRID_H; r++) {
-    for (let c = 0; c < GRID_W; c++) {
+  for (let r = 0; r < gridH; r++) {
+    for (let c = 0; c < gridW; c++) {
       const cell = el('button', 'build-cell') as HTMLButtonElement;
       cell.dataset['key'] = cellKey(c, r);
       const existing = services.save.build[cellKey(c, r)];

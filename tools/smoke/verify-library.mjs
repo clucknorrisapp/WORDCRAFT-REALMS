@@ -99,6 +99,8 @@ if (after1.booksRead.length !== 1) errors.push(`expected 1 book read, got ${JSON
 // pig-in-mud pays an egg; hen pays a gem — first spine is pig-in-mud.
 if (after1.eggs !== 1) errors.push(`expected reward egg paid (eggs=1), got eggs=${after1.eggs}`);
 if (reads1.length !== 1) errors.push(`expected exactly 1 sentence_read row, got ${reads1.length}`);
+// Land that grows (Phase 2.5): finishing a book widens the build canvas.
+if (after1.canvasLevel !== 1) errors.push(`finishing a book should grow the canvas (canvasLevel=1), got ${after1.canvasLevel}`);
 
 // Re-read the same book: reward must NOT be paid twice.
 await readFirstBook('again');
@@ -106,6 +108,7 @@ const after2 = await page.evaluate(() => JSON.parse(localStorage.getItem('readqu
 console.log(`after re-read: booksRead=${JSON.stringify(after2.booksRead)}, eggs=${after2.eggs}`);
 if (after2.eggs !== 1) errors.push(`re-read double-paid the reward (eggs=${after2.eggs}, expected 1)`);
 if (after2.booksRead.length !== 1) errors.push(`re-read duplicated booksRead: ${JSON.stringify(after2.booksRead)}`);
+if (after2.canvasLevel !== 1) errors.push(`re-reading must not grow the canvas again (canvasLevel=${after2.canvasLevel}, expected 1)`);
 
 await browser.close();
 const fatal = errors.filter((e) => !e.includes('Failed to load resource'));
