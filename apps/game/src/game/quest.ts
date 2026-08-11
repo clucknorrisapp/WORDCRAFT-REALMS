@@ -3,7 +3,7 @@
 // decides what happens. No pedagogy: word choices come from content, mastery
 // from the engine, and all reading UI from the widgets.
 import { queryWords, word as getWord } from '@readquest/content';
-import { sfxHit, sfxPop, sfxReward } from './sfx';
+import { sfxCrack, sfxHit, sfxPop, sfxReward } from './sfx';
 import type { Services } from '../services';
 import type { Hud } from '../ui/hud';
 import {
@@ -236,23 +236,68 @@ export class QuestDirector {
   onTreeTapped(giveWood: () => void): void {
     if (this.busy) return;
     sfxHit();
-    sfxPop();
-    giveWood();
-    this.services.save.wood += 1;
-    this.services.analytics.log('gathered', { kind: 'wood' });
-    this.services.persist();
-    this.hud.setCounts(this.counts());
+    if (this.step !== QuestStep.FREE_PLAY) return this.instantGather(giveWood, 'wood');
+    void this.run(() => this.readToGather(giveWood, 'wood', '🪓'));
   }
 
   onRockTapped(giveStone: () => void): void {
     if (this.busy) return;
     sfxHit();
+    if (this.step !== QuestStep.FREE_PLAY) return this.instantGather(giveStone, 'stone');
+    void this.run(() => this.readToGather(giveStone, 'stone', '⛏️'));
+  }
+
+  /** Tutorial gather: instant, so the guided intro stays simple. */
+  private instantGather(give: () => void, kind: 'wood' | 'stone'): void {
     sfxPop();
-    giveStone();
-    this.services.save.stone += 1;
-    this.services.analytics.log('gathered', { kind: 'stone' });
+    give();
+    this.services.save[kind] += 1;
+    this.services.analytics.log('gathered', { kind });
     this.services.persist();
     this.hud.setCounts(this.counts());
+  }
+
+  // Say-to-Mine (free play): reading IS the swing of the axe. Tap a node, an
+  // adaptive decodable word slams up, you read it (forgiving — the word card
+  // never fails), and the node CRACKS and loot bursts out. Every gather is now
+  // an adaptive reading rep, chosen by the same 70/20/10 engine, logged as
+  // evidence, and it never blocks (readWordCard always resolves).
+  private async readToGather(give: () => void, kind: 'wood' | 'stone', icon: string): Promise<void> {
+    const { target, skill, bucket } = this.pickPracticeWord();
+    this.services.analytics.log('adaptive_target', { skill, bucket, word: target, via: 'gather' });
+    await readWordCard(this.services, target, { icon });
+    sfxCrack();
+    give();
+    this.services.save[kind] += 1;
+    this.services.analytics.log('gathered', { kind, via: 'read' });
+    this.services.persist();
+    this.hud.setCounts(this.counts());
+  }
+
+  /** The invisible engine (70/20/10) picks the next skill; draw a decodable word
+   *  for it from the child's growing vocabulary. Shared by gather + dragon. */
+  private pickPracticeWord(): { target: string; distractors: string[]; skill: string; bucket: string } {
+    const seed = Math.floor(Math.random() * 1e6);
+    const plan = this.services.engine.nextTarget(
+      { childId: this.services.save.childId, hostableTypes: ['word_match'] },
+      seed,
+      Date.now(),
+    );
+    const pool = queryWords({
+      withinSkills: this.services.save.taught,
+      requireSkill: plan.targetSkill,
+      count: 40,
+    }).filter((w) => !w.heart);
+    if (pool.length >= 3) {
+      const target = pool[seed % pool.length]!.text;
+      const distractors = pool.filter((w) => w.text !== target).slice(0, 2).map((w) => w.text);
+      return { target, distractors, skill: plan.targetSkill, bucket: plan.bucket };
+    }
+    // Fallback (e.g. the target skill is base): the classic snack words.
+    const forSkill = FEED_FOODS.filter((f) => getWord(f).skills.includes(plan.targetSkill));
+    const target = (forSkill.length ? forSkill : FEED_FOODS)[seed % (forSkill.length || FEED_FOODS.length)]!;
+    const distractors = FEED_FOODS.filter((f) => f !== target).slice(0, 2);
+    return { target, distractors, skill: plan.targetSkill, bucket: plan.bucket };
   }
 
   onPlotSlotTapped(slot: number): void {
@@ -422,34 +467,9 @@ export class QuestDirector {
       // Adaptive free-play practice: the invisible engine picks the skill the
       // child needs next (70/20/10), and we feed the dragon a food that
       // exercises it. Distractors are other foods (curated, thematic).
-      const seed = Math.floor(Math.random() * 1e6);
-      const plan = this.services.engine.nextTarget(
-        { childId: this.services.save.childId, hostableTypes: ['word_match'] },
-        seed,
-        Date.now(),
-      );
-      // Draw the practice word from the child's GROWING decodable vocabulary at
-      // the skill the engine picked — so free-play practice actually drills the
-      // tier they're working on (blends, magic-e, r-controlled, …), not just a
-      // fixed food list. The dragon eats WORDS: reading feeds it (theme + loop).
-      const pool = queryWords({
-        withinSkills: this.services.save.taught,
-        requireSkill: plan.targetSkill,
-        count: 40,
-      }).filter((w) => !w.heart);
-      let target: string;
-      let distractors: string[];
-      if (pool.length >= 3) {
-        target = pool[seed % pool.length]!.text;
-        distractors = pool.filter((w) => w.text !== target).slice(0, 2).map((w) => w.text);
-      } else {
-        // Fallback: the classic snack words (e.g. when the target skill is base).
-        const forSkill = FEED_FOODS.filter((f) => getWord(f).skills.includes(plan.targetSkill));
-        target = (forSkill.length ? forSkill : FEED_FOODS)[seed % (forSkill.length || FEED_FOODS.length)]!;
-        distractors = FEED_FOODS.filter((f) => f !== target).slice(0, 2);
-      }
+      const { target, distractors, skill, bucket } = this.pickPracticeWord();
       this.feedIdx += 1;
-      this.services.analytics.log('adaptive_target', { skill: plan.targetSkill, bucket: plan.bucket, word: target });
+      this.services.analytics.log('adaptive_target', { skill, bucket, word: target, via: 'dragon' });
       await toast(this.services, 'ln_feed_dragon');
       await choiceBoard(this.services, {
         challengeType: 'word_match',

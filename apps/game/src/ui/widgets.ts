@@ -166,14 +166,14 @@ export async function showDialogue(
 export async function readWordCard(
   services: Services,
   wordText: string,
-  opts: { autoSpeak?: boolean; countType?: 'sign_read' } = {},
+  opts: { autoSpeak?: boolean; countType?: 'sign_read'; icon?: string } = {},
 ): Promise<void> {
   const started = Date.now();
   const w = getWord(wordText);
   const layer = openLayer();
   const panel = el('div', 'panel');
   const { wrap } = graphemeSpans(wordText);
-  panel.appendChild(el('div', 'subtitle', '🪧'));
+  panel.appendChild(el('div', 'subtitle', opts.icon ?? '🪧'));
   panel.appendChild(wrap);
   let audioRequested = false;
   const row = el('div', 'cards');
