@@ -7,6 +7,7 @@ import type { BuildBlock } from '@readquest/shared';
 import type { Services } from '../services';
 import { bottomLeftCluster, confetti, el, floatNote, openLayer, reducedMotion, speakerButton, wait } from './dom';
 import { readWordCard, renderBuildInWorld } from './widgets';
+import { checkDeeds } from './deeds';
 import { blockTextureURL } from '../game/block-textures';
 import { sfxPlace, sfxShatter, sfxUnlock } from '../game/sfx';
 
@@ -317,6 +318,7 @@ export async function openBuild(services: Services): Promise<void> {
     teardown();
     layer.close();
     renderBuildInWorld(); // show the creation in the actual world
+    void checkDeeds(services); // placing blocks may have earned a Builder deed
   });
   actions.appendChild(close);
   panel.appendChild(actions);

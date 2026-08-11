@@ -55,6 +55,8 @@ export interface SaveData {
   build: Record<string, string>; // Build Mode grid: "col,row" → blockId
   buildPlaced: number; // cumulative blocks ever placed — drives Builder rank
   glintsFound: string[]; // overworld glint-cache ids already collected (one-time rewards)
+  deedsEarned: string[]; // achievement ("deed") ids earned — each celebrated once
+  lastGiftDay: string | null; // YYYY-MM-DD of the last claimed daily word-of-the-day gift
   taught: SkillId[];
   evidence: Evidence[];
   events: GameEvent[];

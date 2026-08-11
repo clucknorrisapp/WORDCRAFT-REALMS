@@ -9,6 +9,9 @@ import { mountLibraryButton } from './ui/library';
 import { mountSpellbookButton } from './ui/spellbook';
 import { mountBuildButton } from './ui/build';
 import { mountProgression } from './ui/progression';
+import { mountDeedsButton } from './ui/deeds';
+import { mountDailyGiftButton } from './ui/daily';
+import { mountCompassButton } from './ui/compass';
 import { configureSfx } from './game/sfx';
 import { applyTextScale, applyAccessibility } from './ui/dom';
 
@@ -40,6 +43,9 @@ async function boot(): Promise<void> {
   mountLibraryButton(services, hud);
   mountSpellbookButton(services);
   mountBuildButton(services);
+  mountCompassButton(services); // "Where do I go?" — reveal the current goal
+  mountDeedsButton(services); // 🏅 the deed wall (achievements)
+  mountDailyGiftButton(services, hud); // 🎁 word-of-the-day, pulses when ready
   mountProgression(services, hud); // "New Sounds!" + Reader Level-up on tier unlock
 
   const game = new Phaser.Game({

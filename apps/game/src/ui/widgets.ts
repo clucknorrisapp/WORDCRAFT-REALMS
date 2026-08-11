@@ -37,6 +37,16 @@ export function renderBuildInWorld(): void {
   buildRenderer();
 }
 
+// Bridge: the world scene registers how to reveal the current goal; the compass
+// button (and anything else asking "where now?") calls requestNext().
+let nextHandler: () => void = () => {};
+export function setNextHandler(fn: () => void): void {
+  nextHandler = fn;
+}
+export function requestNext(): void {
+  nextHandler();
+}
+
 const CELEBRATE_LINES = ['ln_celebrate_1', 'ln_celebrate_2', 'ln_celebrate_3'];
 let celebrateIdx = 0;
 

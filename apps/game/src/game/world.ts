@@ -6,7 +6,7 @@ import type { Services } from '../services';
 import type { Hud } from '../ui/hud';
 import { allBlocks } from '@readquest/content';
 import { floatNote, isUiOpen, reducedMotion } from '../ui/dom';
-import { setBuildRenderer, setDragonCelebrate } from '../ui/widgets';
+import { setBuildRenderer, setDragonCelebrate, setNextHandler } from '../ui/widgets';
 import { openBuild, GRID_W, GRID_H } from '../ui/build';
 import { blockTextureCanvas } from './block-textures';
 import { hasPropTexture, propTextureCanvas, PIXEL_PROP_KEYS } from './world-textures';
@@ -138,6 +138,7 @@ export class WorldScene extends Phaser.Scene {
     this.director = new QuestDirector(this.services, this.worldControl(), this.hud);
     setDragonCelebrate((big) => this.dragonCelebrateAnim(big));
     setBuildRenderer(() => this.renderBuild());
+    setNextHandler(() => this.showNext()); // the "Where do I go?" compass
     // Free play only: strew the wide east with Say-to-Mine nodes + glint caches,
     // then nudge toward the nearest one so a session never opens on a blank map.
     this.seedFreePlayNodes();
@@ -623,6 +624,17 @@ export class WorldScene extends Phaser.Scene {
         }),
       150,
     );
+  }
+
+  /** Compass: answer "where do I go?" on demand. During the quest, reveal the
+   *  scripted objective; in free play, beckon toward the nearest node/cache. */
+  private showNext(): void {
+    const target = this.director?.objectiveTarget() ?? null;
+    if (target) {
+      this.revealObjective(target);
+      return;
+    }
+    this.freePlayOpener();
   }
 
   /** Free-play opener: beckon the child toward the nearest thing to do, so a

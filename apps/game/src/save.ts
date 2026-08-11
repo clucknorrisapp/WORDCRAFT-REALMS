@@ -26,6 +26,8 @@ export function freshSave(): SaveData {
     build: {},
     buildPlaced: 0,
     glintsFound: [],
+    deedsEarned: [],
+    lastGiftDay: null,
     taught: [...curriculum.initialTaught],
     evidence: [],
     events: [],

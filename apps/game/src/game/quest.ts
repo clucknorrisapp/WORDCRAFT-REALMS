@@ -16,6 +16,7 @@ import {
   toast,
 } from '../ui/widgets';
 import { floatNote } from '../ui/dom';
+import { checkDeeds } from '../ui/deeds';
 import { QuestStep } from '../types';
 
 export interface WorldControl {
@@ -214,6 +215,7 @@ export class QuestDirector {
       this.busy = false;
       this.refresh();
       this.maybeReveal();
+      void checkDeeds(this.services); // reading/quest progress may earn a deed
     }
   }
 

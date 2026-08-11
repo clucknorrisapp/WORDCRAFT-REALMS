@@ -292,6 +292,31 @@
     @keyframes newsound-pop { from { transform: scale(0.3); opacity: 0; } to { transform: scale(1); opacity: 1; } }
     .newsound-levelup { margin: 10px 0 2px; font-size: 18px; font-weight: 900; color: var(--good, #2ecc71); }
 
+    /* ── Deeds (Phase 1.5): the achievement wall + its non-modal banner ── */
+    .deed-toast { position: absolute; top: max(64px, env(safe-area-inset-top)); left: 50%; transform: translateX(-50%);
+      display: flex; align-items: center; gap: 12px; padding: 12px 20px 12px 14px; border-radius: 18px;
+      background: linear-gradient(160deg, #fffdf6, #ffe9c2); border: 3px solid var(--accent, #ff9f43);
+      box-shadow: 0 8px 22px rgba(0,0,0,0.22); pointer-events: none; max-width: 88vw; }
+    .deed-toast-icon { font-size: 42px; line-height: 1; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2)); }
+    .deed-toast-title { font-size: 19px; font-weight: 900; color: var(--accent2, #6c5ce7); }
+    .deed-toast-sub { font-size: 13px; color: #8a7b63; font-weight: 700; }
+    .panel.deeds { max-width: 460px; }
+    .deeds-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin: 8px 0 4px; }
+    .deed { background: #fff8ec; border: 2px solid #ecdcbf; border-radius: 14px; padding: 10px 6px; text-align: center; }
+    .deed.got { background: linear-gradient(160deg, #fffdf6, #ffeecb); border-color: var(--accent, #ff9f43); box-shadow: 0 2px 0 rgba(0,0,0,0.08); }
+    .deed.locked { opacity: 0.72; filter: grayscale(0.35); }
+    .deed-icon { font-size: 32px; line-height: 1.1; }
+    .deed-title { font-size: 14px; font-weight: 900; color: #5b4632; margin-top: 2px; }
+    .deed-hint { font-size: 11px; color: #8a7b63; margin-top: 2px; line-height: 1.2; }
+    .deed.got .deed-hint { color: var(--good, #2ecc71); font-weight: 800; }
+
+    /* Daily gift button pulses gold while a fresh word-of-the-day waits. */
+    .round.gift.gift-ready { animation: gift-pulse 1.4s ease-in-out infinite; }
+    @keyframes gift-pulse {
+      0%, 100% { box-shadow: 0 4px 0 rgba(0,0,0,0.15), 0 0 0 0 rgba(255,159,67,0.55); }
+      50% { box-shadow: 0 4px 0 rgba(0,0,0,0.15), 0 0 0 12px rgba(255,159,67,0); transform: scale(1.06); }
+    }
+
     /* Reader Level — the reading rank badge + its little level card. */
     .chip.reader-lv { background: linear-gradient(160deg, #fff6de, #ffe4a8); border: 2px solid var(--accent, #ff9f43); font-weight: 900; cursor: pointer; color: #7a5a1e; }
     .chip.reader-lv:active { transform: scale(0.94); }

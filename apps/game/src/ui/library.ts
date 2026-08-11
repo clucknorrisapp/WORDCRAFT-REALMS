@@ -8,6 +8,7 @@ import type { Hud } from './hud';
 import { bottomLeftCluster, castEffect, el, floatNote, openLayer } from './dom';
 import { openBook, REWARD_ICON } from './book-reader';
 import { spellUnlockedByBook } from './spellbook';
+import { checkDeeds } from './deeds';
 import { QuestStep } from '../types';
 
 const REWARD_FIELD: Record<Book['reward'], 'wood' | 'stone' | 'eggs' | 'gems'> = {
@@ -75,7 +76,10 @@ export async function openLibrary(services: Services, hud: Hud): Promise<void> {
   renderShelf();
 
   const close = el('button', 'btn', 'Close');
-  close.addEventListener('click', () => layer.close());
+  close.addEventListener('click', () => {
+    layer.close();
+    void checkDeeds(services); // finishing a book / reading pages may earn a deed
+  });
   panel.appendChild(close);
   layer.root.appendChild(panel);
 }
