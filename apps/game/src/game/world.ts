@@ -6,7 +6,8 @@ import type { Services } from '../services';
 import type { Hud } from '../ui/hud';
 import { allBlocks } from '@readquest/content';
 import { floatNote, isUiOpen, reducedMotion } from '../ui/dom';
-import { setBuildRenderer, setDragonCelebrate, setNextHandler, setPlaceModeToggle, setCreatureRefresh } from '../ui/widgets';
+import { setBuildRenderer, setDragonCelebrate, setNextHandler, setPlaceModeToggle, setCreatureRefresh, setFastTravel, setPlayerPeek } from '../ui/widgets';
+import { regionAt } from './regions';
 import { creatureById, wildCreatures, type Creature } from '../ui/creatures';
 import { openBuild, gridDims } from '../ui/build';
 import { checkDeeds } from '../ui/deeds';
@@ -193,6 +194,8 @@ export class WorldScene extends Phaser.Scene {
     setNextHandler(() => this.showNext()); // the "Where do I go?" compass
     setPlaceModeToggle(() => this.togglePlaceMode()); // Build Where You Stand
     setCreatureRefresh(() => this.refreshWildCreatures()); // new sounds → new creatures
+    setFastTravel((x, y) => this.teleport(x, y)); // map pins whoosh the player
+    setPlayerPeek(() => ({ x: this.player.x, y: this.player.y })); // map's "you are here"
     this.renderWorldBuild(); // restore blocks laid in the world last session
     this.renderBlueprint(); // restore an in-progress plan's ghosts
     // Free play only: strew the wide east with Say-to-Mine nodes + glint caches,
@@ -1450,6 +1453,16 @@ export class WorldScene extends Phaser.Scene {
     return { stage: this.dragonStage(), scale: this.dragon.scaleX, tint: this.dragon.tintTopLeft, hasRig: !!this.dragonRig };
   }
 
+  /** Fog of war: walking into a region clears it on the map, once. Cheap — a
+   *  find over six rects, and it only mutates the first time each is entered. */
+  private revealRegion(): void {
+    const reg = regionAt(this.player.x, this.player.y);
+    if (!reg || this.services.save.mapSeen.includes(reg.id)) return;
+    this.services.save.mapSeen.push(reg.id);
+    this.services.analytics.log('region_seen', { region: reg.id });
+    this.services.persist();
+  }
+
   private dragonCelebrateAnim(big: boolean): void {
     // Calm mode: keep the floating hearts (gentle, celebratory) but skip the
     // spin and big jumps that WCAG flags as vestibular triggers.
@@ -1866,6 +1879,7 @@ export class WorldScene extends Phaser.Scene {
 
     this.updateGuidance();
     this.updateDayNight();
+    this.revealRegion();
 
     if (body.velocity.x !== 0) this.player.setFlipX(body.velocity.x < 0);
     this.player.setDepth(this.player.y);

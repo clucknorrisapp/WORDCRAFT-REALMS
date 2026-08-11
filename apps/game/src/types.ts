@@ -86,6 +86,8 @@ export interface SaveData {
   gatesOpened: string[]; // Word-Gate ids opened — reading the tier word unrolled a new biome
   pickLevel: number; // best mining pick forged (0 = starter) — gates which ore seams crack
   dragonColor: string | null; // a colour word read to "dress" the dragon (recolours it)
+  mapSeen: string[]; // region ids the child has walked into (fog cleared)
+  mapClaimed: string[]; // region ids claimed by reading their name (fast-travel pins)
   taught: SkillId[];
   evidence: Evidence[];
   events: GameEvent[];

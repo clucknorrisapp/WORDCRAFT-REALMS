@@ -369,6 +369,33 @@
       50% { box-shadow: 0 4px 0 rgba(0,0,0,0.15), 0 0 0 12px rgba(255,159,67,0); transform: scale(1.06); }
     }
 
+    /* Fog-of-war map + fast travel (Phase 4.4). A pixel-parchment of the whole
+       kingdom: dark fog clears as you walk, and reading a region's name turns it
+       gold and makes it a fast-travel pin. */
+    .panel.map-panel { max-width: 92vw; text-align: center; }
+    .map-title { font-size: 20px; font-weight: 900; color: #5b4632; margin-bottom: 8px; }
+    .map-board { position: relative; margin: 0 auto; border-radius: 14px; overflow: hidden;
+      border: 4px solid #5b4632; background: #262a34; box-shadow: inset 0 0 40px rgba(0,0,0,0.55); }
+    .map-region { position: absolute; box-sizing: border-box; appearance: none; -webkit-appearance: none;
+      font-family: inherit; margin: 0; padding: 4px; display: flex; flex-direction: column; align-items: center;
+      justify-content: center; gap: 2px; border: 1px solid rgba(0,0,0,0.25); cursor: default; overflow: hidden; }
+    .map-region.fog { background: #20242e; }
+    .map-region.seen { background: #6f7a5e; }             /* dim, explored but unclaimed */
+    .map-region.seen.locked { background: #5a6350; }
+    .map-region.seen.can-claim { background: #8a9a63; cursor: pointer; animation: map-glow 1.6s ease-in-out infinite; }
+    .map-region.claimed { background: linear-gradient(160deg, #ffe9a8, #f0c14b); cursor: pointer; border-color: #b8860b; }
+    .map-region.flare { animation: map-flare 0.7s ease-out; }
+    .map-name { font-size: clamp(9px, 2.4vw, 14px); font-weight: 900; letter-spacing: 1px; color: #f4efe0; text-shadow: 0 1px 2px rgba(0,0,0,0.5); }
+    .map-region.claimed .map-name { color: #6b4a1e; text-shadow: none; }
+    .map-hint { font-size: clamp(8px, 2vw, 12px); font-weight: 800; color: #fffdf6; opacity: 0.9; }
+    .map-flag { font-size: clamp(14px, 3.4vw, 22px); line-height: 1; }
+    .map-you { position: absolute; transform: translate(-50%, -50%); font-size: 18px; line-height: 1;
+      pointer-events: none; z-index: 3; filter: drop-shadow(0 0 4px #fff); animation: map-glow 1.2s ease-in-out infinite; }
+    .map-tally { margin-top: 10px; font-size: 14px; font-weight: 900; color: #7a5a1e; }
+    .map-close { margin-top: 10px; }
+    @keyframes map-glow { 0%, 100% { filter: brightness(1); } 50% { filter: brightness(1.25); } }
+    @keyframes map-flare { 0% { box-shadow: 0 0 0 0 rgba(255,209,102,0.9); } 100% { box-shadow: 0 0 0 22px rgba(255,209,102,0); } }
+
     /* Reader Level — the reading rank badge + its little level card. */
     .chip.reader-lv { background: linear-gradient(160deg, #fff6de, #ffe4a8); border: 2px solid var(--accent, #ff9f43); font-weight: 900; cursor: pointer; color: #7a5a1e; }
     .chip.reader-lv:active { transform: scale(0.94); }

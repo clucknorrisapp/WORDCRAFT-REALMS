@@ -67,6 +67,26 @@ export function requestCreatureRefresh(): void {
   creatureRefresh();
 }
 
+// Bridge: the world scene registers how to whoosh the player to a spot (the
+// existing fade-teleport); the map's fast-travel pins call requestFastTravel().
+let fastTravel: (x: number, y: number) => void = () => {};
+export function setFastTravel(fn: (x: number, y: number) => void): void {
+  fastTravel = fn;
+}
+export function requestFastTravel(x: number, y: number): void {
+  fastTravel(x, y);
+}
+
+// Bridge: the world scene registers a read-only peek at the player's world
+// position so the map can draw the "you are here" dot without owning the scene.
+let playerPeek: () => { x: number; y: number } = () => ({ x: 0, y: 0 });
+export function setPlayerPeek(fn: () => { x: number; y: number }): void {
+  playerPeek = fn;
+}
+export function peekPlayer(): { x: number; y: number } {
+  return playerPeek();
+}
+
 const CELEBRATE_LINES = ['ln_celebrate_1', 'ln_celebrate_2', 'ln_celebrate_3'];
 let celebrateIdx = 0;
 

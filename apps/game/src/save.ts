@@ -40,6 +40,8 @@ export function freshSave(): SaveData {
     gatesOpened: [],
     pickLevel: 0,
     dragonColor: null,
+    mapSeen: [],
+    mapClaimed: [],
     taught: [...curriculum.initialTaught],
     evidence: [],
     events: [],
