@@ -74,7 +74,10 @@ export class WorldScene extends Phaser.Scene {
   private chestGlow!: Phaser.GameObjects.Arc;
   private coop!: Phaser.GameObjects.Sprite;
   private markers = new Map<string, Phaser.GameObjects.Text>();
-  private caveReturn = { x: 2320, y: 430 };
+  // Where leaving the cave drops you: out on the path, well clear of the cave
+  // entrance's tap zone (2380,305 r=190) so you don't instantly re-enter.
+  private caveReturn = { x: 2200, y: 660 };
+  private caveCooldownUntil = 0; // blocks re-entering the cave right after leaving
   private eggsOnGround = 0;
   private buildTiles: Phaser.GameObjects.Image[] = [];
 
@@ -538,6 +541,7 @@ export class WorldScene extends Phaser.Scene {
     const leave = (event?: Phaser.Types.Input.EventData) => {
       event?.stopPropagation?.();
       if (isUiOpen()) return;
+      this.caveCooldownUntil = this.time.now + 1500; // no accidental instant re-entry
       this.teleport(this.caveReturn.x, this.caveReturn.y);
     };
     exit.on('pointerdown', (_p: unknown, _x: unknown, _y: unknown, e: Phaser.Types.Input.EventData) => leave(e));
@@ -888,7 +892,10 @@ export class WorldScene extends Phaser.Scene {
 
   // ── Cave transitions + eggs ───────────────────────────────────────────────
   private enterCave(): void {
-    this.caveReturn = { x: 2320, y: 430 };
+    // Don't re-enter within a beat of leaving — otherwise the tap that's meant
+    // to walk away from the entrance drops you straight back in.
+    if (this.time.now < this.caveCooldownUntil) return;
+    this.caveReturn = { x: 2200, y: 660 };
     this.teleport(430, 1450);
   }
 
