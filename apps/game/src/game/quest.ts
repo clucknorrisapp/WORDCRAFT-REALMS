@@ -19,6 +19,7 @@ import { floatNote } from '../ui/dom';
 import { checkDeeds } from '../ui/deeds';
 import { buildJob, jobReward, showJobOffer } from '../ui/questboard';
 import { blueprintById, nextBlueprint, type BlueprintDef } from '../ui/blueprints';
+import { creatureById } from '../ui/creatures';
 import { QuestStep } from '../types';
 
 const WORLD_TILE = 54; // keep in sync with world.ts WORLD_TILE (blueprint guidance math)
@@ -39,6 +40,7 @@ export interface WorldControl {
   renderBlueprint(): void;
   fillBlueprintCell(index: number): void;
   finishBlueprint(id: string, pet: string): void;
+  tameCreature(id: string): void;
 }
 
 // Decodable baby species an egg can hatch into. The pool is filtered to what the
@@ -748,6 +750,25 @@ export class QuestDirector {
       this.hud.setCounts(this.counts());
       floatNote('+1 💎', window.innerWidth / 2, window.innerHeight / 2 - 60);
       await celebrate(this.services);
+    });
+  }
+
+  /** Read-to-Tame (Phase 3.3): tapping a wild creature reads its decodable name;
+   *  the read tames it and it stays on as a friend on the farm. */
+  onCreatureTapped(id: string): void {
+    if (this.step !== QuestStep.FREE_PLAY) return;
+    void this.run(async () => {
+      const c = creatureById(id);
+      if (!c) return;
+      const s = this.services.save;
+      if (s.tamed.includes(id)) return;
+      await readWordCard(this.services, c.name, { icon: c.emoji }); // read its name to tame it
+      s.tamed.push(id);
+      this.services.analytics.log('creature_tamed', { id, name: c.name });
+      this.services.persist();
+      this.world.tameCreature(id);
+      await celebrate(this.services);
+      await this.services.speakText(`You tamed a ${c.name}!`).done; // proud read-back
     });
   }
 

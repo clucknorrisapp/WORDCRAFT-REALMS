@@ -35,6 +35,10 @@
     .scrim {
       position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
       background: rgba(30, 30, 60, 0.45); animation: fadein 0.25s ease;
+      /* Above all HUD chrome (hud-left/right 20, job-chip 20, worldbuild-bar 25,
+         float-note 30) so a modal's controls are never covered by a HUD button —
+         and below the celebration particle effects (confetti 40, cast 45). */
+      z-index: 35;
     }
     .scrim.clear { background: transparent; pointer-events: none; }
     .scrim.clear > * { pointer-events: auto; }
@@ -345,6 +349,18 @@
     .deed-title { font-size: 14px; font-weight: 900; color: #5b4632; margin-top: 2px; }
     .deed-hint { font-size: 11px; color: #8a7b63; margin-top: 2px; line-height: 1.2; }
     .deed.got .deed-hint { color: var(--good, #2ecc71); font-weight: 800; }
+
+    /* Friends Book (Phase 3.3) — the creature album. */
+    .panel.friends { max-width: 460px; }
+    .friends-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 9px; margin: 8px 0 4px; }
+    .friend { background: #fff8ec; border: 2px solid #ecdcbf; border-radius: 14px; padding: 8px 4px; text-align: center; }
+    .friend.got { background: linear-gradient(160deg, #fffdf6, #ffeecb); border-color: var(--accent, #ff9f43); }
+    .friend.wild { border-style: dashed; }
+    .friend.locked { opacity: 0.6; filter: grayscale(0.4); }
+    .friend-emoji { font-size: 30px; line-height: 1.1; }
+    .friend-name { font-size: 13px; font-weight: 900; color: #5b4632; margin-top: 1px; letter-spacing: 0.5px; }
+    .friend-hint { font-size: 10px; color: #8a7b63; margin-top: 1px; }
+    .friend.got .friend-hint { color: var(--good, #2ecc71); font-weight: 800; }
 
     /* Daily gift button pulses gold while a fresh word-of-the-day waits. */
     .round.gift.gift-ready { animation: gift-pulse 1.4s ease-in-out infinite; }

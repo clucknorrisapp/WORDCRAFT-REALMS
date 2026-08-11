@@ -13,6 +13,7 @@ import { mountProgression } from './ui/progression';
 import { mountDeedsButton } from './ui/deeds';
 import { mountDailyGiftButton } from './ui/daily';
 import { mountCompassButton } from './ui/compass';
+import { mountFriendsButton } from './ui/friends';
 import { configureSfx } from './game/sfx';
 import { applyTextScale, applyAccessibility } from './ui/dom';
 
@@ -47,6 +48,7 @@ async function boot(): Promise<void> {
   mountWorldBuildButton(services); // 🧱 Build Where You Stand (place blocks in the world)
   mountCompassButton(services); // "Where do I go?" — reveal the current goal
   mountDeedsButton(services); // 🏅 the deed wall (achievements)
+  mountFriendsButton(services); // 🐾 the Friends Book (tamed creatures)
   mountDailyGiftButton(services, hud); // 🎁 word-of-the-day, pulses when ready
   mountProgression(services, hud); // "New Sounds!" + Reader Level-up on tier unlock
 

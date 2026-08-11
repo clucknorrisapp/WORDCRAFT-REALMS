@@ -6,7 +6,8 @@ import type { Services } from '../services';
 import type { Hud } from '../ui/hud';
 import { allBlocks } from '@readquest/content';
 import { floatNote, isUiOpen, reducedMotion } from '../ui/dom';
-import { setBuildRenderer, setDragonCelebrate, setNextHandler, setPlaceModeToggle } from '../ui/widgets';
+import { setBuildRenderer, setDragonCelebrate, setNextHandler, setPlaceModeToggle, setCreatureRefresh } from '../ui/widgets';
+import { creatureById, wildCreatures, type Creature } from '../ui/creatures';
 import { openBuild, gridDims } from '../ui/build';
 import { checkDeeds } from '../ui/deeds';
 import { openWorldPalette, firstWorldBlock, WORLD_ERASER, type WorldPalette } from '../ui/worldbuild';
@@ -101,6 +102,10 @@ export class WorldScene extends Phaser.Scene {
   private wasNight = false;
   private phaseOverride: number | null = null; // test hook
 
+  // Read-to-Tame creatures (Phase 3.3).
+  private wildMobs = new Map<string, Phaser.GameObjects.Container>();
+  private tamedMobs: Phaser.GameObjects.Container[] = [];
+
   constructor(services: Services, hud: Hud) {
     super('world');
     this.services = services;
@@ -131,6 +136,8 @@ export class WorldScene extends Phaser.Scene {
     this.restoreFromSave();
     this.spawnCritters();
     this.spawnPets(); // babies hatched from eggs in earlier sessions
+    this.spawnTamedCreatures(); // creatures tamed in earlier sessions live here
+    this.refreshWildCreatures(); // shy critters roam, ready to be read-tamed
 
     this.cameras.main.setBounds(0, 0, W, H);
     this.cameras.main.startFollow(this.player, true, 0.12, 0.12);
@@ -180,6 +187,7 @@ export class WorldScene extends Phaser.Scene {
     setBuildRenderer(() => this.renderBuild());
     setNextHandler(() => this.showNext()); // the "Where do I go?" compass
     setPlaceModeToggle(() => this.togglePlaceMode()); // Build Where You Stand
+    setCreatureRefresh(() => this.refreshWildCreatures()); // new sounds → new creatures
     this.renderWorldBuild(); // restore blocks laid in the world last session
     this.renderBlueprint(); // restore an in-progress plan's ghosts
     // Free play only: strew the wide east with Say-to-Mine nodes + glint caches,
@@ -1125,6 +1133,94 @@ export class WorldScene extends Phaser.Scene {
     this.fireflies = [];
   }
 
+  // ── Read-to-Tame creatures (Phase 3.3) ───────────────────────────────────
+  private makeCreature(c: Creature, x: number, y: number, tame: boolean): Phaser.GameObjects.Container {
+    const emoji = this.add.text(0, 0, c.emoji, { fontSize: '30px' }).setOrigin(0.5);
+    const cont = this.add.container(x, y, [emoji]);
+    if (!tame) {
+      // Wild: its name floats above (the word to read), and tapping calls it.
+      const label = this.add
+        .text(0, -28, c.name.toUpperCase(), { fontFamily: FONT, fontSize: '13px', fontStyle: '900', color: '#3a2f1a', backgroundColor: '#fff7e6' })
+        .setOrigin(0.5)
+        .setPadding(3, 1, 3, 1);
+      cont.add(label);
+      cont.setSize(64, 64);
+      cont.setInteractive(new Phaser.Geom.Rectangle(-32, -32, 64, 64), Phaser.Geom.Rectangle.Contains);
+      cont.on('pointerdown', (_p: unknown, _x: unknown, _y: unknown, event: Phaser.Types.Input.EventData) => {
+        // Don't tame while building or with UI up — let the tap fall through.
+        if (this.placing || isUiOpen()) return;
+        event.stopPropagation();
+        this.director.onCreatureTapped(c.id);
+      });
+    }
+    cont.setDepth(y);
+    this.tweens.add({ targets: emoji, y: -4, duration: 560 + Phaser.Math.Between(0, 300), yoyo: true, repeat: -1, ease: 'sine.inOut' });
+    this.wanderCreature(cont);
+    return cont;
+  }
+
+  private wanderCreature(cont: Phaser.GameObjects.Container): void {
+    const nx = Phaser.Math.Clamp(cont.x + Phaser.Math.Between(-150, 150), 120, W - 120);
+    const ny = Phaser.Math.Clamp(cont.y + Phaser.Math.Between(-100, 100), 240, 1080);
+    this.tweens.add({
+      targets: cont,
+      x: nx,
+      y: ny,
+      duration: 2600 + Phaser.Math.Between(0, 2200),
+      ease: 'sine.inOut',
+      onUpdate: () => cont.setDepth(cont.y),
+      onComplete: () => cont.active && this.wanderCreature(cont),
+    });
+  }
+
+  /** Scatter one of each still-wild (readable, untamed) creature across the land. */
+  private refreshWildCreatures(): void {
+    if (this.services.save.questStep !== QuestStep.FREE_PLAY) return;
+    for (const cont of this.wildMobs.values()) cont.destroy();
+    this.wildMobs.clear();
+    const wild = wildCreatures(this.services);
+    const rnd = new Phaser.Math.RandomDataGenerator(['mobs', String((this.services.save.tamed ?? []).length)]);
+    for (const c of wild) {
+      const x = rnd.between(320, W - 320);
+      const y = rnd.between(260, 1040);
+      this.wildMobs.set(c.id, this.makeCreature(c, x, y, false));
+    }
+  }
+
+  private spawnTamedCreatures(): void {
+    const tamed = this.services.save.tamed ?? [];
+    tamed.forEach((id, i) => {
+      const c = creatureById(id);
+      if (!c) return;
+      const x = 1720 + (i % 5) * 46 + Phaser.Math.Between(-16, 16); // by the build plot — the "farm"
+      const y = 1000 + Math.floor(i / 5) * 30 + Phaser.Math.Between(-10, 10);
+      this.tamedMobs.push(this.makeCreature(c, x, y, true));
+    });
+  }
+
+  /** A wild creature is tamed: it poofs sparkles and stays on as a friend. */
+  private tameCreature(id: string): void {
+    const cont = this.wildMobs.get(id);
+    const c = creatureById(id);
+    const x = cont?.x ?? 1760;
+    const y = cont?.y ?? 1020;
+    for (let i = 0; i < 8; i++) {
+      const s = this.add.text(x, y, '✨', { fontSize: '18px' }).setOrigin(0.5).setDepth(9500);
+      this.tweens.add({ targets: s, x: x + Phaser.Math.Between(-64, 64), y: y - Phaser.Math.Between(20, 84), alpha: 0, duration: 720, onComplete: () => s.destroy() });
+    }
+    cont?.destroy();
+    this.wildMobs.delete(id);
+    if (c) this.tamedMobs.push(this.makeCreature(c, x, y, true));
+  }
+
+  /** Test/facilitator hooks for creatures. */
+  wildMobCount(): number {
+    return this.wildMobs.size;
+  }
+  tamedMobCount(): number {
+    return this.tamedMobs.length;
+  }
+
   /** Test/facilitator hooks for the day/night cycle. */
   setDayPhaseForTest(p: number | null): void {
     this.phaseOverride = p;
@@ -1380,6 +1476,7 @@ export class WorldScene extends Phaser.Scene {
       renderBlueprint: () => this.renderBlueprint(),
       fillBlueprintCell: (index: number) => this.fillBlueprintCell(index),
       finishBlueprint: (id: string, pet: string) => this.finishBlueprint(id, pet),
+      tameCreature: (id: string) => this.tameCreature(id),
     };
   }
 

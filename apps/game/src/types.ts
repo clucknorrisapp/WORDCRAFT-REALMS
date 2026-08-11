@@ -82,6 +82,7 @@ export interface SaveData {
   blueprint: ActiveBlueprint | null; // the plan the child is currently filling in
   blueprintsDone: string[]; // completed blueprint ids (each builds once)
   firefliesCaught: number; // night fireflies read-caught (a "come back after dark" tally)
+  tamed: string[]; // creature ids tamed by reading their name (they live on the farm)
   taught: SkillId[];
   evidence: Evidence[];
   events: GameEvent[];

@@ -9,6 +9,7 @@ import type { SkillId } from '@readquest/shared';
 import type { Services } from '../services';
 import type { Hud } from './hud';
 import { confetti, el, isUiOpen, openLayer, speakerButton, wait } from './dom';
+import { requestCreatureRefresh } from './widgets';
 import { sfxFanfare } from '../game/sfx';
 import { bumpCanvas } from './build';
 
@@ -37,7 +38,8 @@ const SKILL_INTRO: Record<string, SkillIntro> = {
 export function mountProgression(services: Services, hud: Hud): void {
   services.setAdvanceHandler((skill) => {
     hud.refreshReaderLevel();
-    void showNewSounds(services, skill);
+    // New sounds → new creatures roam the land (refresh once the moment is shown).
+    void showNewSounds(services, skill).then(() => requestCreatureRefresh());
   });
 }
 
@@ -73,6 +75,8 @@ export async function showNewSounds(services: Services, skill: SkillId): Promise
   if (bumpCanvas(services)) {
     panel.appendChild(el('div', 'newsound-levelup', '🗺️ New land to build on!'));
   }
+  // …and new creatures whose names the child can now read (Phase 3.3).
+  panel.appendChild(el('div', 'newsound-levelup', '🐾 New creatures roam the land!'));
 
   const row = el('div', 'cards');
   row.appendChild(speakerButton(() => void services.speakWord(intro.example).done));

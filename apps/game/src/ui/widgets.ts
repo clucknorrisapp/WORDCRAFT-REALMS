@@ -57,6 +57,16 @@ export function requestPlaceMode(): void {
   placeModeToggle();
 }
 
+// Bridge: the world scene registers how to re-scatter wild creatures; a tier
+// unlock calls requestCreatureRefresh() so newly-readable species roam the land.
+let creatureRefresh: () => void = () => {};
+export function setCreatureRefresh(fn: () => void): void {
+  creatureRefresh = fn;
+}
+export function requestCreatureRefresh(): void {
+  creatureRefresh();
+}
+
 const CELEBRATE_LINES = ['ln_celebrate_1', 'ln_celebrate_2', 'ln_celebrate_3'];
 let celebrateIdx = 0;
 

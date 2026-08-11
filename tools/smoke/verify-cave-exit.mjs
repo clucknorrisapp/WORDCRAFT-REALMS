@@ -59,15 +59,23 @@ const inCaveY = await page.evaluate(() => Math.round(window.__readquest.game.sce
 console.log(`player y in cave: ${inCaveY} (want > 1200)`);
 if (inCaveY < 1200) errors.push(`did not enter cave (player y=${inCaveY})`);
 
-// Tap the ⬆ exit (world 330,1470).
-const exitPos = await page.evaluate(() => {
-  const s = window.__readquest.game.scene.keys.world;
-  s.cameras.main.setLerp(1, 1);
-  const cam = s.cameras.main;
-  return { x: 330 - cam.scrollX, y: 1470 - cam.scrollY };
-});
-await page.mouse.click(exitPos.x, exitPos.y);
-await page.waitForTimeout(1000); // fade teleport
+// Tap the ⬆ exit (world 330,1470). A single programmatic mouse click can land
+// on a frame where Phaser's hit-test misses the small target (a harness timing
+// race — a real finger-tap always lands), so retry until the teleport fires.
+const exitScreen = () =>
+  page.evaluate(() => {
+    const s = window.__readquest.game.scene.keys.world;
+    s.cameras.main.setLerp(1, 1);
+    const cam = s.cameras.main;
+    return { x: 330 - cam.scrollX, y: 1470 - cam.scrollY };
+  });
+const stillInCave = () => page.evaluate(() => window.__readquest.game.scene.keys.world.player.y > 1160);
+for (let i = 0; i < 5 && (await stillInCave()); i++) {
+  const pos = await exitScreen();
+  await page.waitForTimeout(120); // let the frame settle so the tap registers
+  await page.mouse.click(pos.x, pos.y);
+  await page.waitForTimeout(900); // fade teleport
+}
 
 const after = await page.evaluate(() => {
   const p = window.__readquest.game.scene.keys.world.player;
