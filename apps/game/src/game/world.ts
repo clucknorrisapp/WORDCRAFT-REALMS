@@ -6,8 +6,11 @@ import type { Services } from '../services';
 import type { Hud } from '../ui/hud';
 import { allBlocks } from '@readquest/content';
 import { floatNote, isUiOpen, reducedMotion } from '../ui/dom';
-import { setBuildRenderer, setDragonCelebrate, setNextHandler } from '../ui/widgets';
+import { setBuildRenderer, setDragonCelebrate, setNextHandler, setPlaceModeToggle } from '../ui/widgets';
 import { openBuild, GRID_W, GRID_H } from '../ui/build';
+import { checkDeeds } from '../ui/deeds';
+import { openWorldPalette, firstWorldBlock, WORLD_ERASER, type WorldPalette } from '../ui/worldbuild';
+import { sfxPlace, sfxShatter } from './sfx';
 import { blockTextureCanvas } from './block-textures';
 import { hasPropTexture, propTextureCanvas, PIXEL_PROP_KEYS } from './world-textures';
 
@@ -20,6 +23,8 @@ import { DRAGON_TINTS, QuestStep } from '../types';
 
 const W = 2600;
 const H = 1600;
+const WORLD_TILE = 54; // Build-Where-You-Stand tile size (matches the plot grid)
+const BUILD_MAX_Y = 1140; // keep world-builds in the overworld, out of the cave band
 const FONT = '"Nunito", "Segoe UI Rounded", sans-serif';
 
 interface Tappable {
@@ -81,6 +86,14 @@ export class WorldScene extends Phaser.Scene {
   private eggsOnGround = 0;
   private buildTiles: Phaser.GameObjects.Image[] = [];
 
+  // Build Where You Stand (Phase 2.2): place-mode state + the persisted blocks.
+  private placing = false;
+  private placeBlockId = WORLD_ERASER;
+  private placeGrid: Phaser.GameObjects.Graphics | null = null;
+  private placeCursor: Phaser.GameObjects.Rectangle | null = null;
+  private worldPalette: WorldPalette | null = null;
+  private worldBuildTiles = new Map<string, Phaser.GameObjects.Image>();
+
   constructor(services: Services, hud: Hud) {
     super('world');
     this.services = services;
@@ -119,9 +132,19 @@ export class WorldScene extends Phaser.Scene {
     this.input.on('pointerdown', (p: Phaser.Input.Pointer) => {
       this.noteInput();
       if (isUiOpen()) return;
+      if (this.placing) {
+        this.updatePlaceCursor(p);
+        this.placeAtPointer(p);
+        return;
+      }
       this.moveTarget = { x: p.worldX, y: p.worldY };
       this.pending = null;
       this.autoWalking = false;
+    });
+    this.input.on('pointermove', (p: Phaser.Input.Pointer) => {
+      if (!this.placing) return;
+      this.updatePlaceCursor(p);
+      if (p.isDown) this.placeAtPointer(p); // drag to paint a path/wall
     });
     this.input.keyboard!.on('keydown', () => this.noteInput());
 
@@ -139,6 +162,8 @@ export class WorldScene extends Phaser.Scene {
     setDragonCelebrate((big) => this.dragonCelebrateAnim(big));
     setBuildRenderer(() => this.renderBuild());
     setNextHandler(() => this.showNext()); // the "Where do I go?" compass
+    setPlaceModeToggle(() => this.togglePlaceMode()); // Build Where You Stand
+    this.renderWorldBuild(); // restore blocks laid in the world last session
     // Free play only: strew the wide east with Say-to-Mine nodes + glint caches,
     // then nudge toward the nearest one so a session never opens on a blank map.
     this.seedFreePlayNodes();
@@ -448,6 +473,122 @@ export class WorldScene extends Phaser.Scene {
   /** Test/facilitator hook: how many build tiles are currently shown. */
   buildTileCount(): number {
     return this.buildTiles.length;
+  }
+
+  // ── Build Where You Stand (Phase 2.2) ─────────────────────────────────────
+  /** Redraw every block the child has laid in the world (persisted across
+   *  sessions). Each block sits just below entity depth so the player and
+   *  dragon trot in front of / "inside" the build. */
+  renderWorldBuild(): void {
+    for (const img of this.worldBuildTiles.values()) img.destroy();
+    this.worldBuildTiles.clear();
+    const build = this.services.save.worldBuild ?? {};
+    for (const key of Object.keys(build)) {
+      const [txs, tys] = key.split(',');
+      const tx = Number(txs);
+      const ty = Number(tys);
+      if (!Number.isInteger(tx) || !Number.isInteger(ty)) continue;
+      this.paintWorldTile(tx, ty, build[key]!);
+    }
+  }
+
+  private paintWorldTile(tx: number, ty: number, id: string): void {
+    const key = `${tx},${ty}`;
+    this.worldBuildTiles.get(key)?.destroy();
+    const texKey = `blk_${id}`;
+    if (!this.textures.exists(texKey)) return;
+    const x = tx * WORLD_TILE + WORLD_TILE / 2;
+    const y = ty * WORLD_TILE + WORLD_TILE / 2;
+    const img = this.add.image(x, y, texKey).setDisplaySize(WORLD_TILE, WORLD_TILE).setDepth(y - 6);
+    this.worldBuildTiles.set(key, img);
+  }
+
+  /** Test/facilitator hook: how many world-build blocks are laid. */
+  worldBuildCount(): number {
+    return this.worldBuildTiles.size;
+  }
+
+  private togglePlaceMode(): void {
+    if (this.placing) this.exitPlaceMode();
+    else this.enterPlaceMode();
+  }
+
+  private enterPlaceMode(): void {
+    if (this.placing) return;
+    this.placing = true;
+    this.moveTarget = null;
+    this.pending = null;
+    this.autoWalking = false;
+    this.cancelCinematic();
+    // Faint tile grid over the buildable overworld.
+    const g = this.add.graphics().setDepth(8000);
+    g.lineStyle(1, 0xffffff, 0.16);
+    for (let x = 0; x <= W; x += WORLD_TILE) g.lineBetween(x, 0, x, BUILD_MAX_Y);
+    for (let y = 0; y <= BUILD_MAX_Y; y += WORLD_TILE) g.lineBetween(0, y, W, y);
+    this.placeGrid = g;
+    this.placeCursor = this.add
+      .rectangle(0, 0, WORLD_TILE, WORLD_TILE, 0xffffff, 0.18)
+      .setStrokeStyle(3, 0xffe08a, 0.9)
+      .setDepth(9000)
+      .setVisible(false);
+    this.placeBlockId = firstWorldBlock(this.services);
+    this.worldPalette = openWorldPalette(this.services, {
+      onSelect: (id) => (this.placeBlockId = id),
+      onDone: () => this.exitPlaceMode(),
+    });
+    floatNote('🧱 Build! Tap the grass.', window.innerWidth / 2, 96);
+    this.services.analytics.log('worldbuild_opened', { placed: Object.keys(this.services.save.worldBuild ?? {}).length });
+  }
+
+  private exitPlaceMode(): void {
+    if (!this.placing) return;
+    this.placing = false;
+    this.placeGrid?.destroy();
+    this.placeGrid = null;
+    this.placeCursor?.destroy();
+    this.placeCursor = null;
+    this.worldPalette?.close();
+    this.worldPalette = null;
+    this.services.persist();
+    void checkDeeds(this.services); // laying blocks may have earned a Builder deed
+  }
+
+  private updatePlaceCursor(p: Phaser.Input.Pointer): void {
+    if (!this.placeCursor) return;
+    const tx = Math.floor(p.worldX / WORLD_TILE);
+    const ty = Math.floor(p.worldY / WORLD_TILE);
+    const overBar = p.y > this.cameras.main.height - 104; // don't hover over the palette bar
+    this.placeCursor
+      .setPosition(tx * WORLD_TILE + WORLD_TILE / 2, ty * WORLD_TILE + WORLD_TILE / 2)
+      .setVisible(!overBar && this.inBuildableTile(tx, ty));
+  }
+
+  private inBuildableTile(tx: number, ty: number): boolean {
+    return tx >= 0 && (tx + 1) * WORLD_TILE <= W && ty >= 1 && (ty + 1) * WORLD_TILE <= BUILD_MAX_Y;
+  }
+
+  /** Lay (or erase) a block at the pointer — free finger-dragging, never gated. */
+  private placeAtPointer(p: Phaser.Input.Pointer): void {
+    if (p.y > this.cameras.main.height - 104) return; // tap landed on the palette bar
+    const tx = Math.floor(p.worldX / WORLD_TILE);
+    const ty = Math.floor(p.worldY / WORLD_TILE);
+    if (!this.inBuildableTile(tx, ty)) return;
+    const key = `${tx},${ty}`;
+    const build = this.services.save.worldBuild;
+    if (this.placeBlockId === WORLD_ERASER) {
+      if (!(key in build)) return;
+      delete build[key];
+      this.worldBuildTiles.get(key)?.destroy();
+      this.worldBuildTiles.delete(key);
+      sfxShatter();
+    } else {
+      if (build[key] === this.placeBlockId) return; // already this block — no churn
+      build[key] = this.placeBlockId;
+      this.paintWorldTile(tx, ty, this.placeBlockId);
+      this.services.save.buildPlaced += 1; // world placements count toward Builder rank
+      sfxPlace();
+    }
+    this.services.persist();
   }
 
   private buildForest(): void {
@@ -1050,7 +1191,7 @@ export class WorldScene extends Phaser.Scene {
       this.pending = null;
       const len = Math.hypot(vx, vy) || 1;
       body.setVelocity((vx / len) * speed, (vy / len) * speed);
-    } else if (this.moveTarget) {
+    } else if (this.moveTarget && !this.placing) {
       const d = Phaser.Math.Distance.Between(this.player.x, this.player.y, this.moveTarget.x, this.moveTarget.y);
       if (d < 12) {
         this.moveTarget = null;

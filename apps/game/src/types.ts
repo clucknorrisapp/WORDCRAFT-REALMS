@@ -64,6 +64,7 @@ export interface SaveData {
   booksRead: string[]; // Library book ids finished at least once (reward paid)
   blocksUnlocked: string[]; // Build Mode block ids unlocked by reading their word
   build: Record<string, string>; // Build Mode grid: "col,row" → blockId
+  worldBuild: Record<string, string>; // Build-Where-You-Stand: "tileX,tileY" → blockId (world tiles)
   buildPlaced: number; // cumulative blocks ever placed — drives Builder rank
   glintsFound: string[]; // overworld glint-cache ids already collected (one-time rewards)
   deedsEarned: string[]; // achievement ("deed") ids earned — each celebrated once

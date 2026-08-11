@@ -24,6 +24,7 @@ export function freshSave(): SaveData {
     booksRead: [],
     blocksUnlocked: [],
     build: {},
+    worldBuild: {},
     buildPlaced: 0,
     glintsFound: [],
     deedsEarned: [],

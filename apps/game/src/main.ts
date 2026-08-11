@@ -8,6 +8,7 @@ import { mountParentButton } from './ui/parent';
 import { mountLibraryButton } from './ui/library';
 import { mountSpellbookButton } from './ui/spellbook';
 import { mountBuildButton } from './ui/build';
+import { mountWorldBuildButton } from './ui/worldbuild';
 import { mountProgression } from './ui/progression';
 import { mountDeedsButton } from './ui/deeds';
 import { mountDailyGiftButton } from './ui/daily';
@@ -43,6 +44,7 @@ async function boot(): Promise<void> {
   mountLibraryButton(services, hud);
   mountSpellbookButton(services);
   mountBuildButton(services);
+  mountWorldBuildButton(services); // 🧱 Build Where You Stand (place blocks in the world)
   mountCompassButton(services); // "Where do I go?" — reveal the current goal
   mountDeedsButton(services); // 🏅 the deed wall (achievements)
   mountDailyGiftButton(services, hud); // 🎁 word-of-the-day, pulses when ready

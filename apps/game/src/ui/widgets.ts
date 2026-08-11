@@ -47,6 +47,16 @@ export function requestNext(): void {
   nextHandler();
 }
 
+// Bridge: the world scene registers how to toggle Build-Where-You-Stand mode;
+// the 🧱 HUD button calls requestPlaceMode().
+let placeModeToggle: () => void = () => {};
+export function setPlaceModeToggle(fn: () => void): void {
+  placeModeToggle = fn;
+}
+export function requestPlaceMode(): void {
+  placeModeToggle();
+}
+
 const CELEBRATE_LINES = ['ln_celebrate_1', 'ln_celebrate_2', 'ln_celebrate_3'];
 let celebrateIdx = 0;
 
