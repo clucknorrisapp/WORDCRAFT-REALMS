@@ -44,12 +44,24 @@ export function mountHud(services: Services): Hud {
   };
   refreshReaderLevel();
 
+  // A counter that just went UP pops — the reward flies into the number.
+  const prev: Record<string, number> = { wood: -1, stone: -1, eggs: -1, gems: -1 };
+  const set = (chip: HTMLElement, key: string, val: number, label: string) => {
+    chip.textContent = label;
+    if (prev[key] !== -1 && val > (prev[key] ?? 0)) {
+      chip.classList.remove('bump');
+      void chip.offsetWidth; // restart the animation
+      chip.classList.add('bump');
+    }
+    prev[key] = val;
+  };
+
   return {
     setCounts(c) {
-      wood.textContent = `🪵 ${c.wood}`;
-      stone.textContent = `🪨 ${c.stone}`;
-      eggs.textContent = `🥚 ${c.eggs}`;
-      gems.textContent = `💎 ${c.gems}`;
+      set(wood, 'wood', c.wood, `🪵 ${c.wood}`);
+      set(stone, 'stone', c.stone, `🪨 ${c.stone}`);
+      set(eggs, 'eggs', c.eggs, `🥚 ${c.eggs}`);
+      set(gems, 'gems', c.gems, `💎 ${c.gems}`);
       if (c.hens === null || c.hens === undefined) hens.style.display = 'none';
       else {
         hens.style.display = '';

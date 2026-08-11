@@ -123,6 +123,18 @@ export function castEffect(particle: string, hue: string, count = 18): void {
   }
 }
 
+/** A milestone white-flash punch (book finished, tier mastered, level-up). Calm
+ *  mode keeps a gentle, brief fade instead of a bright pop. */
+export function screenFlash(strength = 0.5): void {
+  const flash = el('div', 'screen-flash');
+  overlay().appendChild(flash);
+  const peak = motionReduced ? Math.min(0.18, strength) : strength;
+  flash.animate([{ opacity: peak }, { opacity: 0 }], {
+    duration: motionReduced ? 420 : 600,
+    easing: 'ease-out',
+  }).onfinish = () => flash.remove();
+}
+
 export function floatNote(text: string, x: number, y: number): void {
   const note = el('div', 'float-note', text);
   note.style.left = `${x}px`;

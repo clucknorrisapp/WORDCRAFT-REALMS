@@ -8,7 +8,7 @@
 import { buildChallenge, line as getLine, word as getWord } from '@readquest/content';
 import { seededShuffle, type Spell } from '@readquest/shared';
 import type { Services } from '../services';
-import { castEffect, confetti, el, isUiOpen, openLayer, speakerButton, wait } from './dom';
+import { castEffect, confetti, el, isUiOpen, openLayer, screenFlash, speakerButton, wait } from './dom';
 import { resetReadStreak, sfxDragon, sfxFanfare, sfxMiss, sfxReadWin, sfxUnlock } from '../game/sfx';
 
 export { isUiOpen };
@@ -42,8 +42,12 @@ let celebrateIdx = 0;
 
 export async function celebrate(services: Services, big = false, lineId?: string): Promise<void> {
   confetti(big ? 44 : 22);
-  if (big) sfxFanfare();
-  else sfxDragon();
+  if (big) {
+    sfxFanfare();
+    screenFlash(); // the milestone "punch"
+  } else {
+    sfxDragon();
+  }
   dragonCelebrate(big);
   const id = lineId ?? CELEBRATE_LINES[celebrateIdx++ % CELEBRATE_LINES.length]!;
   await services.speakLine(id).done;

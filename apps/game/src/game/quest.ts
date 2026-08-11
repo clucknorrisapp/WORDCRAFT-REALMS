@@ -268,6 +268,7 @@ export class QuestDirector {
     await readWordCard(this.services, target, { icon });
     sfxCrack();
     give();
+    this.world.dragonHappy(); // the dragon hops because you read — reaction to every read
     this.services.save[kind] += 1;
     this.services.analytics.log('gathered', { kind, via: 'read' });
     this.services.persist();

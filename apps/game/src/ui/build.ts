@@ -5,7 +5,7 @@
 import { allBlocks, validateText, word as getWord } from '@readquest/content';
 import type { BuildBlock } from '@readquest/shared';
 import type { Services } from '../services';
-import { bottomLeftCluster, confetti, el, floatNote, openLayer, speakerButton, wait } from './dom';
+import { bottomLeftCluster, confetti, el, floatNote, openLayer, reducedMotion, speakerButton, wait } from './dom';
 import { readWordCard, renderBuildInWorld } from './widgets';
 import { blockTextureURL } from '../game/block-textures';
 import { sfxPlace, sfxShatter, sfxUnlock } from '../game/sfx';
@@ -105,12 +105,14 @@ export async function openBuild(services: Services): Promise<void> {
       cell.style.backgroundImage = '';
       cell.classList.remove('filled');
       sfxShatter();
+      juiceCell(cell, 'shattered', '#9aa0a6');
     } else {
       if (services.save.build[key] === selected) return; // already this block
       services.save.build[key] = selected;
       cell.style.backgroundImage = tex(selected);
       cell.classList.add('filled');
       sfxPlace();
+      juiceCell(cell, 'placed', '#caa06a'); // squash-in + a puff of dust
       registerPlacement(); // cumulative — drives Builder rank
     }
     services.persist();
@@ -324,6 +326,35 @@ export async function openBuild(services: Services): Promise<void> {
 function firstUnlockedId(services: Services): string {
   const first = allBlocks().find((b) => isUnlocked(services, b));
   return first ? first.id : ERASER;
+}
+
+// A block landing (or shattering) should feel chunky: a squash keyframe on the
+// cell + a little puff of dust motes. Calm mode keeps the squash, drops the dust.
+function juiceCell(cell: HTMLElement, cls: 'placed' | 'shattered', color: string): void {
+  cell.classList.remove(cls);
+  void cell.offsetWidth; // restart the CSS animation
+  cell.classList.add(cls);
+  if (reducedMotion()) return;
+  const r = cell.getBoundingClientRect();
+  const cx = r.left + r.width / 2;
+  const cy = r.top + r.height / 2;
+  for (let i = 0; i < 5; i++) {
+    const mote = el('div', 'dust-mote');
+    mote.style.left = `${cx}px`;
+    mote.style.top = `${cy}px`;
+    mote.style.background = color;
+    document.body.appendChild(mote);
+    const dx = (Math.random() - 0.5) * 46;
+    const dy = -8 - Math.random() * 34;
+    mote
+      .animate(
+        [
+          { transform: 'translate(-50%,-50%) scale(1)', opacity: 0.9 },
+          { transform: `translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px)) scale(0.4)`, opacity: 0 },
+        ],
+        { duration: 420 + Math.random() * 220, easing: 'cubic-bezier(0.2,0.7,0.3,1)' },
+      ).onfinish = () => mote.remove();
+  }
 }
 
 /** A craft block is craftable once BOTH of its ingredient blocks are unlocked. */
