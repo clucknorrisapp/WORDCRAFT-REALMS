@@ -20,7 +20,7 @@ import { hasPropTexture, propTextureCanvas, PIXEL_PROP_KEYS } from './world-text
 // the south-east, clear of the village, forest, and cave).
 const BUILD_ORIGIN = { x: 1800, y: 1130 };
 const BUILD_TILE = 54;
-import { QuestDirector, type WorldControl } from './quest';
+import { QuestDirector, INTERACTIVE_BLOCKS, type WorldControl } from './quest';
 import { DRAGON_TINTS, QuestStep } from '../types';
 
 const W = 2600;
@@ -527,6 +527,16 @@ export class WorldScene extends Phaser.Scene {
     const x = tx * WORLD_TILE + WORLD_TILE / 2;
     const y = ty * WORLD_TILE + WORLD_TILE / 2;
     const img = this.add.image(x, y, texKey).setDisplaySize(WORLD_TILE, WORLD_TILE).setDepth(y - 6);
+    // Blocks that DO things (Phase 3.4): a bed/sun tile is tappable to read its
+    // command. Guarded so a tap while building still places instead.
+    if (id in INTERACTIVE_BLOCKS) {
+      img.setInteractive({ useHandCursor: true });
+      img.on('pointerdown', (_p: unknown, _x: unknown, _y: unknown, event: Phaser.Types.Input.EventData) => {
+        if (this.placing || isUiOpen()) return;
+        event.stopPropagation();
+        this.director.onInteractiveBlock(id);
+      });
+    }
     this.worldBuildTiles.set(key, img);
   }
 
@@ -1221,6 +1231,14 @@ export class WorldScene extends Phaser.Scene {
     return this.tamedMobs.length;
   }
 
+  /** Blocks that DO things (Phase 3.4): reading a bed/sun command flips the sky.
+   *  Sets a manual phase that holds until the child reads the other command. */
+  private forceDayNight(night: boolean): void {
+    this.phaseOverride = night ? 0.8 : 0.42;
+    this.updateDayNight();
+    if (!reducedMotion()) this.cameras.main.flash(220, night ? 20 : 255, night ? 24 : 245, night ? 60 : 210);
+  }
+
   /** Test/facilitator hooks for the day/night cycle. */
   setDayPhaseForTest(p: number | null): void {
     this.phaseOverride = p;
@@ -1477,6 +1495,7 @@ export class WorldScene extends Phaser.Scene {
       fillBlueprintCell: (index: number) => this.fillBlueprintCell(index),
       finishBlueprint: (id: string, pet: string) => this.finishBlueprint(id, pet),
       tameCreature: (id: string) => this.tameCreature(id),
+      forceDayNight: (night: boolean) => this.forceDayNight(night),
     };
   }
 

@@ -41,7 +41,16 @@ export interface WorldControl {
   fillBlueprintCell(index: number): void;
   finishBlueprint(id: string, pet: string): void;
   tameCreature(id: string): void;
+  forceDayNight(night: boolean): void;
 }
+
+// Blocks that DO things (Phase 3.4): a placed block you tap to read a short
+// decodable command that flips a switch in the world. Forgiving — reading the
+// word always fires the effect (a placed block is never a locked gate).
+export const INTERACTIVE_BLOCKS: Record<string, { cmd: string; icon: string; night: boolean }> = {
+  bed: { cmd: 'nap', icon: '🛏️', night: true }, // read "nap" → the world goes to soft night
+  sun: { cmd: 'sun', icon: '☀️', night: false }, // read "sun" → sunrise sweeps it back to day
+};
 
 // Decodable baby species an egg can hatch into. The pool is filtered to what the
 // child can read at their tier (pup/cub/kid are base+short-vowel, so always
@@ -749,6 +758,21 @@ export class QuestDirector {
       this.world.dragonHappy();
       this.hud.setCounts(this.counts());
       floatNote('+1 💎', window.innerWidth / 2, window.innerHeight / 2 - 60);
+      await celebrate(this.services);
+    });
+  }
+
+  /** Blocks that DO things (Phase 3.4): tap an interactive block, read its command
+   *  word, and the world flips a switch — the north star made literal ("my voice
+   *  changes the world"). */
+  onInteractiveBlock(id: string): void {
+    if (this.step !== QuestStep.FREE_PLAY) return;
+    const spec = INTERACTIVE_BLOCKS[id];
+    if (!spec) return;
+    void this.run(async () => {
+      await readWordCard(this.services, spec.cmd, { icon: spec.icon }); // read the command (forgiving)
+      this.services.analytics.log('block_activated', { block: id, cmd: spec.cmd });
+      this.world.forceDayNight(spec.night);
       await celebrate(this.services);
     });
   }
