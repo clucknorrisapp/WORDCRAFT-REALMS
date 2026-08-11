@@ -92,6 +92,7 @@ export interface SaveData {
   beaconLit: number; // highest Beacon ring count already celebrated (rings = readerLevel + books)
   giantShields: number; // word-shields the child has shattered on the Waking Giant (0–3)
   giantDefeated: boolean; // the giant has woken, thanked the child, and stepped aside
+  furnaceCharge: number; // ore the furnace machine has smelted over time, waiting to be read out
   taught: SkillId[];
   evidence: Evidence[];
   events: GameEvent[];

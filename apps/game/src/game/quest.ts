@@ -50,6 +50,7 @@ export interface WorldControl {
   applyDragonColor(word: string): void;
   shatterGiantShield(count: number): void;
   giantStandAside(): void;
+  refreshFurnace(): void;
 }
 
 // Blocks that DO things (Phase 3.4): a placed block you tap to read a short
@@ -949,6 +950,33 @@ export class QuestDirector {
         await celebrate(this.services);
         await this.services.speakText(`${3 - n} more ${3 - n === 1 ? 'shield' : 'shields'} to wake the giant!`).done;
       }
+    });
+  }
+
+  /** The Furnace machine (Phase 4.1). It smelts a bar over time on its own; the
+   *  child collects the batch by reading its power word ("run"). Production is
+   *  idle, but reading is the switch that turns it into gems — so the machine
+   *  only ever pays because the child read. */
+  onFurnaceTapped(): void {
+    if (this.step !== QuestStep.FREE_PLAY || this.busy) return;
+    const charge = this.services.save.furnaceCharge ?? 0;
+    if (charge <= 0) {
+      void this.services.speakText('The furnace is still cooking. Come back soon!').done;
+      return;
+    }
+    void this.run(async () => {
+      const batch = this.services.save.furnaceCharge ?? 0;
+      if (batch <= 0) return; // re-entrancy guard
+      await readWordCard(this.services, 'run', { icon: '🔥' }); // read the power switch to run it
+      this.services.save.gems += batch;
+      this.services.save.furnaceCharge = 0;
+      this.services.analytics.log('furnace_collected', { bars: batch });
+      this.services.persist();
+      this.world.refreshFurnace();
+      sfxReward();
+      this.hud.setCounts(this.counts());
+      floatNote(`+${batch} 💎`, window.innerWidth / 2, window.innerHeight / 2 - 60);
+      await celebrate(this.services);
     });
   }
 }

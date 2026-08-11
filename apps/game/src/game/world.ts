@@ -139,6 +139,7 @@ export class WorldScene extends Phaser.Scene {
     this.buildMine(); // toolbench + ore seams (the pick ladder)
     this.buildBeacon(); // the reading-journey monument on the hill (Phase 4.2)
     this.buildGiant(); // the Waking Giant boss out south-east (Phase 4.2)
+    this.buildFurnace(); // the smelter machine: makes ore over time, read to collect (Phase 4.1)
     this.setupBuildPlot();
     this.setupBlueprintTable();
     this.spawnPlayerAndDragon();
@@ -1247,6 +1248,60 @@ export class WorldScene extends Phaser.Scene {
     return { defeated: this.services.save.giantDefeated, shields: this.services.save.giantShields ?? 0, alive: !!this.giant && this.giant.active };
   }
 
+  // ── The Furnace machine (Phase 4.1) ───────────────────────────────────────
+  // The tech-tree capstone: a machine that smelts ore over TIME (a bar every
+  // little while, up to a cap) that the child collects by reading a one-word
+  // power switch ("run"). The machine only ever pays out because the child read
+  // to start it — idle production, but reading is still the key that turns it.
+  private static readonly FURNACE = { x: 1950, y: 600 };
+  private static readonly FURNACE_CAP = 5;
+  private static readonly FURNACE_TICK = 18000; // ms between smelted bars
+  private furnaceLabel?: Phaser.GameObjects.Text;
+  private furnaceGlow?: Phaser.GameObjects.Ellipse;
+
+  private buildFurnace(): void {
+    const { x, y } = WorldScene.FURNACE;
+    this.add.ellipse(x, y + 30, 150, 60, 0x2c2540, 0.4).setDepth(-70);
+    this.add.rectangle(x, y, 90, 96, 0x6f6a60).setStrokeStyle(4, 0x47433b).setDepth(y);
+    this.add.rectangle(x, y - 58, 40, 30, 0x504b43).setDepth(y); // chimney
+    this.furnaceGlow = this.add.ellipse(x, y + 14, 46, 34, 0xff8a3c, 0.85).setDepth(y + 1); // mouth fire
+    this.add.rectangle(x, y + 14, 50, 40, 0x000000, 0.001).setDepth(y + 1);
+    this.furnaceLabel = this.add
+      .text(x, y - 92, '', { fontFamily: FONT, fontSize: '20px', fontStyle: '900', color: '#ffd166', stroke: '#5a3a00', strokeThickness: 4 })
+      .setOrigin(0.5)
+      .setDepth(y + 2);
+    const hit = this.add.rectangle(x, y - 10, 120, 150, 0xffffff, 0.001).setDepth(y + 3);
+    hit.setInteractive({ useHandCursor: true });
+    hit.on('pointerdown', (_p: unknown, _lx: unknown, _ly: unknown, event: Phaser.Types.Input.EventData) => {
+      if (this.placing || isUiOpen()) return;
+      event.stopPropagation();
+      this.director.onFurnaceTapped();
+    });
+    // Smelt a bar every tick, up to the cap — only during free play.
+    this.time.addEvent({ delay: WorldScene.FURNACE_TICK, loop: true, callback: () => this.furnaceTick() });
+    this.refreshFurnace();
+  }
+
+  private furnaceTick(): void {
+    if (this.services.save.questStep !== QuestStep.FREE_PLAY) return;
+    const c = this.services.save.furnaceCharge ?? 0;
+    if (c >= WorldScene.FURNACE_CAP) return;
+    this.services.save.furnaceCharge = c + 1;
+    this.services.persist();
+    this.refreshFurnace();
+  }
+
+  private refreshFurnace(): void {
+    const c = this.services.save.furnaceCharge ?? 0;
+    this.furnaceLabel?.setText(c > 0 ? `🔥 ${c}` : '');
+    this.furnaceGlow?.setFillStyle(0xff8a3c, 0.55 + Math.min(0.4, c * 0.09));
+  }
+
+  /** Test/facilitator hook for the furnace machine. */
+  furnaceInfo(): { charge: number } {
+    return { charge: this.services.save.furnaceCharge ?? 0 };
+  }
+
   // ── Player + dragon ───────────────────────────────────────────────────────
   private spawnPlayerAndDragon(): void {
     const avatarKey = `avatar_${this.services.save.avatar ?? 0}`;
@@ -1964,6 +2019,7 @@ export class WorldScene extends Phaser.Scene {
       applyDragonColor: (word: string) => this.applyDragonColor(word),
       shatterGiantShield: (count: number) => this.shatterGiantShield(count),
       giantStandAside: () => this.giantStandAside(),
+      refreshFurnace: () => this.refreshFurnace(),
     };
   }
 

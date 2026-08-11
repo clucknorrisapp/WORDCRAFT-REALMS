@@ -15,6 +15,7 @@ import { mountDailyGiftButton } from './ui/daily';
 import { mountCompassButton } from './ui/compass';
 import { mountMapButton } from './ui/map';
 import { mountBagButton } from './ui/loot';
+import { mountTechTreeButton } from './ui/techtree';
 import { mountFriendsButton } from './ui/friends';
 import { configureSfx } from './game/sfx';
 import { applyTextScale, applyAccessibility } from './ui/dom';
@@ -51,6 +52,7 @@ async function boot(): Promise<void> {
   mountCompassButton(services); // "Where do I go?" — reveal the current goal
   mountMapButton(services); // 🗺️ fog-of-war kingdom map + fast travel
   mountBagButton(services); // 🎒 Word Bag — read a word to summon its thing
+  mountTechTreeButton(services); // 🧪 Tech Tree — smelting chains you climb by reading
   mountDeedsButton(services); // 🏅 the deed wall (achievements)
   mountFriendsButton(services); // 🐾 the Friends Book (tamed creatures)
   mountDailyGiftButton(services, hud); // 🎁 word-of-the-day, pulses when ready

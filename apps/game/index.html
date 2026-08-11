@@ -414,6 +414,31 @@
     .loot-hint { font-size: 11px; }
     .bag-close { margin-top: 12px; }
 
+    /* Tech-Tree board (Phase 4.1) — the reading elevator: owned nodes coloured,
+       readable-now nodes glowing with their word/recipe, future ones ghosted. */
+    .panel.tech-panel { max-width: 560px; text-align: center; }
+    .tech-title { font-size: 20px; font-weight: 900; color: #5b4632; }
+    .tech-sub { font-size: 13px; font-weight: 700; color: #8a7b63; margin: 2px 0 8px; }
+    .tech-scroll { max-height: 56vh; overflow-y: auto; padding: 2px; }
+    .tech-age { text-align: left; font-size: 14px; font-weight: 900; color: #7a5a1e; margin: 10px 2px 4px; border-bottom: 2px dotted #e2d3b3; padding-bottom: 2px; }
+    .tech-row { display: flex; flex-wrap: wrap; gap: 8px; }
+    .tech-node { appearance: none; -webkit-appearance: none; font-family: inherit; position: relative;
+      width: 78px; min-height: 80px; border-radius: 14px; padding: 6px 3px; display: flex; flex-direction: column;
+      align-items: center; justify-content: center; gap: 2px; cursor: default;
+      background: #f1ead9; border: 2px solid #d9c9a6; }
+    .tech-node.owned { background: linear-gradient(160deg, #fffdf6, #ffeecb); border-color: var(--accent, #ff9f43); }
+    .tech-node.ready { background: #eaf6d8; border-color: #8bc34a; cursor: pointer; animation: tech-glow 1.6s ease-in-out infinite; }
+    .tech-node.ready:active { transform: scale(0.94); }
+    .tech-node.locked { opacity: 0.55; filter: grayscale(0.5); }
+    .tech-node.flash { animation: tech-flash 0.7s ease-out; }
+    .tech-ico { font-size: 26px; line-height: 1.1; }
+    .tech-label { font-size: 11px; font-weight: 900; letter-spacing: 0.5px; color: #5b4632; line-height: 1.05; }
+    .tech-badge { position: absolute; top: 3px; right: 5px; font-size: 12px; font-weight: 900; }
+    .tech-badge.ready { color: #4a8a1e; }
+    .tech-close { margin-top: 12px; }
+    @keyframes tech-glow { 0%, 100% { box-shadow: 0 0 0 0 rgba(139,195,74,0.5); } 50% { box-shadow: 0 0 0 5px rgba(139,195,74,0); } }
+    @keyframes tech-flash { 0% { box-shadow: 0 0 0 0 rgba(255,209,102,0.9); } 100% { box-shadow: 0 0 0 20px rgba(255,209,102,0); } }
+
     /* Reader Level — the reading rank badge + its little level card. */
     .chip.reader-lv { background: linear-gradient(160deg, #fff6de, #ffe4a8); border: 2px solid var(--accent, #ff9f43); font-weight: 900; cursor: pointer; color: #7a5a1e; }
     .chip.reader-lv:active { transform: scale(0.94); }

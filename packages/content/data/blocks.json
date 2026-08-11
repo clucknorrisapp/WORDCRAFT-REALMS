@@ -25,6 +25,7 @@
   { "id": "brick", "word": "red",  "icon": "🧱", "recipe": "red rock", "from": ["rock", "mud"] },
   { "id": "tree",  "word": "big",  "icon": "🌲", "recipe": "big bush", "from": ["bush", "log"] },
   { "id": "glass", "word": "sand", "icon": "🪟", "recipe": "hot sand", "from": ["sand", "sun"] },
+  { "id": "pan",   "word": "pan",  "icon": "🍳", "recipe": "tin pan", "from": ["tin", "magma"] },
 
   { "id": "nest", "word": "nest", "icon": "🪺" },
   { "id": "flag", "word": "flag", "icon": "🚩" },

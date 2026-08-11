@@ -64,6 +64,33 @@ function isUnlocked(services: Services, b: BuildBlock): boolean {
   return b.starter === true || services.save.blocksUnlocked.includes(b.id);
 }
 
+/** Shared with the Tech-Tree board: has the child earned this block yet? */
+export function isBlockUnlocked(services: Services, b: BuildBlock): boolean {
+  return isUnlocked(services, b);
+}
+
+/** Read a plain block's word to unlock it (Tech-Tree board). True if newly earned. */
+export async function unlockPlainBlock(services: Services, b: BuildBlock): Promise<boolean> {
+  await readWordCard(services, b.word);
+  if (services.save.blocksUnlocked.includes(b.id)) return false;
+  services.save.blocksUnlocked.push(b.id);
+  services.persist();
+  sfxUnlock();
+  services.analytics.log('block_unlocked', { block: b.id, word: b.word });
+  return true;
+}
+
+/** Read a recipe phrase to craft/smelt a block (Tech-Tree board). True if newly made. */
+export async function craftBlock(services: Services, b: BuildBlock): Promise<boolean> {
+  await readPhraseToCraft(services, b);
+  if (services.save.blocksUnlocked.includes(b.id)) return false;
+  services.save.blocksUnlocked.push(b.id);
+  services.persist();
+  sfxUnlock();
+  services.analytics.log('block_crafted', { block: b.id, recipe: b.recipe });
+  return true;
+}
+
 export function mountBuildButton(services: Services): void {
   const btn = el('button', 'btn ghost round', '🔨');
   btn.title = 'Build your world';

@@ -46,6 +46,7 @@ export function freshSave(): SaveData {
     beaconLit: 0,
     giantShields: 0,
     giantDefeated: false,
+    furnaceCharge: 0,
     taught: [...curriculum.initialTaught],
     evidence: [],
     events: [],
