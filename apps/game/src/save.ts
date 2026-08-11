@@ -38,6 +38,7 @@ export function freshSave(): SaveData {
     firefliesCaught: 0,
     tamed: [],
     gatesOpened: [],
+    pickLevel: 0,
     taught: [...curriculum.initialTaught],
     evidence: [],
     events: [],

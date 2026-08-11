@@ -21,6 +21,7 @@ import { buildJob, jobReward, showJobOffer } from '../ui/questboard';
 import { blueprintById, nextBlueprint, type BlueprintDef } from '../ui/blueprints';
 import { creatureById } from '../ui/creatures';
 import { gateById } from '../ui/gates';
+import { nextPick, seamById } from '../ui/mine';
 import { QuestStep } from '../types';
 
 const WORLD_TILE = 54; // keep in sync with world.ts WORLD_TILE (blueprint guidance math)
@@ -44,6 +45,7 @@ export interface WorldControl {
   tameCreature(id: string): void;
   forceDayNight(night: boolean): void;
   openGate(id: string): void;
+  crackSeam(id: string): void;
 }
 
 // Blocks that DO things (Phase 3.4): a placed block you tap to read a short
@@ -760,6 +762,52 @@ export class QuestDirector {
       this.world.dragonHappy();
       this.hud.setCounts(this.counts());
       floatNote('+1 💎', window.innerWidth / 2, window.innerHeight / 2 - 60);
+      await celebrate(this.services);
+    });
+  }
+
+  // ── The Mine + Pick Ladder (Phase 3.2) ────────────────────────────────────
+  /** Tap the toolbench to forge the next pick by reading its material word — a
+   *  better pick cracks deeper seams. Gated: the word must be decodable now. */
+  onToolbenchTapped(): void {
+    if (this.step !== QuestStep.FREE_PLAY) return;
+    void this.run(async () => {
+      const pick = nextPick(this.services);
+      if (!pick) {
+        const maxed = (this.services.save.pickLevel ?? 0) >= 3;
+        await this.services.speakText(maxed ? 'You forged every pick! Amazing!' : 'Read more sounds to forge a better pick!').done;
+        return;
+      }
+      await readWordCard(this.services, pick.mat, { icon: '⛏️' }); // read the material to forge it
+      this.services.save.pickLevel = pick.level;
+      this.services.analytics.log('pick_forged', { level: pick.level, mat: pick.mat });
+      this.services.persist();
+      this.world.refreshMarkers();
+      await celebrate(this.services, true);
+      await this.services.speakText(`You forged the ${pick.mat} pick!`).done;
+    });
+  }
+
+  /** Tap an ore seam. With the right pick, mining is a Say-to-Mine reading rep
+   *  that pays gems; without it, a nudge to forge the pick first. */
+  onSeamTapped(id: string): void {
+    if (this.step !== QuestStep.FREE_PLAY || this.busy) return;
+    const seam = seamById(id);
+    if (!seam) return;
+    if ((this.services.save.pickLevel ?? 0) < seam.level) {
+      void this.services.speakText(`Forge the ${seam.mat} pick first!`).done;
+      return;
+    }
+    void this.run(async () => {
+      const { target, skill, bucket } = this.pickPracticeWord();
+      this.services.analytics.log('adaptive_target', { skill, bucket, word: target, via: 'mine' });
+      await readWordCard(this.services, target, { icon: '⛏️' });
+      this.services.save.gems += seam.gems;
+      this.services.analytics.log('ore_mined', { id, gems: seam.gems });
+      this.services.persist();
+      this.world.crackSeam(id);
+      this.hud.setCounts(this.counts());
+      floatNote(`+${seam.gems} 💎`, window.innerWidth / 2, window.innerHeight / 2 - 60);
       await celebrate(this.services);
     });
   }

@@ -13,7 +13,8 @@ import { checkDeeds } from '../ui/deeds';
 import { openWorldPalette, firstWorldBlock, WORLD_ERASER, type WorldPalette } from '../ui/worldbuild';
 import { blueprintById } from '../ui/blueprints';
 import { GATES, gateById, gateOpenable, type GateDef } from '../ui/gates';
-import { sfxChirp, sfxPlace, sfxShatter } from './sfx';
+import { MINE_SEAMS, TOOLBENCH, seamById, seamVisible, nextPick, type Seam } from '../ui/mine';
+import { sfxChirp, sfxCrack, sfxPlace, sfxShatter } from './sfx';
 import { blockTextureCanvas } from './block-textures';
 import { hasPropTexture, propTextureCanvas, PIXEL_PROP_KEYS } from './world-textures';
 
@@ -132,6 +133,7 @@ export class WorldScene extends Phaser.Scene {
     this.buildForest();
     this.buildCave();
     this.buildGates(); // Word-Gates at the eastern edge (+ any biomes already opened)
+    this.buildMine(); // toolbench + ore seams (the pick ladder)
     this.setupBuildPlot();
     this.setupBlueprintTable();
     this.spawnPlayerAndDragon();
@@ -713,6 +715,52 @@ export class WorldScene extends Phaser.Scene {
   /** Test/facilitator hook: how many biomes are open. */
   gatesOpenCount(): number {
     return (this.services.save.gatesOpened ?? []).length;
+  }
+
+  // ── The Mine + Pick Ladder (Phase 3.2) ────────────────────────────────────
+  private mineSeams = new Map<string, Phaser.GameObjects.Sprite>();
+
+  private buildMine(): void {
+    // Mine-mouth backdrop + the forge toolbench.
+    this.add.ellipse(TOOLBENCH.x + 110, TOOLBENCH.y - 110, 220, 150, 0x2c2540, 0.45).setDepth(-70);
+    const bench = this.prop('stall', TOOLBENCH.x, TOOLBENCH.y, 118, 108, { tint: 0x9a7b52, solid: false });
+    this.add
+      .text(TOOLBENCH.x, TOOLBENCH.y - 64, '⛏️ FORGE', { fontFamily: FONT, fontSize: '15px', fontStyle: '900', color: '#3a2f1a', backgroundColor: 'rgba(255,255,255,0.6)' })
+      .setOrigin(0.5)
+      .setPadding(4, 2, 4, 2)
+      .setDepth(TOOLBENCH.y);
+    this.tappable(bench, () => this.director.onToolbenchTapped(), 200);
+    this.marker('toolbench', TOOLBENCH.x, TOOLBENCH.y - 92);
+
+    for (const s of MINE_SEAMS) this.renderSeam(s);
+  }
+
+  private renderSeam(s: Seam): void {
+    if (!seamVisible(this.services, s)) return; // only surfaces once its material is readable
+    const rock = this.prop('rock', s.x, s.y, 94, 68);
+    const gem = this.add.circle(s.x, s.y - 6, 12, s.tint, 1).setStrokeStyle(2, 0xffffff, 0.55).setDepth(s.y + 1);
+    this.tweens.add({ targets: gem, alpha: { from: 1, to: 0.5 }, duration: 900, yoyo: true, repeat: -1 });
+    this.mineSeams.set(s.id, rock);
+    let cd = 0;
+    this.tappable(rock, () => {
+      if (this.time.now < cd) return;
+      cd = this.time.now + 900;
+      this.director.onSeamTapped(s.id);
+    });
+    this.marker(`seam_${s.id}`, s.x, s.y - 62);
+  }
+
+  private crackSeam(id: string): void {
+    const rock = this.mineSeams.get(id);
+    if (rock) this.bounce(rock);
+    const s = seamById(id);
+    if (s) {
+      for (let i = 0; i < 5; i++) {
+        const p = this.add.text(s.x, s.y, '✨', { fontSize: '16px' }).setOrigin(0.5).setDepth(9500);
+        this.tweens.add({ targets: p, x: s.x + Phaser.Math.Between(-42, 42), y: s.y - Phaser.Math.Between(20, 64), alpha: 0, duration: 640, onComplete: () => p.destroy() });
+      }
+    }
+    sfxCrack();
   }
 
   private togglePlaceMode(): void {
@@ -1572,6 +1620,7 @@ export class WorldScene extends Phaser.Scene {
       tameCreature: (id: string) => this.tameCreature(id),
       forceDayNight: (night: boolean) => this.forceDayNight(night),
       openGate: (id: string) => this.openGate(id),
+      crackSeam: (id: string) => this.crackSeam(id),
     };
   }
 
@@ -1600,6 +1649,11 @@ export class WorldScene extends Phaser.Scene {
     // Free play: a Word-Gate glows ❗ once its tier is mastered and it's unopened.
     const opened = new Set(this.services.save.gatesOpened ?? []);
     for (const g of GATES) show(`gate_${g.id}`, fp && gateOpenable(this.services, g) && !opened.has(g.id));
+    // Free play: the toolbench beckons when there's a new pick to forge; a seam
+    // beckons once you hold the pick that can crack it.
+    show('toolbench', fp && nextPick(this.services) !== null);
+    const pickLvl = this.services.save.pickLevel ?? 0;
+    for (const s of MINE_SEAMS) show(`seam_${s.id}`, fp && seamVisible(this.services, s) && pickLvl >= s.level);
     show('chest', step === QuestStep.CHEST);
     show('cave_enter', step === QuestStep.CHEST);
   }
