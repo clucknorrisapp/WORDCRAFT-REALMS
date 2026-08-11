@@ -83,6 +83,7 @@ export interface SaveData {
   blueprintsDone: string[]; // completed blueprint ids (each builds once)
   firefliesCaught: number; // night fireflies read-caught (a "come back after dark" tally)
   tamed: string[]; // creature ids tamed by reading their name (they live on the farm)
+  gatesOpened: string[]; // Word-Gate ids opened — reading the tier word unrolled a new biome
   taught: SkillId[];
   evidence: Evidence[];
   events: GameEvent[];

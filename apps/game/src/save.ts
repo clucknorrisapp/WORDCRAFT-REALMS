@@ -37,6 +37,7 @@ export function freshSave(): SaveData {
     blueprintsDone: [],
     firefliesCaught: 0,
     tamed: [],
+    gatesOpened: [],
     taught: [...curriculum.initialTaught],
     evidence: [],
     events: [],

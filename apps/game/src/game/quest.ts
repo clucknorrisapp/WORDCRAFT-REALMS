@@ -20,6 +20,7 @@ import { checkDeeds } from '../ui/deeds';
 import { buildJob, jobReward, showJobOffer } from '../ui/questboard';
 import { blueprintById, nextBlueprint, type BlueprintDef } from '../ui/blueprints';
 import { creatureById } from '../ui/creatures';
+import { gateById } from '../ui/gates';
 import { QuestStep } from '../types';
 
 const WORLD_TILE = 54; // keep in sync with world.ts WORLD_TILE (blueprint guidance math)
@@ -42,6 +43,7 @@ export interface WorldControl {
   finishBlueprint(id: string, pet: string): void;
   tameCreature(id: string): void;
   forceDayNight(night: boolean): void;
+  openGate(id: string): void;
 }
 
 // Blocks that DO things (Phase 3.4): a placed block you tap to read a short
@@ -759,6 +761,33 @@ export class QuestDirector {
       this.hud.setCounts(this.counts());
       floatNote('+1 💎', window.innerWidth / 2, window.innerHeight / 2 - 60);
       await celebrate(this.services);
+    });
+  }
+
+  /** Word-Gates (Phase 3.1): tap a gate at the map's edge. Locked until its tier
+   *  is mastered; then say its word to dissolve the wall and open a new biome. */
+  onGateTapped(id: string): void {
+    if (this.step !== QuestStep.FREE_PLAY) return;
+    void this.run(async () => {
+      const g = gateById(id);
+      if (!g) return;
+      const s = this.services.save;
+      if (s.gatesOpened.includes(id)) {
+        await this.services.speakText(`Welcome to the ${g.biome}!`).done;
+        return;
+      }
+      if (!s.taught.includes(g.skill)) {
+        await this.services.speakText('Read more to light this word! Learn new sounds first.').done;
+        return;
+      }
+      const result = await magicWordDoor(this.services, g.word); // say the magic word (forgiving)
+      s.gatesOpened.push(id);
+      this.services.analytics.log('gate_opened', { id, word: g.word, spoken: result.spoken });
+      this.services.persist();
+      this.world.openGate(id);
+      this.world.refreshMarkers();
+      await celebrate(this.services, true);
+      await this.services.speakText(`You opened the ${g.biome}!`).done;
     });
   }
 

@@ -12,6 +12,7 @@ import { openBuild, gridDims } from '../ui/build';
 import { checkDeeds } from '../ui/deeds';
 import { openWorldPalette, firstWorldBlock, WORLD_ERASER, type WorldPalette } from '../ui/worldbuild';
 import { blueprintById } from '../ui/blueprints';
+import { GATES, gateById, gateOpenable, type GateDef } from '../ui/gates';
 import { sfxChirp, sfxPlace, sfxShatter } from './sfx';
 import { blockTextureCanvas } from './block-textures';
 import { hasPropTexture, propTextureCanvas, PIXEL_PROP_KEYS } from './world-textures';
@@ -130,6 +131,7 @@ export class WorldScene extends Phaser.Scene {
     this.buildVillage();
     this.buildForest();
     this.buildCave();
+    this.buildGates(); // Word-Gates at the eastern edge (+ any biomes already opened)
     this.setupBuildPlot();
     this.setupBlueprintTable();
     this.spawnPlayerAndDragon();
@@ -638,6 +640,79 @@ export class WorldScene extends Phaser.Scene {
     if (!reducedMotion()) this.cameras.main.shake(200, 0.004);
     this.spawnBaby(pet, cx + Phaser.Math.Between(-30, 30), cy + 44);
     sfxChirp();
+  }
+
+  // ── Word-Gates → new biomes (Phase 3.1) ───────────────────────────────────
+  private gateWalls = new Map<string, Phaser.GameObjects.GameObject[]>();
+
+  private buildGates(): void {
+    const stone = 0x8a7f74;
+    for (const g of GATES) {
+      const opened = (this.services.save.gatesOpened ?? []).includes(g.id);
+      if (opened) {
+        this.paintBiome(g);
+      } else {
+        // A sliver of the land beyond, glimpsed through the wall.
+        this.add.ellipse(g.x + 70, g.y, 120, 200, g.tint, 0.5).setDepth(g.y - 40);
+      }
+      // The archway (permanent pixel-stone frame).
+      this.add.rectangle(g.x - 46, g.y, 24, 150, stone).setDepth(g.y + 1);
+      this.add.rectangle(g.x + 46, g.y, 24, 150, stone).setDepth(g.y + 1);
+      this.add.rectangle(g.x, g.y - 80, 130, 24, stone).setDepth(g.y + 1);
+
+      const objs: Phaser.GameObjects.GameObject[] = [];
+      if (!opened) {
+        const wall = this.add.rectangle(g.x, g.y, 74, 150, g.tint, 0.92).setDepth(g.y);
+        wall.setStrokeStyle(2, 0xffffff, 0.4);
+        const word = this.add
+          .text(g.x, g.y, g.word.toUpperCase(), { fontFamily: FONT, fontSize: '22px', fontStyle: '900', color: '#3a2f1a' })
+          .setOrigin(0.5)
+          .setDepth(g.y + 2);
+        this.tweens.add({ targets: wall, alpha: { from: 0.92, to: 0.6 }, duration: 950, yoyo: true, repeat: -1 });
+        objs.push(wall, word);
+      }
+      this.gateWalls.set(g.id, objs);
+
+      const hit = this.add.rectangle(g.x, g.y, 140, 180, 0xffffff, 0.001).setDepth(g.y + 3);
+      hit.setInteractive({ useHandCursor: true });
+      hit.on('pointerdown', (_p: unknown, _x: unknown, _y: unknown, event: Phaser.Types.Input.EventData) => {
+        if (this.placing || isUiOpen()) return;
+        event.stopPropagation();
+        this.director.onGateTapped(g.id);
+      });
+      this.marker(`gate_${g.id}`, g.x, g.y - 104);
+    }
+  }
+
+  /** Paint the land beyond an opened gate: a tinted ground patch, a name sign,
+   *  and a couple of Say-to-Mine gather nodes (decodable at the gate's tier). */
+  private paintBiome(g: GateDef): void {
+    this.add.ellipse(g.x - 30, g.y, 320, 280, g.tint, 0.55).setDepth(-60);
+    this.gatherableTree(g.x - 130, g.y - 40);
+    this.gatherableRock(g.x - 96, g.y + 66);
+    this.add
+      .text(g.x - 30, g.y - 122, g.biome, { fontFamily: FONT, fontSize: '15px', fontStyle: '900', color: '#2f2718', backgroundColor: 'rgba(255,255,255,0.7)' })
+      .setOrigin(0.5)
+      .setPadding(4, 2, 4, 2)
+      .setDepth(g.y);
+  }
+
+  private openGate(id: string): void {
+    const g = gateById(id);
+    if (!g) return;
+    const objs = this.gateWalls.get(id) ?? [];
+    for (const o of objs) this.tweens.add({ targets: o, alpha: 0, duration: 700, onComplete: () => o.destroy() });
+    this.gateWalls.set(id, []);
+    if (!reducedMotion()) this.cameras.main.shake(420, 0.006);
+    this.time.delayedCall(reducedMotion() ? 120 : 500, () => {
+      this.paintBiome(g);
+      this.revealObjective({ x: g.x - 60, y: g.y }); // pan out over the new land
+    });
+  }
+
+  /** Test/facilitator hook: how many biomes are open. */
+  gatesOpenCount(): number {
+    return (this.services.save.gatesOpened ?? []).length;
   }
 
   private togglePlaceMode(): void {
@@ -1496,6 +1571,7 @@ export class WorldScene extends Phaser.Scene {
       finishBlueprint: (id: string, pet: string) => this.finishBlueprint(id, pet),
       tameCreature: (id: string) => this.tameCreature(id),
       forceDayNight: (night: boolean) => this.forceDayNight(night),
+      openGate: (id: string) => this.openGate(id),
     };
   }
 
@@ -1521,6 +1597,9 @@ export class WorldScene extends Phaser.Scene {
     const bpDone = new Set(this.services.save.blueprintsDone ?? []);
     const bpLeft = ['den', 'pen', 'hut'].some((id) => !bpDone.has(id));
     show('blueprint', fp && !this.services.save.blueprint && bpLeft);
+    // Free play: a Word-Gate glows ❗ once its tier is mastered and it's unopened.
+    const opened = new Set(this.services.save.gatesOpened ?? []);
+    for (const g of GATES) show(`gate_${g.id}`, fp && gateOpenable(this.services, g) && !opened.has(g.id));
     show('chest', step === QuestStep.CHEST);
     show('cave_enter', step === QuestStep.CHEST);
   }
