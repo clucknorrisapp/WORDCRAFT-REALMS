@@ -42,6 +42,7 @@ export function freshSave(): SaveData {
     dragonColor: null,
     mapSeen: [],
     mapClaimed: [],
+    summoned: [],
     taught: [...curriculum.initialTaught],
     evidence: [],
     events: [],

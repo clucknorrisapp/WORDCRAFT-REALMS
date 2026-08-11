@@ -396,6 +396,24 @@
     @keyframes map-glow { 0%, 100% { filter: brightness(1); } 50% { filter: brightness(1.25); } }
     @keyframes map-flare { 0% { box-shadow: 0 0 0 0 rgba(255,209,102,0.9); } 100% { box-shadow: 0 0 0 22px rgba(255,209,102,0); } }
 
+    /* Word Loot (Phase 4.5) — the Word Bag: your read vocabulary as summonable
+       things. Owned words glow; unread ones sit locked until you read them. */
+    .panel.bag-panel { max-width: 480px; text-align: center; }
+    .bag-title { font-size: 20px; font-weight: 900; color: #5b4632; }
+    .bag-sub { font-size: 13px; font-weight: 700; color: #8a7b63; margin: 2px 0 10px; }
+    .bag-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 9px; max-height: 52vh; overflow-y: auto; padding: 2px; }
+    .loot { appearance: none; -webkit-appearance: none; font-family: inherit; cursor: default;
+      background: #fff8ec; border: 2px solid #ecdcbf; border-radius: 14px; padding: 8px 4px; display: flex;
+      flex-direction: column; align-items: center; gap: 1px; }
+    .loot.owned { background: linear-gradient(160deg, #fffdf6, #ffeecb); border-color: var(--accent, #ff9f43); cursor: pointer; box-shadow: 0 2px 0 rgba(0,0,0,0.08); }
+    .loot.owned:active { transform: scale(0.94); }
+    .loot.locked { opacity: 0.6; filter: grayscale(0.5); }
+    .loot-emoji { font-size: 30px; line-height: 1.1; }
+    .loot-word { font-size: 13px; font-weight: 900; letter-spacing: 0.5px; color: #5b4632; }
+    .loot.locked .loot-word { color: #8a7b63; }
+    .loot-hint { font-size: 11px; }
+    .bag-close { margin-top: 12px; }
+
     /* Reader Level — the reading rank badge + its little level card. */
     .chip.reader-lv { background: linear-gradient(160deg, #fff6de, #ffe4a8); border: 2px solid var(--accent, #ff9f43); font-weight: 900; cursor: pointer; color: #7a5a1e; }
     .chip.reader-lv:active { transform: scale(0.94); }

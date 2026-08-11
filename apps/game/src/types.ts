@@ -88,6 +88,7 @@ export interface SaveData {
   dragonColor: string | null; // a colour word read to "dress" the dragon (recolours it)
   mapSeen: string[]; // region ids the child has walked into (fog cleared)
   mapClaimed: string[]; // region ids claimed by reading their name (fast-travel pins)
+  summoned: Array<{ w: string; x: number; y: number }>; // Word-Loot things read into the world
   taught: SkillId[];
   evidence: Evidence[];
   events: GameEvent[];

@@ -87,6 +87,16 @@ export function peekPlayer(): { x: number; y: number } {
   return playerPeek();
 }
 
+// Bridge: the world scene registers how to summon a read word's thing into the
+// world (Word Loot); the Word Bag calls requestSummon() after the child reads.
+let summon: (word: string) => void = () => {};
+export function setSummon(fn: (word: string) => void): void {
+  summon = fn;
+}
+export function requestSummon(word: string): void {
+  summon(word);
+}
+
 const CELEBRATE_LINES = ['ln_celebrate_1', 'ln_celebrate_2', 'ln_celebrate_3'];
 let celebrateIdx = 0;
 

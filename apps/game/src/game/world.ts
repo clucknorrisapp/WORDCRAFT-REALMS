@@ -6,8 +6,9 @@ import type { Services } from '../services';
 import type { Hud } from '../ui/hud';
 import { allBlocks } from '@readquest/content';
 import { floatNote, isUiOpen, reducedMotion } from '../ui/dom';
-import { setBuildRenderer, setDragonCelebrate, setNextHandler, setPlaceModeToggle, setCreatureRefresh, setFastTravel, setPlayerPeek } from '../ui/widgets';
+import { setBuildRenderer, setDragonCelebrate, setNextHandler, setPlaceModeToggle, setCreatureRefresh, setFastTravel, setPlayerPeek, setSummon } from '../ui/widgets';
 import { regionAt } from './regions';
+import { summonableByWord, type Summonable } from '../ui/loot';
 import { creatureById, wildCreatures, type Creature } from '../ui/creatures';
 import { openBuild, gridDims } from '../ui/build';
 import { checkDeeds } from '../ui/deeds';
@@ -142,6 +143,7 @@ export class WorldScene extends Phaser.Scene {
     this.restoreFromSave();
     this.spawnCritters();
     this.spawnPets(); // babies hatched from eggs in earlier sessions
+    this.restoreSummoned(); // Word-Loot things read into the world in earlier sessions
     this.spawnTamedCreatures(); // creatures tamed in earlier sessions live here
     this.refreshWildCreatures(); // shy critters roam, ready to be read-tamed
 
@@ -196,6 +198,7 @@ export class WorldScene extends Phaser.Scene {
     setCreatureRefresh(() => this.refreshWildCreatures()); // new sounds → new creatures
     setFastTravel((x, y) => this.teleport(x, y)); // map pins whoosh the player
     setPlayerPeek(() => ({ x: this.player.x, y: this.player.y })); // map's "you are here"
+    setSummon((word) => this.summonThing(word)); // Word Loot: read a word → its thing appears
     this.renderWorldBuild(); // restore blocks laid in the world last session
     this.renderBlueprint(); // restore an in-progress plan's ghosts
     // Free play only: strew the wide east with Say-to-Mine nodes + glint caches,
@@ -1215,6 +1218,58 @@ export class WorldScene extends Phaser.Scene {
       onUpdate: () => c.setDepth(c.y),
       onComplete: () => this.time.delayedCall(600 + Phaser.Math.Between(0, 2400), () => c.active && this.wanderBaby(c)),
     });
+  }
+
+  // ── Word Loot (Phase 4.5): read a word → its thing appears in the world ─────
+  private summonSprites: Phaser.GameObjects.Text[] = [];
+  private static SUMMON_MAX = 40; // creative freedom, but keep the plot from drowning
+
+  /** Summon a read word's thing at the player's feet, remember it, and pop it in.
+   *  Reading the word (in the bag) IS the summon — this just makes it real. */
+  private summonThing(word: string): void {
+    const def = summonableByWord(word);
+    if (!def) return;
+    if (this.summonSprites.length >= WorldScene.SUMMON_MAX) {
+      const oldest = this.summonSprites.shift();
+      oldest?.destroy();
+      this.services.save.summoned.shift();
+    }
+    const x = Phaser.Math.Clamp(this.player.x + (this.player.flipX ? -70 : 70), 120, W - 120);
+    const y = Phaser.Math.Clamp(this.player.y + 26, 260, H - 120);
+    this.placeSummon(def, x, y, true);
+    this.services.save.summoned.push({ w: word, x, y });
+    this.services.persist();
+    this.services.analytics.log('word_summoned', { word, kind: def.mob ? 'mob' : 'prop' });
+    floatNote(`${def.emoji} ${word.toUpperCase()}!`, window.innerWidth / 2, window.innerHeight / 2 - 70);
+  }
+
+  /** Draw one summoned thing. Mobs wander (reusing the baby wander); props sit
+   *  and bob. New summons pop in with a squash; restored ones just appear. */
+  private placeSummon(def: Summonable, x: number, y: number, fresh: boolean): void {
+    const t = this.add.text(x, y, def.emoji, { fontSize: '34px' }).setOrigin(0.5).setDepth(y);
+    this.summonSprites.push(t);
+    if (fresh && !reducedMotion()) {
+      t.setScale(0.2);
+      this.tweens.add({ targets: t, scale: 1, duration: 280, ease: 'back.out' });
+      sfxPlace();
+    }
+    if (def.mob) {
+      this.wanderBaby(t); // creatures roam like hatched babies
+    } else {
+      this.tweens.add({ targets: t, y: y - 3, duration: 700, yoyo: true, repeat: -1, ease: 'sine.inOut' });
+    }
+  }
+
+  private restoreSummoned(): void {
+    for (const it of this.services.save.summoned ?? []) {
+      const def = summonableByWord(it.w);
+      if (def) this.placeSummon(def, it.x, it.y, false);
+    }
+  }
+
+  /** Test/facilitator hook: how many summoned things are alive in the world. */
+  summonCount(): number {
+    return this.summonSprites.length;
   }
 
   /** The hatch moment: an egg at the coop shudders, cracks open in a burst of
