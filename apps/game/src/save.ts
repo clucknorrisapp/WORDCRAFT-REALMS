@@ -25,6 +25,7 @@ export function freshSave(): SaveData {
     blocksUnlocked: [],
     build: {},
     buildPlaced: 0,
+    glintsFound: [],
     taught: [...curriculum.initialTaught],
     evidence: [],
     events: [],

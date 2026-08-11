@@ -54,6 +54,7 @@ export interface SaveData {
   blocksUnlocked: string[]; // Build Mode block ids unlocked by reading their word
   build: Record<string, string>; // Build Mode grid: "col,row" → blockId
   buildPlaced: number; // cumulative blocks ever placed — drives Builder rank
+  glintsFound: string[]; // overworld glint-cache ids already collected (one-time rewards)
   taught: SkillId[];
   evidence: Evidence[];
   events: GameEvent[];

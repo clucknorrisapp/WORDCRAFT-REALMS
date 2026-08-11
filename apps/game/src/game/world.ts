@@ -138,7 +138,11 @@ export class WorldScene extends Phaser.Scene {
     this.director = new QuestDirector(this.services, this.worldControl(), this.hud);
     setDragonCelebrate((big) => this.dragonCelebrateAnim(big));
     setBuildRenderer(() => this.renderBuild());
+    // Free play only: strew the wide east with Say-to-Mine nodes + glint caches,
+    // then nudge toward the nearest one so a session never opens on a blank map.
+    this.seedFreePlayNodes();
     this.time.delayedCall(400, () => void this.director.start());
+    this.time.delayedCall(1400, () => this.freePlayOpener());
 
     this.time.addEvent({
       delay: 30000,
@@ -564,6 +568,77 @@ export class WorldScene extends Phaser.Scene {
 
   private bounce(obj: Phaser.GameObjects.Sprite): void {
     this.tweens.add({ targets: obj, scaleX: obj.scaleX * 1.08, scaleY: obj.scaleY * 0.92, duration: 90, yoyo: true });
+  }
+
+  private gatherableRock(x: number, y: number): void {
+    const rock = this.prop('rock', x, y, 88, 62);
+    let cd = 0;
+    this.tappable(rock, () => {
+      if (this.time.now < cd) return;
+      cd = this.time.now + 900;
+      this.director.onRockTapped(() => {
+        this.bounce(rock);
+        floatNote('+1 🪨', window.innerWidth / 2, window.innerHeight / 2 - 60);
+      });
+    });
+  }
+
+  // Fill the wide-open east so free play always has a node over the next rise —
+  // the fix for "there's nowhere to go". Every node is a Say-to-Mine reading rep,
+  // and glinting caches are one-time reward reads. Free play only.
+  private freeNodes: Array<{ x: number; y: number }> = [];
+  private seedFreePlayNodes(): void {
+    if (this.services.save.questStep !== QuestStep.FREE_PLAY) return;
+    const trees: Array<[number, number]> = [
+      [820, 260], [1080, 540], [900, 940], [1260, 300], [1340, 780],
+      [2340, 760], [2200, 1000], [1720, 470], [2020, 180], [700, 420],
+    ];
+    for (const [x, y] of trees) this.gatherableTree(x, y);
+    const rocks: Array<[number, number]> = [[720, 600], [1160, 780], [1980, 470], [2380, 900], [1500, 300]];
+    for (const [x, y] of rocks) this.gatherableRock(x, y);
+    for (const [x, y] of [...trees, ...rocks]) this.freeNodes.push({ x, y });
+
+    const glints: Array<[string, number, number]> = [
+      ['g1', 1300, 500], ['g2', 1900, 860], ['g3', 2400, 620],
+      ['g4', 1050, 300], ['g5', 760, 880], ['g6', 1650, 980],
+    ];
+    for (const [id, x, y] of glints) this.glintCache(id, x, y);
+  }
+
+  private glintCache(id: string, x: number, y: number): void {
+    if (this.services.save.glintsFound.includes(id)) return;
+    const glow = this.add.circle(x, y, 20, 0xffe08a, 0.5).setDepth(y);
+    const star = this.add.text(x, y, '✨', { fontSize: '30px' }).setOrigin(0.5).setDepth(y + 1);
+    this.tweens.add({ targets: [glow, star], scale: { from: 0.85, to: 1.2 }, duration: 700, yoyo: true, repeat: -1, ease: 'sine.inOut' });
+    this.freeNodes.push({ x, y });
+    const hit = this.add.circle(x, y, 46, 0xffffff, 0.001).setDepth(y + 2);
+    this.tappable(
+      hit as unknown as Phaser.GameObjects.Sprite,
+      () =>
+        this.director.onGlintTapped(id, () => {
+          glow.destroy();
+          star.destroy();
+          hit.destroy();
+          for (let i = 0; i < 3; i++) this.time.delayedCall(i * 90, () => this.pulseAt(x, y));
+        }),
+      150,
+    );
+  }
+
+  /** Free-play opener: beckon the child toward the nearest thing to do, so a
+   *  session never starts on a blank slate ("nowhere to go"). */
+  private freePlayOpener(): void {
+    if (this.services.save.questStep !== QuestStep.FREE_PLAY || this.freeNodes.length === 0) return;
+    let best = this.freeNodes[0]!;
+    let bd = Infinity;
+    for (const n of this.freeNodes) {
+      const d = Phaser.Math.Distance.Between(this.player.x, this.player.y, n.x, n.y);
+      if (d > 130 && d < bd) {
+        bd = d;
+        best = n;
+      }
+    }
+    this.revealObjective(best);
   }
 
   // ── Player + dragon ───────────────────────────────────────────────────────

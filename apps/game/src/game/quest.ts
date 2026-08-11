@@ -15,6 +15,7 @@ import {
   showDialogue,
   toast,
 } from '../ui/widgets';
+import { floatNote } from '../ui/dom';
 import { QuestStep } from '../types';
 
 export interface WorldControl {
@@ -494,5 +495,35 @@ export class QuestDirector {
     this.services.analytics.log('egg_collected');
     this.services.persist();
     this.hud.setCounts(this.counts());
+  }
+
+  /** Free-play glint cache: a sparkle hidden out over the eastern rise. Tapping
+   *  it is a one-time reading rep that pays a gem — a concrete reward for walking
+   *  east and reading. Idempotent: the id is remembered, so a found cache never
+   *  pays twice (a reload mid-celebration can't double-grant). */
+  onGlintTapped(id: string, onCollect: () => void): void {
+    if (this.step !== QuestStep.FREE_PLAY) return;
+    if (this.services.save.glintsFound.includes(id)) {
+      onCollect(); // already claimed — just clear the stale sparkle
+      return;
+    }
+    void this.run(async () => {
+      const s = this.services.save;
+      if (s.glintsFound.includes(id)) return; // re-entrancy guard
+      const { target, skill, bucket } = this.pickPracticeWord();
+      this.services.analytics.log('adaptive_target', { skill, bucket, word: target, via: 'glint' });
+      await readWordCard(this.services, target, { icon: '✨' });
+      // Pay the reward exactly once, state first.
+      s.glintsFound.push(id);
+      s.gems += 1;
+      this.services.analytics.log('glint_found', { id, word: target });
+      this.services.persist();
+      sfxReward();
+      onCollect(); // world removes the sparkle + bursts a little pop
+      this.world.dragonHappy();
+      this.hud.setCounts(this.counts());
+      floatNote('+1 💎', window.innerWidth / 2, window.innerHeight / 2 - 60);
+      await celebrate(this.services);
+    });
   }
 }
