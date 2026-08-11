@@ -3,7 +3,7 @@
 // decides what happens. No pedagogy: word choices come from content, mastery
 // from the engine, and all reading UI from the widgets.
 import { queryWords, word as getWord } from '@readquest/content';
-import { sfxCrack, sfxHit, sfxPop, sfxReward } from './sfx';
+import { sfxCrack, sfxHit, sfxPop, sfxReward, sfxUnlock } from './sfx';
 import type { Services } from '../services';
 import type { Hud } from '../ui/hud';
 import {
@@ -17,6 +17,7 @@ import {
 } from '../ui/widgets';
 import { floatNote } from '../ui/dom';
 import { checkDeeds } from '../ui/deeds';
+import { buildJob, jobReward, showJobOffer } from '../ui/questboard';
 import { QuestStep } from '../types';
 
 export interface WorldControl {
@@ -71,6 +72,8 @@ const POI = {
   door: [2380, 300] as [number, number],
   chest: [760, 1430] as [number, number],
   spots: { shed: [1560, 400], rock: [2150, 520], log: [1880, 730] } as Record<string, [number, number]>,
+  rocks: [[1620, 560], [2060, 680]] as Array<[number, number]>,
+  nest: [445, 1000] as [number, number], // where free-play eggs appear (by the coop)
 };
 
 function xy(p: [number, number]): { x: number; y: number } {
@@ -144,8 +147,20 @@ export class QuestDirector {
       case QuestStep.CHEST:
         return p.y > 1200 ? xy(POI.chest) : xy(POI.door);
       default:
-        return null; // FREE_PLAY — no arrow, no auto-walk; free play is sacred
+        return this.jobTarget(); // FREE_PLAY — guide only while a Help-Wanted job is active
     }
+  }
+
+  /** Where the active free-play job points: the resource while gathering, the
+   *  giver once it's ready to turn in. Null with no job — free play stays open. */
+  private jobTarget(): { x: number; y: number } | null {
+    const job = this.services.save.job;
+    if (!job) return null;
+    const p = this.world.playerPos();
+    if (job.progress >= job.target) return xy(job.giver === 'mayor' ? POI.mayor : POI.wizard);
+    if (job.kind === 'wood') return nearest(p, POI.trees);
+    if (job.kind === 'stone') return nearest(p, POI.rocks);
+    return xy(POI.nest); // eggs gather by the coop
   }
 
   private maybeReveal(): void {
@@ -159,6 +174,7 @@ export class QuestDirector {
     const obj = OBJECTIVES[this.step] ?? { icon: '🎈', lineId: null };
     this.hud.setObjective(obj.icon, obj.lineId);
     this.hud.setCounts(this.counts());
+    this.hud.setJob(this.services.save.job);
     this.world.refreshMarkers();
   }
 
@@ -276,6 +292,7 @@ export class QuestDirector {
     this.services.analytics.log('gathered', { kind, via: 'read' });
     this.services.persist();
     this.hud.setCounts(this.counts());
+    this.bumpJob(kind); // a Help-Wanted job may want this resource
   }
 
   /** The invisible engine (70/20/10) picks the next skill; draw a decodable word
@@ -340,6 +357,8 @@ export class QuestDirector {
         await celebrate(this.services, true);
         this.setStep(QuestStep.BUILD_COOP);
         await toast(this.services, 'ln_build_coop');
+      } else if (this.step === QuestStep.FREE_PLAY) {
+        await this.giverInteract('mayor');
       } else {
         await this.services.speakText('Cluck cluck!', 'mayor_hen').done;
       }
@@ -375,6 +394,8 @@ export class QuestDirector {
         await celebrate(this.services, true);
         this.services.analytics.log('magic_door_opened', { spoken: result.spoken });
         this.setStep(QuestStep.HUNT);
+      } else if (this.step === QuestStep.FREE_PLAY) {
+        await this.giverInteract('wizard');
       } else if (this.step >= QuestStep.CHEST) {
         await showDialogue(this.services, 'ln_chest_tease');
       } else {
@@ -497,6 +518,72 @@ export class QuestDirector {
     this.services.analytics.log('egg_collected');
     this.services.persist();
     this.hud.setCounts(this.counts());
+    this.bumpJob('eggs');
+  }
+
+  // ── Quest Board / Help Wanted (Phase 2.1) ─────────────────────────────────
+  /** Tapping a giver in free play: turn in a ready job, nudge an in-progress
+   *  one, or offer a fresh one (reading the order to accept is a sentence_read). */
+  private async giverInteract(giver: 'mayor' | 'wizard'): Promise<void> {
+    const s = this.services.save;
+    const job = s.job;
+    const voice = giver === 'mayor' ? 'mayor_hen' : 'wizard';
+    if (job && job.giver === giver && job.progress >= job.target) {
+      await this.turnInJob();
+      return;
+    }
+    if (job) {
+      let line: string;
+      if (job.progress >= job.target) {
+        line = job.giver === 'mayor' ? 'Take that to the mayor!' : 'Take that to the wizard!';
+      } else {
+        line = job.giver === giver ? 'Keep going! You can do it!' : 'Finish your other job first!';
+      }
+      await this.services.speakText(line, voice).done;
+      this.pendingReveal = true; // re-point the way
+      return;
+    }
+    const seed = Math.floor(Math.random() * 1e6);
+    const accepted = await showJobOffer(this.services, buildJob(this.services, giver, seed));
+    if (accepted) {
+      s.job = accepted;
+      this.services.persist();
+      this.pendingReveal = true; // guide toward the resource
+    }
+  }
+
+  private async turnInJob(): Promise<void> {
+    const s = this.services.save;
+    const job = s.job;
+    if (!job) return;
+    const reward = jobReward(this.services);
+    s.gems += reward.gems;
+    s.jobsDone += 1;
+    s.job = null;
+    this.services.persist();
+    this.services.analytics.log('job_done', { kind: job.kind, jobsDone: s.jobsDone });
+    const voice = job.giver === 'mayor' ? 'mayor_hen' : 'wizard';
+    await this.services.speakText('Thank you! Here is a treasure for you!', voice).done;
+    sfxReward();
+    floatNote(`+${reward.gems} 💎`, window.innerWidth / 2, window.innerHeight / 2 - 60);
+    this.hud.setCounts(this.counts());
+    await celebrate(this.services, true);
+  }
+
+  /** A gather/egg event nudges the active job; hitting the target arms turn-in. */
+  private bumpJob(kind: 'wood' | 'stone' | 'eggs'): void {
+    const job = this.services.save.job;
+    if (!job || job.kind !== kind || job.progress >= job.target) return;
+    job.progress += 1;
+    this.services.persist();
+    this.hud.setJob(job);
+    if (job.progress >= job.target) {
+      sfxUnlock();
+      floatNote('📋 ✓ Turn it in!', window.innerWidth / 2, window.innerHeight * 0.32);
+      this.pendingReveal = true;
+      this.world.refreshMarkers();
+      this.maybeReveal();
+    }
   }
 
   /** Free-play glint cache: a sparkle hidden out over the eastern rise. Tapping

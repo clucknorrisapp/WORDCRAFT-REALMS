@@ -33,6 +33,17 @@ export interface SettingsData {
   reducedMotion: boolean;
 }
 
+/** A Help-Wanted job from an NPC: read a short decodable order, go do it, come
+ *  back for a reward. Generated from decodable templates so it renews forever. */
+export interface Job {
+  giver: 'mayor' | 'wizard';
+  kind: 'wood' | 'stone' | 'eggs';
+  text: string; // the decodable order the child reads, e.g. "chop a log"
+  icon: string; // resource icon 🪵 🪨 🥚
+  target: number; // how many to bring
+  progress: number; // how many so far
+}
+
 export interface SaveData {
   v: 1;
   childId: string;
@@ -57,6 +68,8 @@ export interface SaveData {
   glintsFound: string[]; // overworld glint-cache ids already collected (one-time rewards)
   deedsEarned: string[]; // achievement ("deed") ids earned — each celebrated once
   lastGiftDay: string | null; // YYYY-MM-DD of the last claimed daily word-of-the-day gift
+  job: Job | null; // the active Help-Wanted job, if any (Quest Board)
+  jobsDone: number; // cumulative jobs completed — a progression tally
   taught: SkillId[];
   evidence: Evidence[];
   events: GameEvent[];

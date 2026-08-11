@@ -950,9 +950,15 @@ export class WorldScene extends Phaser.Scene {
     const step = this.services.save.questStep;
     const found = this.services.save.hensFound;
     const show = (key: string, visible: boolean) => this.markers.get(key)?.setVisible(visible);
-    show('mayor', step === QuestStep.MEET_MAYOR || step === QuestStep.RETURN_MAYOR);
+    // Free-play Help-Wanted: a giver shows ❗ when it has an offer (no active
+    // job) or is the one holding a job that's ready to turn in.
+    const job = this.services.save.job;
+    const fp = step === QuestStep.FREE_PLAY;
+    const ready = !!job && job.progress >= job.target;
+    const offers = (g: 'mayor' | 'wizard') => fp && (!job || (ready && job.giver === g));
+    show('mayor', step === QuestStep.MEET_MAYOR || step === QuestStep.RETURN_MAYOR || offers('mayor'));
     show('pathsign', step === QuestStep.PATH_CHOICE);
-    show('wizard', step === QuestStep.CAVE_DOOR);
+    show('wizard', step === QuestStep.CAVE_DOOR || offers('wizard'));
     show('spot_shed', step === QuestStep.HUNT && !found.includes('shed'));
     show('spot_rock', step === QuestStep.HUNT && !found.includes('rock'));
     show('spot_log', step === QuestStep.HUNT && !found.includes('log'));

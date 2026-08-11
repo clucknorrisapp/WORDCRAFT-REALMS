@@ -1,10 +1,15 @@
 import { readerLevel, type ReaderLevel } from '@readquest/content';
 import type { Services } from '../services';
+import type { Job } from '../types';
 import { el, openLayer } from './dom';
+import { jobChipLabel } from './questboard';
+import { requestNext } from './widgets';
 
 export interface Hud {
   setCounts(c: { wood: number; stone: number; eggs: number; gems: number; hens?: number | null }): void;
   setObjective(icon: string, lineId: string | null): void;
+  /** Show/refresh the active Help-Wanted job chip (null hides it). */
+  setJob(job: Job | null): void;
   /** Refresh the Reader Level badge from the child's taught set. */
   refreshReaderLevel(): void;
 }
@@ -36,6 +41,18 @@ export function mountHud(services: Services): Hud {
       services.analytics.log('audio_requested', { lineId: objectiveLine, source: 'objective' });
       void services.speakLine(objectiveLine, undefined).done;
     }
+  });
+
+  // Active Help-Wanted job chip: reads back the order and points the way.
+  const jobChip = el('button', 'job-chip');
+  jobChip.style.display = 'none';
+  overlayEl.appendChild(jobChip);
+  jobChip.addEventListener('click', () => {
+    const job = services.save.job;
+    if (!job) return;
+    services.analytics.log('job_chip_tapped', { kind: job.kind });
+    void services.speakText(job.text).done;
+    requestNext(); // show where to go
   });
 
   const refreshReaderLevel = () => {
@@ -72,6 +89,15 @@ export function mountHud(services: Services): Hud {
       objIcon.textContent = icon;
       objectiveLine = lineId;
       objSpeaker.style.display = lineId ? '' : 'none';
+    },
+    setJob(job) {
+      if (!job) {
+        jobChip.style.display = 'none';
+        return;
+      }
+      jobChip.style.display = '';
+      jobChip.textContent = jobChipLabel(job);
+      jobChip.classList.toggle('ready', job.progress >= job.target);
     },
     refreshReaderLevel,
   };

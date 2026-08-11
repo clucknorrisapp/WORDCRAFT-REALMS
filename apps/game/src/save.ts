@@ -28,6 +28,8 @@ export function freshSave(): SaveData {
     glintsFound: [],
     deedsEarned: [],
     lastGiftDay: null,
+    job: null,
+    jobsDone: 0,
     taught: [...curriculum.initialTaught],
     evidence: [],
     events: [],
