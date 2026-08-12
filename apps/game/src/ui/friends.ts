@@ -3,13 +3,13 @@
 // word to read to tame them; species whose name isn't decodable yet stay locked
 // until the child's reading unlocks them. The book fills as the child reads.
 import type { Services } from '../services';
-import { bottomLeftCluster, el, openLayer } from './dom';
+import { hudMenuTray, el, openLayer } from './dom';
 import { CREATURES, readableCreatures } from './creatures';
 
 export function mountFriendsButton(services: Services): void {
   const btn = el('button', 'btn ghost round', '🐾');
   btn.title = 'Friends Book';
-  bottomLeftCluster().appendChild(btn);
+  hudMenuTray().appendChild(btn);
   btn.addEventListener('click', () => openFriends(services));
 }
 

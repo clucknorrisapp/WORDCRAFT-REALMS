@@ -7,7 +7,7 @@
 import { allBlocks, validateText } from '@readquest/content';
 import type { BuildBlock } from '@readquest/shared';
 import type { Services } from '../services';
-import { bottomLeftCluster, el, overlay } from './dom';
+import { hudMenuTray, el, overlay } from './dom';
 import { readWordCard, requestPlaceMode } from './widgets';
 import { blockTextureURL } from '../game/block-textures';
 import { sfxUnlock } from '../game/sfx';
@@ -18,7 +18,7 @@ export const WORLD_ERASER = '__erase__';
 export function mountWorldBuildButton(services: Services): void {
   const btn = el('button', 'btn ghost round', '🧱');
   btn.title = 'Build where you stand';
-  bottomLeftCluster().appendChild(btn);
+  hudMenuTray().appendChild(btn);
   btn.addEventListener('click', () => {
     services.analytics.log('worldbuild_toggle');
     requestPlaceMode();

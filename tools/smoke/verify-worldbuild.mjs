@@ -44,7 +44,9 @@ const readSave = () => page.evaluate(() => JSON.parse(localStorage.getItem('read
 const wbCount = () => page.evaluate(() => window.__readquest.game.scene.keys.world.worldBuildCount());
 
 // ── Enter place mode ──────────────────────────────────────────────────────────
-await page.locator('.hud-left button:has-text("🧱")').click();
+await page.locator('.menu-btn').click(); // Build-Where-You-Stand lives in the ➕ More menu now
+await page.waitForSelector('.hud-menu-tray:not([hidden])', { timeout: 6000 });
+await page.locator('.hud-menu-tray button:has-text("🧱")').click();
 await page.waitForSelector('.worldbuild-bar', { timeout: 6000 });
 const toolCount = await page.evaluate(() => document.querySelectorAll('.worldbuild-bar .wb-tool').length);
 console.log(`place mode: ${toolCount} palette tools (eraser + unlocked starters)`);

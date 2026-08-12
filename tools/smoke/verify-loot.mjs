@@ -52,6 +52,8 @@ const save = () => page.evaluate(() => window.__readquest.services.save);
 const summonCount = () => page.evaluate(() => window.__readquest.game.scene.keys.world.summonCount());
 
 // ── The bag knows what you've read: hen + log owned, the rest locked ──────────
+await page.locator('.menu-btn').click(); // Word Bag lives in the ➕ More menu now
+await page.waitForSelector('.hud-menu-tray:not([hidden])', { timeout: 6000 });
 await page.locator('.bag-btn').click();
 await page.waitForSelector('.bag-grid', { timeout: 8000 });
 const owned = await page.locator('.loot.owned').count();

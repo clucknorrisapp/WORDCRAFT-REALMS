@@ -48,6 +48,8 @@ const save = () => page.evaluate(() => window.__readquest.services.save);
 const notBusy = () => page.waitForFunction(() => !window.__readquest.game.scene.keys.world.director.busy, null, { timeout: 8000 });
 
 // ── The board renders ages, with starters owned and the chain node visible ────
+await page.locator('.menu-btn').click(); // the Tech Tree lives in the ➕ More menu now
+await page.waitForSelector('.hud-menu-tray:not([hidden])', { timeout: 6000 });
 await page.locator('.tech-btn').click();
 await page.waitForSelector('.tech-scroll', { timeout: 8000 });
 const ages = await page.locator('.tech-age').count();

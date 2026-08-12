@@ -5,7 +5,7 @@
 // celebration; a 🏅 button opens the wall to review earned + locked deeds.
 import { curriculum, readerLevel } from '@readquest/content';
 import type { Services } from '../services';
-import { bottomLeftCluster, confetti, el, isUiOpen, openLayer, wait } from './dom';
+import { hudMenuTray, confetti, el, isUiOpen, openLayer, wait } from './dom';
 import { sfxFanfare, sfxUnlock } from '../game/sfx';
 import { QuestStep } from '../types';
 
@@ -137,6 +137,6 @@ export function openDeeds(services: Services): void {
 export function mountDeedsButton(services: Services): void {
   const btn = el('button', 'btn ghost round', '🏅');
   btn.title = 'My deeds';
-  bottomLeftCluster().appendChild(btn);
+  hudMenuTray().appendChild(btn);
   btn.addEventListener('click', () => openDeeds(services));
 }

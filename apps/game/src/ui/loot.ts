@@ -5,7 +5,7 @@
 // plops down. It's creative-mode-with-words — the bigger your reading vocabulary,
 // the bigger your box of loot — and only words you've truly read are in the bag.
 import type { Services } from '../services';
-import { bottomLeftCluster, el, openLayer } from './dom';
+import { hudMenuTray, el, openLayer } from './dom';
 import { readWordCard, requestSummon } from './widgets';
 
 export interface Summonable {
@@ -54,7 +54,7 @@ export function readWords(services: Services): Set<string> {
 export function mountBagButton(services: Services): void {
   const btn = el('button', 'btn ghost round bag-btn', '🎒');
   btn.title = 'Word Bag';
-  bottomLeftCluster().appendChild(btn);
+  hudMenuTray().appendChild(btn);
   btn.addEventListener('click', () => openBag(services));
 }
 

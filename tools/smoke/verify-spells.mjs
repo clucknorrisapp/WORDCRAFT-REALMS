@@ -42,7 +42,9 @@ await page.waitForSelector('canvas', { timeout: 15000 });
 await page.waitForTimeout(1000);
 
 // Open the spellbook.
-await page.locator('.hud-left button:has-text("✨")').click();
+await page.locator('.menu-btn').click(); // the spellbook lives in the ➕ More menu now
+await page.waitForSelector('.hud-menu-tray:not([hidden])', { timeout: 6000 });
+await page.locator('.hud-menu-tray button:has-text("✨")').click();
 await page.waitForSelector('.spell-grid', { timeout: 8000 });
 const unlocked = await page.locator('.spell-card:not(.locked)').count();
 const locked = await page.locator('.spell-card.locked').count();

@@ -45,17 +45,19 @@ async function boot(): Promise<void> {
 
   const hud = mountHud(services);
   mountParentButton(services);
-  mountLibraryButton(services, hud);
-  mountSpellbookButton(services);
-  mountBuildButton(services);
-  mountWorldBuildButton(services); // 🧱 Build Where You Stand (place blocks in the world)
-  mountCompassButton(services); // "Where do I go?" — reveal the current goal
+  // Always-visible core toolbelt — the few things a child reaches for constantly.
+  mountLibraryButton(services, hud); // 📚 read a book
+  mountBuildButton(services); // 🔨 build your world
+  mountCompassButton(services); // 🧭 "Where do I go?"
   mountMapButton(services); // 🗺️ fog-of-war kingdom map + fast travel
+  mountDailyGiftButton(services, hud); // 🎁 word-of-the-day, pulses when ready
+  // Everything else lives in the ➕ "More" menu so the toolbelt stays short.
+  mountWorldBuildButton(services); // 🧱 Build Where You Stand (place blocks in the world)
+  mountSpellbookButton(services); // ✨ spellbook
   mountBagButton(services); // 🎒 Word Bag — read a word to summon its thing
   mountTechTreeButton(services); // 🧪 Tech Tree — smelting chains you climb by reading
   mountDeedsButton(services); // 🏅 the deed wall (achievements)
   mountFriendsButton(services); // 🐾 the Friends Book (tamed creatures)
-  mountDailyGiftButton(services, hud); // 🎁 word-of-the-day, pulses when ready
   mountProgression(services, hud); // "New Sounds!" + Reader Level-up on tier unlock
 
   const game = new Phaser.Game({

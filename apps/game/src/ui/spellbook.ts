@@ -6,7 +6,7 @@
 import { allSpells } from '@readquest/content';
 import type { Spell } from '@readquest/shared';
 import type { Services } from '../services';
-import { bottomLeftCluster, el, openLayer } from './dom';
+import { hudMenuTray, el, openLayer } from './dom';
 import { castSpell } from './widgets';
 
 /** How many spells are unlocked: a starter + one per book read (capped). */
@@ -37,7 +37,7 @@ export function mountSpellbookButton(services: Services): void {
   const dot = el('span', 'lib-dot');
   // Nudge only once they have a spell and have never cast one.
   if (!hasCastAny(services)) btn.appendChild(dot);
-  bottomLeftCluster().appendChild(btn);
+  hudMenuTray().appendChild(btn);
 
   btn.addEventListener('click', () => {
     dot.remove();

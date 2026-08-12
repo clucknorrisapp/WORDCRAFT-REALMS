@@ -9,7 +9,7 @@
 import { allBlocks, validateText } from '@readquest/content';
 import type { BuildBlock } from '@readquest/shared';
 import type { Services } from '../services';
-import { bottomLeftCluster, el, openLayer } from './dom';
+import { hudMenuTray, el, openLayer } from './dom';
 import { isBlockUnlocked, unlockPlainBlock, craftBlock } from './build';
 
 const byId = (id: string): BuildBlock | undefined => allBlocks().find((b) => b.id === id);
@@ -44,7 +44,7 @@ function nodeState(services: Services, b: BuildBlock): NodeState {
 export function mountTechTreeButton(services: Services): void {
   const btn = el('button', 'btn ghost round tech-btn', '🧪');
   btn.title = 'Tech Tree';
-  bottomLeftCluster().appendChild(btn);
+  hudMenuTray().appendChild(btn);
   btn.addEventListener('click', () => openTechTree(services));
 }
 

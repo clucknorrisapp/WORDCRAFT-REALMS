@@ -69,7 +69,9 @@ if (wild1 !== wild0 - 1) errors.push(`the tamed creature should leave the wild p
 if (tamed1 < 1) errors.push('a tamed creature should live on in the world');
 
 // ── Friends Book: tamed + wild + locked slots ─────────────────────────────────
-await page.locator('.hud-left button:has-text("🐾")').click();
+await page.locator('.menu-btn').click(); // the Friends Book lives in the ➕ More menu now
+await page.waitForSelector('.hud-menu-tray:not([hidden])', { timeout: 6000 });
+await page.locator('.hud-menu-tray button:has-text("🐾")').click();
 await page.waitForSelector('.friends-grid', { timeout: 6000 });
 const fb = await page.evaluate(() => ({
   total: document.querySelectorAll('.friend').length,

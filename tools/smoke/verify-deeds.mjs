@@ -61,7 +61,9 @@ console.log(`deedsEarned after first read: ${JSON.stringify(afterRead.deedsEarne
 if (!afterRead.deedsEarned.includes('read_first')) errors.push('reading a word should earn the read_first deed');
 
 // ── Deed wall: earned + locked deeds are shown ────────────────────────────────
-await page.locator('.hud-left button:has-text("🏅")').click();
+await page.locator('.menu-btn').click(); // the deed wall lives in the ➕ More menu now
+await page.waitForSelector('.hud-menu-tray:not([hidden])', { timeout: 6000 });
+await page.locator('.hud-menu-tray button:has-text("🏅")').click();
 await page.waitForSelector('.deeds-grid', { timeout: 6000 });
 const deedCounts = await page.evaluate(() => ({
   total: document.querySelectorAll('.deed').length,

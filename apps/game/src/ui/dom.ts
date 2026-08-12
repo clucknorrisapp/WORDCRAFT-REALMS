@@ -80,7 +80,7 @@ export function confetti(count = 26): void {
   }
 }
 
-/** Shared bottom-left button cluster (Library 📚 + Spellbook ✨ live here). */
+/** Shared bottom-left button cluster (the always-visible core toolbelt). */
 export function bottomLeftCluster(): HTMLElement {
   let c = document.querySelector<HTMLElement>('.hud-left');
   if (!c) {
@@ -88,6 +88,42 @@ export function bottomLeftCluster(): HTMLElement {
     overlay().appendChild(c);
   }
   return c;
+}
+
+/** The "More" menu tray. A single ➕ button in the toolbelt opens a small popup
+ *  of the less-frequent panels, so the bottom cluster stays a short row of core
+ *  actions instead of a wall of buttons a 4-year-old has to hunt through.
+ *  Secondary tools append their button here instead of the always-visible
+ *  cluster; tapping any one runs its action and closes the tray. */
+export function hudMenuTray(): HTMLElement {
+  const existing = document.querySelector<HTMLElement>('.hud-menu-tray');
+  if (existing) return existing;
+  const tray = el('div', 'hud-menu-tray');
+  tray.hidden = true;
+  overlay().appendChild(tray);
+
+  const btn = el('button', 'btn ghost round menu-btn', '➕');
+  btn.title = 'More';
+  const setOpen = (open: boolean): void => {
+    tray.hidden = !open;
+    btn.classList.toggle('open', open);
+  };
+  btn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    setOpen(tray.hidden);
+  });
+  // Tapping a tool in the tray runs its own handler (which bubbles first), then
+  // this closes the tray so the chosen panel is all that's left on screen.
+  tray.addEventListener('click', () => setOpen(false));
+  // Tapping anywhere else dismisses the tray.
+  document.addEventListener('pointerdown', (e) => {
+    if (tray.hidden) return;
+    const t = e.target as Node;
+    if (tray.contains(t) || btn.contains(t)) return;
+    setOpen(false);
+  });
+  bottomLeftCluster().appendChild(btn);
+  return tray;
 }
 
 /** A spell's cast effect: a burst of themed particles with a hued glow. Calm
