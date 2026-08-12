@@ -40,6 +40,9 @@ const GRAPHEME_SKILLS: Record<string, SkillId> = {
   // Final blends: nasal/liquid + stop clusters that close a word.
   nd: 'blend_end', nt: 'blend_end', mp: 'blend_end', nk: 'blend_end',
   ft: 'blend_end', lt: 'blend_end', lk: 'blend_end', lf: 'blend_end', ld: 'blend_end', lp: 'blend_end', ct: 'blend_end',
+  // ng: the "welded" nasal end-sound (ring, king, sing, song) — grouped with the
+  // end blends so it unlocks alongside nk, its natural partner.
+  ng: 'blend_end',
   // Vowel teams — two vowels, one long sound ("rain", "play", "see", "boat").
   // A team is a single grapheme, so these fit the linear rule directly (unlike
   // magic-e). Only the unambiguous long-vowel teams; heart words (said/see/you)

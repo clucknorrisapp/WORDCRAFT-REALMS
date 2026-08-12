@@ -308,5 +308,20 @@
       "At night we see a light.",
       "What a fun day at the beach!"
     ]
+  },
+  {
+    "id": "king-sing",
+    "title": "The King",
+    "cover": "👑",
+    "reward": "gem",
+    "gate": "blend_end",
+    "pages": [
+      "The king has a big ring.",
+      "Bring the ring to the king!",
+      "We sing a song.",
+      "The king can sing a long song.",
+      "The pink drink is in the sink.",
+      "What fun! The king can sing!"
+    ]
   }
 ]
