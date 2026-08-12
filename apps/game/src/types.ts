@@ -93,6 +93,7 @@ export interface SaveData {
   giantShields: number; // word-shields the child has shattered on the Waking Giant (0–3)
   giantDefeated: boolean; // the giant has woken, thanked the child, and stepped aside
   furnaceCharge: number; // ore the furnace machine has smelted over time, waiting to be read out
+  coachDone: boolean; // the one-time "tap to walk" first-run coach has been shown + cleared
   taught: SkillId[];
   evidence: Evidence[];
   events: GameEvent[];

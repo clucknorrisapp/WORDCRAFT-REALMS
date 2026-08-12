@@ -47,6 +47,7 @@ export function freshSave(): SaveData {
     giantShields: 0,
     giantDefeated: false,
     furnaceCharge: 0,
+    coachDone: false,
     taught: [...curriculum.initialTaught],
     evidence: [],
     events: [],

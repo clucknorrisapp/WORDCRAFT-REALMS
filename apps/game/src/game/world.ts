@@ -66,6 +66,7 @@ export class WorldScene extends Phaser.Scene {
   private player!: Phaser.Physics.Arcade.Sprite;
   private dragon!: Phaser.GameObjects.Sprite;
   private dragonRig?: Phaser.GameObjects.Container; // horns + wings added as the dragon grows
+  private coachHand?: Phaser.GameObjects.Container; // first-run "tap to walk" cue
   private obstacles!: Phaser.Physics.Arcade.StaticGroup;
   private moveTarget: { x: number; y: number } | null = null;
   private pending: Tappable | null = null;
@@ -145,6 +146,7 @@ export class WorldScene extends Phaser.Scene {
     this.spawnPlayerAndDragon();
     this.restoreFromSave();
     this.spawnCritters();
+    this.time.delayedCall(700, () => this.maybeStartCoach()); // first-run "tap to walk" cue
     this.spawnPets(); // babies hatched from eggs in earlier sessions
     this.restoreSummoned(); // Word-Loot things read into the world in earlier sessions
     this.spawnTamedCreatures(); // creatures tamed in earlier sessions live here
@@ -1408,6 +1410,35 @@ export class WorldScene extends Phaser.Scene {
     }
   }
 
+  // First-run coach: the one thing a pre-reader can't be told in words — tap the
+  // ground to walk. A pulsing 👆 by the avatar, cleared the instant they first
+  // move, shown once ever (only to a brand-new player in the scripted intro).
+  private maybeStartCoach(): void {
+    if (this.services.save.coachDone || this.services.save.questStep !== QuestStep.INTRO_SIGNS) return;
+    const hand = this.add.container(this.player.x + 44, this.player.y + 66);
+    const finger = this.add.text(0, 0, '👆', { fontSize: '40px' }).setOrigin(0.5);
+    const label = this.add
+      .text(0, 40, 'Tap to walk!', { fontFamily: FONT, fontSize: '20px', fontStyle: '900', color: '#ffffff', stroke: '#3a2f1a', strokeThickness: 5 })
+      .setOrigin(0.5);
+    hand.add([finger, label]);
+    hand.setDepth(9500);
+    if (!reducedMotion()) {
+      this.tweens.add({ targets: hand, y: hand.y + 12, duration: 620, yoyo: true, repeat: -1, ease: 'sine.inOut' });
+    }
+    this.coachHand = hand;
+  }
+
+  private clearCoach(): void {
+    if (!this.coachHand) return;
+    const h = this.coachHand;
+    this.coachHand = undefined;
+    this.tweens.add({ targets: h, alpha: 0, duration: 300, onComplete: () => h.destroy() });
+    if (!this.services.save.coachDone) {
+      this.services.save.coachDone = true;
+      this.services.persist();
+    }
+  }
+
   private wander(c: Phaser.GameObjects.Sprite): void {
     const nx = Phaser.Math.Clamp(c.x + Phaser.Math.Between(-170, 170), 120, W - 120);
     const ny = Phaser.Math.Clamp(c.y + Phaser.Math.Between(-110, 110), 220, 1060);
@@ -1516,6 +1547,11 @@ export class WorldScene extends Phaser.Scene {
   /** Test/facilitator hook: how many summoned things are alive in the world. */
   summonCount(): number {
     return this.summonSprites.length;
+  }
+
+  /** Test/facilitator hook: is the first-run "tap to walk" coach on screen? */
+  coachActive(): boolean {
+    return !!this.coachHand;
   }
 
   /** The hatch moment: an egg at the coop shudders, cracks open in a burst of
@@ -2187,6 +2223,9 @@ export class WorldScene extends Phaser.Scene {
 
     if (body.velocity.x !== 0) this.player.setFlipX(body.velocity.x < 0);
     this.player.setDepth(this.player.y);
+
+    // First move learned → retire the "tap to walk" coach, for good.
+    if (this.coachHand && (this.moveTarget || body.velocity.x !== 0 || body.velocity.y !== 0)) this.clearCoach();
 
     // dragon follows with a soft spring
     const behind = this.player.flipX ? 54 : -54;
