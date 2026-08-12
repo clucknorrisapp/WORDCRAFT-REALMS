@@ -111,14 +111,24 @@ await step('05-sign-read', async () => {
     s.player.body.setVelocity(0, 0);
   });
   await page.waitForTimeout(400);
-  // Click the DEN sign (world 270,770) via the camera transform.
-  const pos = await page.evaluate(() => {
-    const s = window.__readquest.game.scene.keys.world;
-    const cam = s.cameras.main;
-    return { x: 270 - cam.scrollX, y: 770 - cam.scrollY };
-  });
-  await page.mouse.click(pos.x, pos.y);
-  await page.waitForSelector('.word-big', { timeout: 12000 }); // player walks over first
+  // Click the DEN sign (world 270,770) via the camera transform. The sign only
+  // fires once the player auto-walks over it, so under headless rAF throttling a
+  // single click occasionally doesn't land the walk — retry, recomputing the
+  // sign's on-screen spot each time (the camera pans as the player moves).
+  let signOpen = false;
+  for (let attempt = 0; attempt < 6 && !signOpen; attempt++) {
+    const pos = await page.evaluate(() => {
+      const s = window.__readquest.game.scene.keys.world;
+      const cam = s.cameras.main;
+      return { x: 270 - cam.scrollX, y: 770 - cam.scrollY };
+    });
+    await page.mouse.click(pos.x, pos.y);
+    signOpen = await page
+      .waitForSelector('.word-big', { timeout: 3000 })
+      .then(() => true)
+      .catch(() => false);
+  }
+  if (!signOpen) await page.waitForSelector('.word-big', { timeout: 5000 }); // final, real failure
   await page.waitForTimeout(400);
 });
 
