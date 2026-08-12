@@ -5,7 +5,7 @@
 //   - the mic can never block: two misses and the door opens anyway
 //   - celebration fires on every success (the dragon's animation is load-bearing)
 
-import { buildChallenge, line as getLine, word as getWord } from '@readquest/content';
+import { buildChallenge, line as getLine, validateText, word as getWord } from '@readquest/content';
 import { seededShuffle, type Spell } from '@readquest/shared';
 import type { Services } from '../services';
 import { castEffect, confetti, el, isUiOpen, openLayer, screenFlash, speakerButton, wait } from './dom';
@@ -245,6 +245,13 @@ export async function readWordCard(
 ): Promise<void> {
   const started = Date.now();
   const w = getWord(wordText);
+  // Iron-rule tripwire (dev builds only, dead-code-eliminated in prod): every
+  // reading card must show a word the child can already decode. A hardcoded
+  // undecodable literal — like the dragon's ungated 'green' once was — should
+  // scream in the console, never leak silently past the game's cardinal rule.
+  if (import.meta.env?.DEV && !validateText(wordText, services.save.taught).ok) {
+    console.warn(`[iron-rule] readWordCard("${wordText}") is not decodable at the child's current tier`);
+  }
   const layer = openLayer();
   const panel = el('div', 'panel');
   const { wrap } = graphemeSpans(wordText);

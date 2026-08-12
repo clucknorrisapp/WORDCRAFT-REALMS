@@ -569,7 +569,11 @@ export class QuestDirector {
   private async maybeGrowDragon(): Promise<void> {
     const xp = this.services.save.dragonXp;
     if (xp !== 6 && xp !== 18) return; // stage-ups: junior (horns) → big (wings)
-    const color = xp === 6 ? 'red' : 'green';
+    // Iron rule: dress it in a colour the child can read RIGHT NOW. Prefer the
+    // themed colour for the stage, but fall back to always-decodable red/tan so a
+    // dragon fed before the blend/vowel-team tiers never shows an undecodable word.
+    const wish = xp === 6 ? ['red', 'tan', 'green'] : ['green', 'tan', 'red'];
+    const color = wish.find((c) => validateText(c, this.services.save.taught).ok) ?? 'red';
     this.world.growDragon();
     this.services.analytics.log('dragon_grew', { xp, stage: xp === 6 ? 1 : 2 });
     await celebrate(this.services, true);
