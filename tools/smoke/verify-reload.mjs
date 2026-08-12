@@ -42,7 +42,15 @@ for (const [label, overrides, expected] of CASES) {
   await page.addInitScript((save) => localStorage.setItem('readquest_save_v1', JSON.stringify(save)), stuckSave(overrides));
   await page.goto(BASE);
   await page.waitForSelector('canvas', { timeout: 15000 }).catch(() => {});
-  await page.waitForTimeout(1500); // let director.start() → reconcile() run
+  // Let director.start() → reconcile() → persist settle. Poll the persisted
+  // step up to the expected value rather than sleeping a fixed 1500ms, which
+  // flaked under full-suite CPU load (boot+reconcile occasionally ran long, so
+  // the read caught the pre-reconcile step). Reconcile only advances forward,
+  // so this waits exactly as long as needed; a genuinely stuck step times out
+  // and is still read + reported as a failure below.
+  await page
+    .waitForFunction((want) => JSON.parse(localStorage.getItem('readquest_save_v1')).questStep >= want, expected, { timeout: 8000 })
+    .catch(() => {});
   const step = await page.evaluate(() => JSON.parse(localStorage.getItem('readquest_save_v1')).questStep);
   const ok = step === expected;
   console.log(`  ${ok ? '✓' : '✗'} ${label} → step ${step} (want ${expected})`);
