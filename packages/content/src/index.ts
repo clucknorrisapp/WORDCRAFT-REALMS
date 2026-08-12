@@ -55,6 +55,10 @@ const GRAPHEME_SKILLS: Record<string, SkillId> = {
   // R-controlled ("Bossy R") — the r changes the vowel ("car", "fork", "bird").
   // Each is one grapheme. ('for' stays a heart word and bypasses this.)
   ar: 'r_controlled', or: 'r_controlled', er: 'r_controlled', ir: 'r_controlled', ur: 'r_controlled',
+  // Diphthongs — the mouth glides through two vowel sounds. ou/ow = /ow/ (out,
+  // cow); oi/oy = /oy/ (coin, boy). Only the reliable single-sound spellings
+  // live here (the /oh/ "ow" of snow is a later job).
+  ou: 'diphthong', ow: 'diphthong', oi: 'diphthong', oy: 'diphthong',
 };
 
 const BASE_GRAPHEMES = new Set([
@@ -140,13 +144,13 @@ export interface ReaderLevel {
 }
 
 const READER_MILESTONES: SkillId[] = [
-  'base', 'blend_st', 'blend_l', 'blend_r', 'blend_s', 'blend_end', 'magic_e', 'vowel_team', 'r_controlled',
+  'base', 'blend_st', 'blend_l', 'blend_r', 'blend_s', 'blend_end', 'magic_e', 'vowel_team', 'r_controlled', 'diphthong',
 ];
 const READER_TITLES = [
   'Sound Starter', 'Blend Beginner', 'Blend Builder', 'Blend Blaster',
-  'Blend Star', 'Blend Master', 'Magic Reader', 'Word Wizard', 'Reading Legend',
+  'Blend Star', 'Blend Master', 'Magic Reader', 'Word Wizard', 'Reading Legend', 'Sound Explorer',
 ];
-const READER_ICONS = ['🌱', '🔗', '🧩', '🚀', '⭐', '🏆', '✨', '🌈', '🌟'];
+const READER_ICONS = ['🌱', '🔗', '🧩', '🚀', '⭐', '🏆', '✨', '🌈', '🌟', '🌀'];
 
 /** The child's Reader Level from their taught set — one level per milestone tier
  *  reached (base = level 1, up to Word Wizard once vowel teams are unlocked). */

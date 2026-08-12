@@ -368,5 +368,20 @@
       "At night we see the light.",
       "What a fun day in the rain!"
     ]
+  },
+  {
+    "id": "brown-owl",
+    "title": "The Brown Owl",
+    "cover": "🦉",
+    "reward": "gem",
+    "gate": "diphthong",
+    "pages": [
+      "A brown owl is in a tree.",
+      "The owl is up high.",
+      "A cow is down in the town.",
+      "The boy has a toy.",
+      "We found a coin!",
+      "What a fun day out!"
+    ]
   }
 ]

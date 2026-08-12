@@ -17,7 +17,8 @@
     "blend_end",
     "magic_e",
     "vowel_team",
-    "r_controlled"
+    "r_controlled",
+    "diphthong"
   ],
   "initialTaught": [
     "base",

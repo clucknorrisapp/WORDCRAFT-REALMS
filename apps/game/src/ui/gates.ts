@@ -24,6 +24,7 @@ export const GATES: GateDef[] = [
   { id: 'frost', skill: 'magic_e', word: 'cake', biome: 'Frost Peaks', tint: 0xbfe3ff, x: 2540, y: 250 },
   { id: 'shore', skill: 'vowel_team', word: 'rain', biome: 'Sandy Shore', tint: 0xf1e2a8, x: 2560, y: 640 },
   { id: 'crystal', skill: 'r_controlled', word: 'star', biome: 'Crystal Caves', tint: 0xd6c4ff, x: 2540, y: 1010 },
+  { id: 'clouds', skill: 'diphthong', word: 'cow', biome: 'Cloud Tops', tint: 0xdfeeff, x: 2560, y: 1380 },
 ];
 
 export function gateById(id: string): GateDef | undefined {
