@@ -191,6 +191,10 @@
   {"text":"nest","g":["n","e","st"],"c":["best"]},
   {"text":"best","g":["b","e","st"],"c":["nest"]},
   {"text":"fast","g":["f","a","st"]},
+  {"text":"stop","g":["st","o","p"],"c":["step"]},
+  {"text":"step","g":["st","e","p"],"c":["stop"]},
+  {"text":"must","g":["m","u","st"],"c":["mist"]},
+  {"text":"mist","g":["m","i","st"],"c":["must"]},
   {"text":"list","g":["l","i","st"]},
 
   {"text":"flag","g":["fl","a","g"],"c":["flat","clap"]},

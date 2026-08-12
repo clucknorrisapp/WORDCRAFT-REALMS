@@ -383,5 +383,80 @@
       "We found a coin!",
       "What a fun day out!"
     ]
+  },
+  {
+    "id": "loud-clown",
+    "title": "The Loud Clown",
+    "cover": "🤡",
+    "reward": "gem",
+    "gate": "diphthong",
+    "pages": [
+      "A clown is in the town.",
+      "The clown has a red toy.",
+      "The toy is a brown cow.",
+      "The cow can jump up and down!",
+      "We found a coin in the mud.",
+      "What fun we had!"
+    ]
+  },
+  {
+    "id": "stop-the-bus",
+    "title": "Stop the Bus",
+    "cover": "🚌",
+    "reward": "wood",
+    "gate": "blend_st",
+    "pages": [
+      "The red bus must stop.",
+      "Stop, bus! Stop!",
+      "A hen is on the bus.",
+      "The hen has a nest.",
+      "It is the best nest.",
+      "The best bus! Yes!"
+    ]
+  },
+  {
+    "id": "glad-pup",
+    "title": "The Glad Pup",
+    "cover": "🐶",
+    "reward": "gem",
+    "gate": "blend_l",
+    "pages": [
+      "The pup is glad.",
+      "It can clap and clap.",
+      "The pup has a flag.",
+      "The flag is flat.",
+      "The pup can slip on the mud.",
+      "The glad pup can nap. Yes!"
+    ]
+  },
+  {
+    "id": "frog-drum",
+    "title": "The Frog and the Drum",
+    "cover": "🥁",
+    "reward": "stone",
+    "gate": "blend_r",
+    "pages": [
+      "The frog has a drum.",
+      "The frog can grab it.",
+      "A crab ran to the drum.",
+      "The crab has a big grin.",
+      "Drip, drip! It is wet.",
+      "The frog and crab grin. Yes!"
+    ]
+  },
+  {
+    "id": "swim-and-spin",
+    "title": "Swim and Spin",
+    "cover": "🐟",
+    "reward": "gem",
+    "gate": "blend_s",
+    "pages": [
+      "The fish can swim.",
+      "It can swim fast.",
+      "The fish can spin.",
+      "It can skip and skip.",
+      "The fish has a red spot.",
+      "Swim, fish, swim! Yes!"
+    ]
   }
 ]
