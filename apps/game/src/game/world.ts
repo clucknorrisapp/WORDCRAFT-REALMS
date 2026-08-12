@@ -1457,7 +1457,7 @@ export class WorldScene extends Phaser.Scene {
   }
 
   // ── Eggs hatch into creatures (Phase 2.4) ─────────────────────────────────
-  private babyEmoji: Record<string, string> = { chick: '🐤', pup: '🐶', cub: '🐻', kid: '🐐' };
+  private babyEmoji: Record<string, string> = { chick: '🐤', pup: '🐶', cub: '🐻', kid: '🐐', duck: '🦆', foal: '🐴' };
 
   /** Respawn every baby the child has hatched — they live near the coop and
    *  amble around the meadow like the hens (the first living creatures). */
