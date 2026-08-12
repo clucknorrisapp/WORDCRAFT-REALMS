@@ -18,7 +18,8 @@ import { mountBagButton } from './ui/loot';
 import { mountTechTreeButton } from './ui/techtree';
 import { mountFriendsButton } from './ui/friends';
 import { configureSfx } from './game/sfx';
-import { applyTextScale, applyAccessibility } from './ui/dom';
+import { applyTextScale, applyAccessibility, setToolbeltVisible } from './ui/dom';
+import { QuestStep } from './types';
 
 async function boot(): Promise<void> {
   const save = loadSave();
@@ -64,6 +65,9 @@ async function boot(): Promise<void> {
   mountDeedsButton(services); // 🏅 the deed wall (achievements)
   mountFriendsButton(services); // 🐾 the Friends Book (tamed creatures)
   mountProgression(services, hud); // "New Sounds!" + Reader Level-up on tier unlock
+  // Set the intro/free-play chrome state now so the toolbelt doesn't flash in
+  // during the scripted intro before the director's first refresh() runs.
+  setToolbeltVisible(save.questStep === QuestStep.FREE_PLAY);
 
   const game = new Phaser.Game({
     type: Phaser.AUTO,

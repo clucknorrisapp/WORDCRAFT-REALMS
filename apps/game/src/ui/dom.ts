@@ -80,6 +80,14 @@ export function confetti(count = 26): void {
   }
 }
 
+/** Hide the free-play toolbelt during the scripted intro so the screen belongs
+ *  to the story — a 4-year-old shouldn't have to ignore six live buttons while
+ *  the game is walking them through their first minutes. The objective marker
+ *  and dialogue do the guiding; the toolbelt returns at free play. */
+export function setToolbeltVisible(visible: boolean): void {
+  document.body.classList.toggle('intro-chrome', !visible);
+}
+
 /** Shared bottom-left button cluster (the always-visible core toolbelt). */
 export function bottomLeftCluster(): HTMLElement {
   let c = document.querySelector<HTMLElement>('.hud-left');

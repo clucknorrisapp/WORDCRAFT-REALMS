@@ -15,7 +15,7 @@ import {
   showDialogue,
   toast,
 } from '../ui/widgets';
-import { floatNote } from '../ui/dom';
+import { floatNote, setToolbeltVisible } from '../ui/dom';
 import { checkDeeds } from '../ui/deeds';
 import { buildJob, jobReward, showJobOffer } from '../ui/questboard';
 import { blueprintById, nextBlueprint, type BlueprintDef } from '../ui/blueprints';
@@ -222,6 +222,7 @@ export class QuestDirector {
     this.hud.setCounts(this.counts());
     this.hud.setJob(this.services.save.job);
     this.world.refreshMarkers();
+    setToolbeltVisible(this.step === QuestStep.FREE_PLAY); // the intro owns the screen
   }
 
   counts(): { wood: number; stone: number; eggs: number; gems: number; hens: number | null } {
