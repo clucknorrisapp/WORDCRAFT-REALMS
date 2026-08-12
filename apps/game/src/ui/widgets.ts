@@ -333,13 +333,23 @@ export async function choiceBoard(services: Services, opts: ChoiceOpts): Promise
     const clueEl = el('div', 'title');
     clueEl.style.fontSize = '30px';
     clueEl.style.letterSpacing = '1px';
-    clueEl.textContent = clue.text.toUpperCase();
+    clueEl.textContent = clue.text; // lowercase, to match how words look in books
     panel.appendChild(clueEl);
     const hear = speakerButton(() => {
       audioRequested = true;
       void services.speakLine(opts.clueLineId!).done;
     });
     panel.appendChild(hear);
+  }
+
+  // An audio-first learner who misses the spoken instruction must be able to
+  // hear it again — a "say it again" button, never a dead end. (Re-hearing the
+  // instruction is not a decoding hint, so it doesn't flag audioRequested.)
+  if (opts.spokenPrompt && !opts.clueLineId) {
+    const again = speakerButton(() => void services.speakText(opts.spokenPrompt!).done);
+    again.classList.add('prompt-replay');
+    again.title = 'Say it again';
+    panel.appendChild(again);
   }
 
   const cards = el('div', 'cards');
@@ -358,7 +368,7 @@ export async function choiceBoard(services: Services, opts: ChoiceOpts): Promise
     const buttons: HTMLButtonElement[] = [];
     let resolved = false; // latch: the winning tap freezes the board
     for (const text of options) {
-      const card = el('button', 'word-card', text.toUpperCase());
+      const card = el('button', 'word-card', text); // lowercase — matches books, aids early/dyslexic decoding
       buttons.push(card);
       card.addEventListener('click', () => {
         // A correct answer ends the challenge; ignore every later tap so an

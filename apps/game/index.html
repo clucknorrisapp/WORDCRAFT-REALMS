@@ -79,20 +79,31 @@
 
     .word-big {
       font-size: calc(56px * var(--text-scale, 1)); font-weight: 900; letter-spacing: 4px;
-      color: var(--ink); text-transform: uppercase; margin: 10px 0;
+      /* Lowercase to match how words appear in books — ALL-CAPS flattens every
+         word to a rectangle and hurts early/dyslexic word recognition. */
+      color: var(--ink); text-transform: lowercase; margin: 10px 0;
     }
     .word-big .g { padding: 0 2px; border-radius: 8px; }
     .word-big .g.glow { color: var(--accent2); background: #efeaff; }
 
     .cards { display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; margin-top: 14px; }
     .word-card {
+      position: relative;
       background: var(--card); border: 4px solid #e7e3d8; border-radius: 18px; padding: 18px 22px;
       font-size: calc(34px * var(--text-scale, 1)); font-weight: 900; letter-spacing: 3px; color: var(--ink);
-      text-transform: uppercase; cursor: pointer; box-shadow: var(--shadow); touch-action: manipulation;
+      text-transform: lowercase; cursor: pointer; box-shadow: var(--shadow); touch-action: manipulation;
       transition: transform 0.12s;
     }
     .word-card:active { transform: scale(0.95); }
+    /* Correct isn't signalled by green alone (colorblind-safe + survives Calm
+       Mode): a ✓ badge is added to the chosen card. */
     .word-card.right { border-color: var(--good); background: #eafff2; }
+    .word-card.right::after {
+      content: '✓'; position: absolute; top: -10px; right: -10px; width: 26px; height: 26px;
+      border-radius: 50%; background: var(--good); color: #fff; font-size: 16px; font-weight: 900;
+      display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 0 rgba(0,0,0,0.18);
+    }
+    .prompt-replay { margin: 8px auto 0; display: block; }
     .word-card.wiggle { animation: wiggle 0.4s; }
     .word-card.pulse { animation: pulse 0.9s infinite; border-color: var(--accent); }
     @keyframes wiggle { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-7px); } 75% { transform: translateX(7px); } }
@@ -270,7 +281,7 @@
     .spell-card:active { transform: scale(0.95); }
     .spell-card.locked { border-color: #e0ddd2; box-shadow: var(--shadow); opacity: 0.75; cursor: default; filter: grayscale(0.4); }
     .spell-emoji { font-size: 46px; line-height: 1; }
-    .spell-word { font-size: calc(24px * var(--text-scale, 1)); font-weight: 900; letter-spacing: 3px; color: var(--ink); text-transform: uppercase; }
+    .spell-word { font-size: calc(24px * var(--text-scale, 1)); font-weight: 900; letter-spacing: 3px; color: var(--ink); text-transform: lowercase; }
 
     /* ── Spell cast panel ── */
     .spellcast {
