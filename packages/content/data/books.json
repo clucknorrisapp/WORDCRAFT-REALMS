@@ -14,6 +14,34 @@
     ]
   },
   {
+    "id": "hen-and-egg",
+    "title": "Hen and the Egg",
+    "cover": "🐔",
+    "reward": "egg",
+    "pages": [
+      "My hen is red. She is here!",
+      "The hen has one egg.",
+      "What is it? It is a chick!",
+      "The chick is with the hen.",
+      "They run and they nap.",
+      "What fun they have!"
+    ]
+  },
+  {
+    "id": "come-to-the-hut",
+    "title": "Come to the Hut",
+    "cover": "🛖",
+    "reward": "wood",
+    "pages": [
+      "Come to my hut! We have fun.",
+      "There is a big pot. What is in it?",
+      "Some ham! We have ham. Yum!",
+      "They are all here. Come and see.",
+      "We sit and we chat.",
+      "What fun we have!"
+    ]
+  },
+  {
     "id": "pig-in-mud",
     "title": "Pig in the Mud",
     "cover": "🐷",
