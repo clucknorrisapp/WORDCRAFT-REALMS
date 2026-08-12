@@ -458,5 +458,35 @@
       "The fish has a red spot.",
       "Swim, fish, swim! Yes!"
     ]
+  },
+  {
+    "id": "the-lake",
+    "title": "The Lake",
+    "cover": "🏞️",
+    "reward": "gem",
+    "gate": "magic_e",
+    "pages": [
+      "The lake is big.",
+      "I ride my bike to the lake.",
+      "A mule came to the lake.",
+      "The mule can nap.",
+      "We made a big cake.",
+      "We ate the cake. Yum!"
+    ]
+  },
+  {
+    "id": "the-barn",
+    "title": "The Barn",
+    "cover": "🚜",
+    "reward": "gem",
+    "gate": "r_controlled",
+    "pages": [
+      "The barn is on the farm.",
+      "A bird is on the barn.",
+      "Corn is in the cart.",
+      "It is dark. I see a star.",
+      "The girl can run in the yard.",
+      "What fun on the farm!"
+    ]
   }
 ]
