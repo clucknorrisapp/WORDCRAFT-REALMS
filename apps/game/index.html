@@ -478,6 +478,24 @@
     .recap-tell { margin-top: 14px; font-size: 20px; background: var(--good, #2ecc71); }
     .recap-close { margin-top: 10px; }
 
+    /* Trading Post — gems buy dragon-colour cosmetics by reading the word. */
+    .panel.shop-panel { max-width: 420px; text-align: center; }
+    .shop-title { font-size: 22px; font-weight: 900; color: #5b4632; }
+    .shop-sub { font-size: 14px; font-weight: 700; color: #8a7b63; margin: 3px 0 12px; }
+    .shop-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+    .shop-item { appearance: none; -webkit-appearance: none; font-family: inherit; cursor: pointer;
+      background: #fff8ec; border: 2px solid #ecdcbf; border-radius: 16px; padding: 10px 6px;
+      display: flex; flex-direction: column; align-items: center; gap: 5px; }
+    .shop-item.buy { border-color: var(--good, #2ecc71); box-shadow: 0 2px 0 rgba(0,0,0,0.08); }
+    .shop-item.worn { border-color: var(--accent, #ff9f43); background: linear-gradient(160deg, #fffdf6, #ffeecb); }
+    .shop-item.owned { border-style: dashed; border-color: var(--accent, #ff9f43); }
+    .shop-item.locked { opacity: 0.55; filter: grayscale(0.4); cursor: default; }
+    .shop-item:not(.locked):active { transform: scale(0.95); }
+    .shop-swatch { width: 46px; height: 46px; border-radius: 50%; border: 3px solid rgba(0,0,0,0.15); }
+    .shop-word { font-size: 15px; font-weight: 900; letter-spacing: 1px; color: #5b4632; }
+    .shop-cost { font-size: 13px; font-weight: 800; color: #7a5a1e; }
+    .shop-close { margin-top: 12px; }
+
     /* Reader Level — the reading rank badge + its little level card. */
     .chip.reader-lv { background: linear-gradient(160deg, #fff6de, #ffe4a8); border: 2px solid var(--accent, #ff9f43); font-weight: 900; cursor: pointer; color: #7a5a1e; }
     .chip.reader-lv:active { transform: scale(0.94); }

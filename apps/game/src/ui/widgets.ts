@@ -97,6 +97,16 @@ export function requestSummon(word: string): void {
   summon(word);
 }
 
+// Bridge: the world scene registers how to recolour the dragon; the Trading Post
+// calls requestDragonColor() the instant a colour is bought/worn.
+let dragonColorApply: (word: string) => void = () => {};
+export function setDragonColorApply(fn: (word: string) => void): void {
+  dragonColorApply = fn;
+}
+export function requestDragonColor(word: string): void {
+  dragonColorApply(word);
+}
+
 // Bridge: the world scene registers how to relight the Beacon; a Reader
 // Level-up or a finished book calls requestBeaconRefresh() so the monument
 // grows a ring the instant reading grows — no reload needed.

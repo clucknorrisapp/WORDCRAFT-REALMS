@@ -48,6 +48,7 @@ export function freshSave(): SaveData {
     giantDefeated: false,
     furnaceCharge: 0,
     coachDone: false,
+    dragonColorsOwned: [],
     taught: [...curriculum.initialTaught],
     evidence: [],
     events: [],

@@ -6,7 +6,7 @@ import type { Services } from '../services';
 import type { Hud } from '../ui/hud';
 import { allBlocks, readerLevel } from '@readquest/content';
 import { floatNote, isUiOpen, reducedMotion } from '../ui/dom';
-import { setBuildRenderer, setDragonCelebrate, setNextHandler, setPlaceModeToggle, setCreatureRefresh, setFastTravel, setPlayerPeek, setSummon, setBeaconRefresh } from '../ui/widgets';
+import { setBuildRenderer, setDragonCelebrate, setNextHandler, setPlaceModeToggle, setCreatureRefresh, setFastTravel, setPlayerPeek, setSummon, setBeaconRefresh, setDragonColorApply } from '../ui/widgets';
 import { regionAt } from './regions';
 import { summonableByWord, type Summonable } from '../ui/loot';
 import { creatureById, wildCreatures, type Creature } from '../ui/creatures';
@@ -205,6 +205,7 @@ export class WorldScene extends Phaser.Scene {
     setPlayerPeek(() => ({ x: this.player.x, y: this.player.y })); // map's "you are here"
     setSummon((word) => this.summonThing(word)); // Word Loot: read a word → its thing appears
     setBeaconRefresh(() => this.updateBeacon(true)); // level-up / finished book lights a ring
+    setDragonColorApply((w) => this.applyDragonColor(w)); // Trading Post recolours the dragon
     this.renderWorldBuild(); // restore blocks laid in the world last session
     this.renderBlueprint(); // restore an in-progress plan's ghosts
     // Free play only: strew the wide east with Say-to-Mine nodes + glint caches,

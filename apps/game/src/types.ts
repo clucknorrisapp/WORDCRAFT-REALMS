@@ -94,6 +94,7 @@ export interface SaveData {
   giantDefeated: boolean; // the giant has woken, thanked the child, and stepped aside
   furnaceCharge: number; // ore the furnace machine has smelted over time, waiting to be read out
   coachDone: boolean; // the one-time "tap to walk" first-run coach has been shown + cleared
+  dragonColorsOwned: string[]; // dragon-colour cosmetics bought at the Trading Post (gems spent)
   taught: SkillId[];
   evidence: Evidence[];
   events: GameEvent[];
