@@ -151,12 +151,15 @@ export async function createServices(save: SaveData): Promise<Services> {
       };
       engine.record(e);
       save.evidence.push(e);
+      // Lifetime tally is kept exact here; the evidence array itself is capped to
+      // a rolling window at persist time (save.ts), so the save can't grow forever.
+      if (COUNTABLE_TYPES.includes(e.challengeType)) save.readCount = (save.readCount ?? 0) + 1;
       maybeAdvanceCurriculum(); // reading mastery may unlock the next phonics tier
       persistSave(save);
       return e;
     },
     readingInteractions() {
-      return save.evidence.filter((e) => COUNTABLE_TYPES.includes(e.challengeType)).length;
+      return save.readCount ?? 0;
     },
     setAdvanceHandler(cb) {
       advanceCb = cb;

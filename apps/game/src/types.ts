@@ -105,8 +105,9 @@ export interface SaveData {
   coachDone: boolean; // the one-time "tap to walk" first-run coach has been shown + cleared
   dragonColorsOwned: string[]; // dragon-colour cosmetics bought at the Trading Post (gems spent)
   petCare: Record<string, PetCare>; // tamed-creature id → the name + bond the child gave it
+  readCount: number; // lifetime countable reading reps — kept exact even as `evidence` is capped
   taught: SkillId[];
-  evidence: Evidence[];
+  evidence: Evidence[]; // capped to a rolling window (MAX_EVIDENCE) so the save can't grow forever
   events: GameEvent[];
   firstSessionAt: number;
   settings: SettingsData;

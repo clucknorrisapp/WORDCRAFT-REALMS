@@ -1,7 +1,23 @@
 import { QuestStep, type SaveData } from './types';
 import { curriculum } from '@readquest/content';
+import { COUNTABLE_TYPES } from '@readquest/shared';
 
 const KEY = 'readquest_save_v1';
+
+// The evidence log grows one row per reading rep — the only unbounded array in
+// the save. A child playing daily for a year would otherwise blow past the
+// browser's ~5MB storage quota and silently lose everything. Cap it to a rolling
+// window big enough that the learning engine's replay (spaced-repetition state,
+// which only needs recent per-word history) is unaffected, while the lifetime
+// `readCount` keeps "words read" and reading deeds exact. On a real quota error
+// we trim harder still and retry — a smaller save always beats a lost one.
+const MAX_EVIDENCE = 1200;
+const EMERGENCY_EVIDENCE = 300;
+
+/** Count the countable (reading-interaction) rows in an evidence log. */
+function countableReads(evidence: SaveData['evidence']): number {
+  return evidence.filter((e) => COUNTABLE_TYPES.includes(e.challengeType)).length;
+}
 
 export function freshSave(): SaveData {
   return {
@@ -50,6 +66,7 @@ export function freshSave(): SaveData {
     coachDone: false,
     dragonColorsOwned: [],
     petCare: {},
+    readCount: 0,
     taught: [...curriculum.initialTaught],
     evidence: [],
     events: [],
@@ -77,9 +94,34 @@ export function loadSave(): SaveData {
     if (parsed.v !== 1) return freshSave();
     const fresh = freshSave();
     // Deep-merge settings so saves from older builds pick up new keys.
-    return { ...fresh, ...parsed, settings: { ...fresh.settings, ...parsed.settings } };
+    const merged = { ...fresh, ...parsed, settings: { ...fresh.settings, ...parsed.settings } };
+    // Backfill the lifetime read counter from the full history the first time
+    // (saves from before the counter existed), THEN cap the array — so a long-
+    // running save is bounded immediately without ever undercounting a milestone.
+    if (parsed.readCount === undefined) merged.readCount = countableReads(merged.evidence);
+    if (merged.evidence.length > MAX_EVIDENCE) merged.evidence = merged.evidence.slice(-MAX_EVIDENCE);
+    return merged;
   } catch {
     return freshSave();
+  }
+}
+
+/** Write the save now, keeping the evidence log bounded. Proactively trims to
+ *  the rolling window before writing; on a real quota error, trims much harder
+ *  and retries once so the child's progress is saved rather than lost. */
+function writeNow(save: SaveData): void {
+  if (save.evidence.length > MAX_EVIDENCE) save.evidence = save.evidence.slice(-MAX_EVIDENCE);
+  try {
+    localStorage.setItem(KEY, JSON.stringify(save));
+  } catch {
+    // Storage full/blocked. Shed the bulk of the (already replayed) history and
+    // retry — a smaller save beats losing the child's progress entirely.
+    try {
+      if (save.evidence.length > EMERGENCY_EVIDENCE) save.evidence = save.evidence.slice(-EMERGENCY_EVIDENCE);
+      localStorage.setItem(KEY, JSON.stringify(save));
+    } catch {
+      /* still failing — gameplay continues, state stays in memory */
+    }
   }
 }
 
@@ -88,11 +130,7 @@ export function persistSave(save: SaveData): void {
   if (pending) clearTimeout(pending);
   pending = setTimeout(() => {
     pending = null;
-    try {
-      localStorage.setItem(KEY, JSON.stringify(save));
-    } catch {
-      /* storage full/blocked — gameplay continues, evidence stays in memory */
-    }
+    writeNow(save);
   }, 250);
 }
 
@@ -104,11 +142,7 @@ export function flushSave(save: SaveData): void {
     clearTimeout(pending);
     pending = null;
   }
-  try {
-    localStorage.setItem(KEY, JSON.stringify(save));
-  } catch {
-    /* storage full/blocked — nothing more we can do synchronously */
-  }
+  writeNow(save);
 }
 
 export function wipeSave(): void {
