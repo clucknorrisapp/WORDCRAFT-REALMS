@@ -19,13 +19,20 @@ export const CREATURES: Creature[] = [
   { id: 'dog', name: 'dog', emoji: '🐶' },
   { id: 'pig', name: 'pig', emoji: '🐷' },
   { id: 'fox', name: 'fox', emoji: '🦊' },
+  { id: 'bug', name: 'bug', emoji: '🐛' },
+  { id: 'bat', name: 'bat', emoji: '🦇' },
   { id: 'fish', name: 'fish', emoji: '🐟' },
+  { id: 'moth', name: 'moth', emoji: '🦋' }, // digraph th
   { id: 'frog', name: 'frog', emoji: '🐸' },
   { id: 'crab', name: 'crab', emoji: '🦀' },
+  { id: 'mule', name: 'mule', emoji: '🐴' }, // magic e
   { id: 'goat', name: 'goat', emoji: '🐐' },
   { id: 'toad', name: 'toad', emoji: '🐢' },
+  { id: 'seal', name: 'seal', emoji: '🦭' }, // vowel team ea
   { id: 'bird', name: 'bird', emoji: '🐦' },
   { id: 'shark', name: 'shark', emoji: '🦈' },
+  { id: 'owl', name: 'owl', emoji: '🦉' }, // diphthong ow
+  { id: 'cow', name: 'cow', emoji: '🐄' }, // diphthong ow
 ];
 
 export function creatureById(id: string): Creature | undefined {
