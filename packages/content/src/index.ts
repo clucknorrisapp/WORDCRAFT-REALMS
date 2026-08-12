@@ -76,6 +76,19 @@ function deriveSkills(raw: RawWord): SkillId[] {
     if (!skills.includes('base')) skills.push('base');
     return skills;
   }
+  // Iron-rule guard: a standalone 'c' before e/i/y says /s/ (nice, race, city,
+  // cent), never the hard /k/ the base tier teaches — so such a word MUST
+  // declare a soft_c skill (via `s`) or be a heart word, else it would silently
+  // validate as base and mis-teach the wrong sound (exactly what the iron rule
+  // exists to prevent, and the validator couldn't otherwise catch). We do NOT
+  // guard soft g: hard g before e/i/y is common in English (get, girl, give,
+  // gift), so a soft g can't be inferred from spelling alone.
+  for (let i = 0; i < raw.g.length - 1; i++) {
+    if (raw.g[i] === 'c' && /^[eiy]/.test(raw.g[i + 1]!)) {
+      throw new Error(`Soft-c word "${raw.text}": a 'c' before e/i/y says /s/ — declare a soft_c skill via "s", don't leave it as base`);
+    }
+  }
+
   const skills: SkillId[] = [];
   for (const g of raw.g) {
     const skill = BASE_GRAPHEMES.has(g) ? 'base' : GRAPHEME_SKILLS[g];
