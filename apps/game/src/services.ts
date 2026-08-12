@@ -15,7 +15,7 @@ import {
 } from '@readquest/shared';
 import { createSpeechService } from '@readquest/speech';
 import { createVoiceService, type VoiceManifest } from '@readquest/voice';
-import { persistSave } from './save';
+import { persistSave, flushSave } from './save';
 import { QuestStep } from './types';
 import type { SaveData } from './types';
 
@@ -26,6 +26,9 @@ export interface Services {
   speech: SpeechService;
   analytics: Analytics;
   persist(): void;
+  /** Write the save synchronously right now (bypass the debounce) — for tab-hide
+   *  / pagehide so a child never loses their last few moments of progress. */
+  flush(): void;
   /** Speak an authored line (premium clip when present, synthesis otherwise). */
   speakLine(lineId: string, textOverride?: string): { handle: SpeakHandle; done: Promise<void> };
   speakText(text: string, voice?: string, rate?: number): { handle: SpeakHandle; done: Promise<void> };
@@ -97,6 +100,7 @@ export async function createServices(save: SaveData): Promise<Services> {
     speech,
     analytics,
     persist: () => persistSave(save),
+    flush: () => flushSave(save),
     speakLine(lineId, textOverride) {
       // lineId may be a synthetic clip-only id (e.g. a per-name variant like
       // ln_dragon_joins_rex) that isn't a registered line — tolerate that.

@@ -93,6 +93,21 @@ export function persistSave(save: SaveData): void {
   }, 250);
 }
 
+/** Write the save RIGHT NOW, bypassing the debounce. Call this the instant the
+ *  page might be frozen or discarded (tab hidden, iPad home button, pagehide) —
+ *  a debounced write can lose the last few moments of a child's progress. */
+export function flushSave(save: SaveData): void {
+  if (pending) {
+    clearTimeout(pending);
+    pending = null;
+  }
+  try {
+    localStorage.setItem(KEY, JSON.stringify(save));
+  } catch {
+    /* storage full/blocked — nothing more we can do synchronously */
+  }
+}
+
 export function wipeSave(): void {
   localStorage.removeItem(KEY);
 }

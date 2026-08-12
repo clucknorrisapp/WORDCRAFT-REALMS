@@ -36,10 +36,15 @@ async function boot(): Promise<void> {
   }
 
   services.analytics.log('session_start', { questStep: save.questStep });
+  // When the page is hidden (tab switch, iPad home button) or being torn down,
+  // write the save SYNCHRONOUSLY — a debounced write can be dropped when the
+  // page is frozen/discarded, silently losing the child's last few reads.
   window.addEventListener('visibilitychange', () => {
     services.analytics.log('session_ping', { visible: document.visibilityState });
-    services.persist();
+    if (document.visibilityState === 'hidden') services.flush();
+    else services.persist();
   });
+  window.addEventListener('pagehide', () => services.flush());
 
   await runCharacterSelect(services);
 
