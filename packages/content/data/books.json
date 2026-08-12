@@ -323,5 +323,50 @@
       "The pink drink is in the sink.",
       "What fun! The king can sing!"
     ]
+  },
+  {
+    "id": "my-bike",
+    "title": "My Bike",
+    "cover": "🚲",
+    "reward": "gem",
+    "gate": "magic_e",
+    "pages": [
+      "I have a bike. It is red.",
+      "I ride the bike home.",
+      "We made a big cake.",
+      "The cake is on the gate.",
+      "What a fun time!",
+      "Come and see my bike!"
+    ]
+  },
+  {
+    "id": "in-the-park",
+    "title": "In the Park",
+    "cover": "🌳",
+    "reward": "gem",
+    "gate": "r_controlled",
+    "pages": [
+      "We go to the park.",
+      "A dog can run and bark.",
+      "It is dark. We see a star.",
+      "A bird is in a tree.",
+      "The girl has a red card.",
+      "What fun in the park!"
+    ]
+  },
+  {
+    "id": "the-rain",
+    "title": "The Rain",
+    "cover": "🌧️",
+    "reward": "gem",
+    "gate": "vowel_team",
+    "pages": [
+      "It is a wet day.",
+      "The rain is here.",
+      "We see a boat on the sea.",
+      "A fish is in the sea.",
+      "At night we see the light.",
+      "What a fun day in the rain!"
+    ]
   }
 ]
