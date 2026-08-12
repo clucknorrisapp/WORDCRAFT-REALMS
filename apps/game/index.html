@@ -515,6 +515,24 @@
     .shop-cost { font-size: 13px; font-weight: 800; color: #7a5a1e; }
     .shop-close { margin-top: 12px; }
 
+    /* ⚡ Quick Read — the automaticity round: a big word to recognize fast. */
+    .panel.quickread { max-width: 380px; text-align: center; }
+    .quickread-card {
+      appearance: none; -webkit-appearance: none; font-family: inherit; cursor: pointer;
+      background: var(--card, #fff); border: 4px solid #e7e3d8; border-radius: 20px;
+      padding: 18px 26px; margin: 6px auto; box-shadow: var(--shadow); touch-action: manipulation;
+      transition: transform 0.1s, border-color 0.1s;
+    }
+    .quickread-card:active { transform: scale(0.96); }
+    .quickread-card.read { border-color: var(--good, #2ecc71); background: #eafff2; }
+    /* A "super-fast" recognition sparks gold. */
+    .quickread-card.spark { border-color: var(--accent, #ff9f43); animation: qr-spark 0.45s ease; }
+    @keyframes qr-spark {
+      0% { box-shadow: 0 0 0 0 rgba(255,159,67,0.6); }
+      100% { box-shadow: 0 0 0 22px rgba(255,159,67,0); }
+    }
+    .panel.quickread-done { max-width: 340px; text-align: center; }
+
     /* Reader Level — the reading rank badge + its little level card. */
     .chip.reader-lv { background: linear-gradient(160deg, #fff6de, #ffe4a8); border: 2px solid var(--accent, #ff9f43); font-weight: 900; cursor: pointer; color: #7a5a1e; }
     .chip.reader-lv:active { transform: scale(0.94); }
