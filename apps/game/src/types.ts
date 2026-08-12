@@ -84,6 +84,7 @@ export interface SaveData {
   glintsFound: string[]; // overworld glint-cache ids already collected (one-time rewards)
   deedsEarned: string[]; // achievement ("deed") ids earned — each celebrated once
   lastGiftDay: string | null; // YYYY-MM-DD of the last claimed daily word-of-the-day gift
+  streak: number; // consecutive days the daily gift was claimed — the read-every-day habit
   job: Job | null; // the active Help-Wanted job, if any (Quest Board)
   jobsDone: number; // cumulative jobs completed — a progression tally
   pets: string[]; // species ids of babies hatched from eggs (they live on the plot)

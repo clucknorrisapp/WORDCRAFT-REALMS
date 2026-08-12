@@ -45,6 +45,7 @@ export function freshSave(): SaveData {
     glintsFound: [],
     deedsEarned: [],
     lastGiftDay: null,
+    streak: 0,
     job: null,
     jobsDone: 0,
     pets: [],

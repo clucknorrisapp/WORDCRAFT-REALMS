@@ -26,6 +26,8 @@ function stats(services: Services): { rl: ReturnType<typeof readerLevel>; words:
     { icon: '🐾', label: 'friends', value: s.tamed.length + s.pets.length },
     { icon: '🏅', label: 'deeds earned', value: s.deedsEarned.length },
   ];
+  // A read-every-day streak, once it's going, is the proudest habit to show.
+  if (s.streak >= 2) tiles.push({ icon: '🔥', label: 'day streak', value: s.streak });
   return { rl, words: services.readingInteractions(), tiles };
 }
 
