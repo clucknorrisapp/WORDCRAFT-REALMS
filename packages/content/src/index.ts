@@ -45,6 +45,10 @@ const GRAPHEME_SKILLS: Record<string, SkillId> = {
   // magic-e). Only the unambiguous long-vowel teams; heart words (said/see/you)
   // bypass this via `heart` and keep their irregular pronunciations.
   ai: 'vowel_team', ay: 'vowel_team', ee: 'vowel_team', oa: 'vowel_team',
+  // ea = long /ee/ (eat, sea, team); igh = long /i/ (night, light). Both are
+  // reliable single-sound teams. (The short-e "ea" in bread/head is a different
+  // job for later; only the long teams live here so the tier stays one sound.)
+  ea: 'vowel_team', igh: 'vowel_team',
   // R-controlled ("Bossy R") — the r changes the vowel ("car", "fork", "bird").
   // Each is one grapheme. ('for' stays a heart word and bypasses this.)
   ar: 'r_controlled', or: 'r_controlled', er: 'r_controlled', ir: 'r_controlled', ur: 'r_controlled',

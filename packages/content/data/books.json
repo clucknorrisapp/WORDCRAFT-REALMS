@@ -293,5 +293,20 @@
       "A bird is on the barn.",
       "The bird can see a star."
     ]
+  },
+  {
+    "id": "beach-night",
+    "title": "The Big Beach",
+    "cover": "🏖️",
+    "reward": "gem",
+    "gate": "vowel_team",
+    "pages": [
+      "We go to the beach. It is bright!",
+      "I can see the sea. It is deep.",
+      "We eat a meal on a mat.",
+      "We see a seal and a fish.",
+      "At night we see a light.",
+      "What a fun day at the beach!"
+    ]
   }
 ]
