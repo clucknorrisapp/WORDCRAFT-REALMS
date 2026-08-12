@@ -1405,7 +1405,7 @@ export class WorldScene extends Phaser.Scene {
     for (const [x, y] of [[320, 300], [980, 760], [1180, 900], [500, 1010], [860, 470]] as Array<[number, number]>) {
       const c = this.add.sprite(x, y, 'hen').setDepth(y);
       c.setScale(42 / c.height);
-      this.tweens.add({ targets: c, y: `-=4`, duration: 640 + Phaser.Math.Between(0, 300), yoyo: true, repeat: -1, ease: 'sine.inOut' });
+      if (!reducedMotion()) this.tweens.add({ targets: c, y: `-=4`, duration: 640 + Phaser.Math.Between(0, 300), yoyo: true, repeat: -1, ease: 'sine.inOut' });
       this.wander(c);
     }
   }
@@ -1440,6 +1440,7 @@ export class WorldScene extends Phaser.Scene {
   }
 
   private wander(c: Phaser.GameObjects.Sprite): void {
+    if (reducedMotion()) return; // Calm Mode: ambient mobs hold still
     const nx = Phaser.Math.Clamp(c.x + Phaser.Math.Between(-170, 170), 120, W - 120);
     const ny = Phaser.Math.Clamp(c.y + Phaser.Math.Between(-110, 110), 220, 1060);
     c.setFlipX(nx < c.x);
@@ -1472,7 +1473,7 @@ export class WorldScene extends Phaser.Scene {
   private spawnBaby(species: string, x: number, y: number): void {
     const emoji = this.babyEmoji[species] ?? '🐤';
     const baby = this.add.text(x, y, emoji, { fontSize: '30px' }).setOrigin(0.5).setDepth(y);
-    this.tweens.add({ targets: baby, y: y - 4, duration: 560 + Phaser.Math.Between(0, 300), yoyo: true, repeat: -1, ease: 'sine.inOut' });
+    if (!reducedMotion()) this.tweens.add({ targets: baby, y: y - 4, duration: 560 + Phaser.Math.Between(0, 300), yoyo: true, repeat: -1, ease: 'sine.inOut' });
     this.babies.push(baby);
     this.wanderBaby(baby);
   }
@@ -1483,6 +1484,7 @@ export class WorldScene extends Phaser.Scene {
   }
 
   private wanderBaby(c: Phaser.GameObjects.Text): void {
+    if (reducedMotion()) return; // Calm Mode: pets hold still
     const nx = Phaser.Math.Clamp(c.x + Phaser.Math.Between(-130, 130), 120, W - 120);
     const ny = Phaser.Math.Clamp(c.y + Phaser.Math.Between(-90, 90), 260, 1080);
     c.setFlipX(nx < c.x);
@@ -1702,12 +1704,13 @@ export class WorldScene extends Phaser.Scene {
       });
     }
     cont.setDepth(y);
-    this.tweens.add({ targets: emoji, y: -4, duration: 560 + Phaser.Math.Between(0, 300), yoyo: true, repeat: -1, ease: 'sine.inOut' });
+    if (!reducedMotion()) this.tweens.add({ targets: emoji, y: -4, duration: 560 + Phaser.Math.Between(0, 300), yoyo: true, repeat: -1, ease: 'sine.inOut' });
     this.wanderCreature(cont);
     return cont;
   }
 
   private wanderCreature(cont: Phaser.GameObjects.Container): void {
+    if (reducedMotion()) return; // Calm Mode: creatures hold still
     const nx = Phaser.Math.Clamp(cont.x + Phaser.Math.Between(-150, 150), 120, W - 120);
     const ny = Phaser.Math.Clamp(cont.y + Phaser.Math.Between(-100, 100), 240, 1080);
     this.tweens.add({
@@ -2008,7 +2011,7 @@ export class WorldScene extends Phaser.Scene {
           const hen = this.add.sprite(x, y, 'hen').setDepth(y);
           hen.setScale((56 / hen.height) * s);
           if (s === 1) hen.setTint(0xffb3a7);
-          this.tweens.add({ targets: hen, y: y - 4, duration: 800 + s * 300, yoyo: true, repeat: -1, ease: 'sine.inOut' });
+          if (!reducedMotion()) this.tweens.add({ targets: hen, y: y - 4, duration: 800 + s * 300, yoyo: true, repeat: -1, ease: 'sine.inOut' });
         }
       },
       openChest: () => {
