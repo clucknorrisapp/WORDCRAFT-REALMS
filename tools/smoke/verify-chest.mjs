@@ -95,7 +95,13 @@ const mouth = await page.evaluate(() => {
   return { x: 2380 - cam.scrollX, y: 305 - cam.scrollY };
 });
 await page.mouse.click(mouth.x, mouth.y);
-await page.waitForTimeout(2200); // walk into range + fade teleport
+// Poll for the teleport rather than sleeping a fixed 2200ms: the tap walks the
+// player into range, then the mouth fires enterCave → a fade teleport into the
+// cave room (y≈1450). Under full-suite CPU load that whole chain occasionally
+// runs past a fixed wait, so wait for the outcome (bounded) instead.
+await page
+  .waitForFunction(() => window.__readquest.game.scene.keys.world.player.y > 1200, null, { timeout: 9000 })
+  .catch(() => {});
 const inCave = await page.evaluate(() => {
   const s = window.__readquest.game.scene.keys.world;
   return Math.round(s.player.y);
