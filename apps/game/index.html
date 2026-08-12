@@ -466,6 +466,18 @@
     @keyframes tech-glow { 0%, 100% { box-shadow: 0 0 0 0 rgba(139,195,74,0.5); } 50% { box-shadow: 0 0 0 5px rgba(139,195,74,0); } }
     @keyframes tech-flash { 0% { box-shadow: 0 0 0 0 rgba(255,209,102,0.9); } 100% { box-shadow: 0 0 0 20px rgba(255,209,102,0); } }
 
+    /* "Show a grown-up" recap card — a celebration the child hands to a parent. */
+    .panel.recap-panel { max-width: 440px; text-align: center; }
+    .recap-title { font-size: 22px; font-weight: 900; color: #5b4632; }
+    .recap-rank { font-size: 15px; font-weight: 900; color: #7a5a1e; margin: 4px 0 12px; }
+    .recap-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+    .recap-tile { background: #fff8ec; border: 2px solid #ecdcbf; border-radius: 14px; padding: 10px 4px; }
+    .recap-ico { font-size: 26px; line-height: 1.15; }
+    .recap-num { font-size: 26px; font-weight: 900; color: var(--accent2, #6c5ce7); line-height: 1.1; }
+    .recap-lab { font-size: 11px; font-weight: 700; color: #8a7b63; margin-top: 1px; }
+    .recap-tell { margin-top: 14px; font-size: 20px; background: var(--good, #2ecc71); }
+    .recap-close { margin-top: 10px; }
+
     /* Reader Level — the reading rank badge + its little level card. */
     .chip.reader-lv { background: linear-gradient(160deg, #fff6de, #ffe4a8); border: 2px solid var(--accent, #ff9f43); font-weight: 900; cursor: pointer; color: #7a5a1e; }
     .chip.reader-lv:active { transform: scale(0.94); }

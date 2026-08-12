@@ -16,6 +16,7 @@ import { mountCompassButton } from './ui/compass';
 import { mountMapButton } from './ui/map';
 import { mountBagButton } from './ui/loot';
 import { mountTechTreeButton } from './ui/techtree';
+import { mountRecapButton } from './ui/recap';
 import { mountFriendsButton } from './ui/friends';
 import { configureSfx } from './game/sfx';
 import { applyTextScale, applyAccessibility, setToolbeltVisible } from './ui/dom';
@@ -63,6 +64,7 @@ async function boot(): Promise<void> {
   mountBagButton(services); // 🎒 Word Bag — read a word to summon its thing
   mountTechTreeButton(services); // 🧪 Tech Tree — smelting chains you climb by reading
   mountDeedsButton(services); // 🏅 the deed wall (achievements)
+  mountRecapButton(services); // ⭐ "Look what I did!" — a recap to show a grown-up
   mountFriendsButton(services); // 🐾 the Friends Book (tamed creatures)
   mountProgression(services, hud); // "New Sounds!" + Reader Level-up on tier unlock
   // Set the intro/free-play chrome state now so the toolbelt doesn't flash in
