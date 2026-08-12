@@ -86,6 +86,12 @@ if (after.forged < 3) errors.push(`building words should log blending_forge reps
 await page.locator('.forge-done .btn').click();
 await page.waitForSelector('.forge-done', { state: 'detached', timeout: 6000 });
 
+// Building words earns the Word Smith deed (the Forge is wired into progression).
+await page.waitForTimeout(350);
+const deeds = await page.evaluate(() => window.__readquest.services.save.deedsEarned);
+console.log(`deeds after forging: ${JSON.stringify(deeds)}`);
+if (!deeds.includes('forge_first')) errors.push(`forging should earn the Word Smith deed, got ${JSON.stringify(deeds)}`);
+
 await browser.close();
 const fatal = errors.filter((e) => !e.includes('Failed to load resource'));
 if (fatal.length) {

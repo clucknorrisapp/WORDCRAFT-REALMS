@@ -8,6 +8,7 @@ import type { Services } from '../services';
 import type { Hud } from './hud';
 import { bottomLeftCluster, el, floatNote } from './dom';
 import { celebrate, readWordCard } from './widgets';
+import { checkDeeds } from './deeds';
 import { sfxReward } from '../game/sfx';
 import { QuestStep } from '../types';
 
@@ -84,6 +85,7 @@ export async function openDailyGift(services: Services, hud: Hud): Promise<void>
   if (streak >= 2) floatNote(`🔥 ${streak}-day streak!`, window.innerWidth / 2, window.innerHeight * 0.55);
   if (bonus) floatNote(`+${bonus} 💎 streak bonus!`, window.innerWidth / 2, window.innerHeight * 0.68);
   services.analytics.log('daily_streak', { streak, bonus });
+  void checkDeeds(services); // a growing streak may have earned an On Fire deed
   await celebrate(services, true);
 }
 

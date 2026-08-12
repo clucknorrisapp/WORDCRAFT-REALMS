@@ -12,6 +12,7 @@ import type { Services } from '../services';
 import type { Hud } from './hud';
 import { hudMenuTray, el, openLayer, confetti, speakerButton, wait } from './dom';
 import { sfxPlace, sfxReadWin, sfxFanfare, sfxMiss } from '../game/sfx';
+import { checkDeeds } from './deeds';
 
 const ROUND = 4; // words forged per session
 // Plausible single-letter distractor tiles (all base-tier graphemes, so adding
@@ -157,4 +158,5 @@ async function celebrate(services: Services, hud: Hud, layer: ReturnType<typeof 
   await wait(50);
   services.analytics.log('forge_done', { built, gain });
   await new Promise<void>((r) => ok.addEventListener('click', () => r(), { once: true }));
+  void checkDeeds(services); // building words may have earned a Word Smith deed
 }

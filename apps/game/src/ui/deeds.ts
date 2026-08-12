@@ -24,13 +24,16 @@ export const DEEDS: Deed[] = [
   { id: 'build_first', icon: '🧱', title: 'Builder', hint: 'Place a block.', done: (s) => s.save.buildPlaced >= 1 },
   { id: 'dragon_feed', icon: '🐉', title: 'Dragon Pal', hint: 'Feed your dragon.', done: (s) => s.save.dragonXp >= 1 },
   { id: 'read_ten', icon: '📚', title: 'Word Muncher', hint: 'Read 10 words.', done: (s) => s.readingInteractions() >= 10 },
+  { id: 'forge_first', icon: '🔨', title: 'Word Smith', hint: 'Build a word in the Forge.', done: (s) => s.save.evidence.some((e) => e.challengeType === 'blending_forge') },
   { id: 'glint_first', icon: '✨', title: 'Treasure', hint: 'Find a sparkle cache.', done: (s) => s.save.glintsFound.length >= 1 },
   { id: 'book_first', icon: '📕', title: 'Bookworm', hint: 'Finish a book.', done: (s) => s.save.booksRead.length >= 1 },
   { id: 'new_sounds', icon: '🔤', title: 'New Sounds', hint: 'Unlock a new sound.', done: (s) => s.save.taught.length > curriculum.initialTaught.length },
+  { id: 'streak_three', icon: '🔥', title: 'On Fire', hint: 'Read three days in a row.', done: (s) => (s.save.streak ?? 0) >= 3 },
   { id: 'build_ten', icon: '🏗️', title: 'Big Builder', hint: 'Place 10 blocks.', done: (s) => s.save.buildPlaced >= 10 },
   { id: 'read_fifty', icon: '🦉', title: 'Word Owl', hint: 'Read 50 words.', done: (s) => s.readingInteractions() >= 50 },
   { id: 'glint_five', icon: '💎', title: 'Gem Hunter', hint: 'Find 5 sparkle caches.', done: (s) => s.save.glintsFound.length >= 5 },
   { id: 'reader_three', icon: '🏅', title: 'Rising Reader', hint: 'Reach Reader Level 3.', done: (s) => readerLevel(s.save.taught).level >= 3 },
+  { id: 'forge_twenty', icon: '⚒️', title: 'Master Smith', hint: 'Build 20 words in the Forge.', done: (s) => s.save.evidence.filter((e) => e.challengeType === 'blending_forge').length >= 20 },
   { id: 'read_hundred', icon: '🌟', title: 'Word Star', hint: 'Read 100 words.', done: (s) => s.readingInteractions() >= 100 },
 ];
 
