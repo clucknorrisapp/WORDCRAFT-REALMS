@@ -204,8 +204,8 @@
     .pron-line-spk { font-weight: 900; color: var(--accent2); }
 
     /* ── Library + Spellbook buttons (bottom-left, kid-facing, single tap) ── */
-    .hud-left { position: absolute; bottom: max(14px, env(safe-area-inset-bottom)); left: 12px; z-index: 20; display: flex; gap: 10px; align-items: center; }
-    .hud-left .round { position: relative; width: 60px; height: 60px; font-size: 28px; background: #fff2df; box-shadow: 0 4px 0 rgba(0,0,0,0.15); }
+    .hud-left { position: absolute; bottom: max(14px, env(safe-area-inset-bottom)); left: 12px; z-index: 20; display: flex; flex-wrap: wrap-reverse; gap: 8px; align-items: center; align-content: flex-end; max-width: min(360px, calc(100vw - 92px)); }
+    .hud-left .round { position: relative; width: 52px; height: 52px; font-size: 25px; background: #fff2df; box-shadow: 0 4px 0 rgba(0,0,0,0.15); }
     .lib-dot { position: absolute; top: 2px; right: 2px; width: 14px; height: 14px; border-radius: 50%; background: var(--good); border: 2px solid #fff; animation: pulse 1.2s infinite; }
 
     /* ── Library shelf ── */
