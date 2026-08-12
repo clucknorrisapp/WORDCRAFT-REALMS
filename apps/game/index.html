@@ -533,6 +533,29 @@
     }
     .panel.quickread-done { max-width: 340px; text-align: center; }
 
+    /* 🔨 Word Forge — spell a heard word by tapping its sound-tiles into slots. */
+    .panel.forge { max-width: 420px; text-align: center; }
+    .forge-slots { display: flex; gap: 8px; justify-content: center; margin: 14px 0; flex-wrap: wrap; }
+    .forge-slot {
+      width: 52px; height: 60px; border-radius: 12px; border: 3px dashed #d8cfbc;
+      background: #fbf7ee; display: flex; align-items: center; justify-content: center;
+      font-size: 30px; font-weight: 900; color: var(--ink); text-transform: lowercase;
+    }
+    .forge-slot.filled { border-style: solid; border-color: var(--good, #2ecc71); background: #eafff2; }
+    .forge-slot.win { animation: qr-spark 0.5s ease; }
+    .forge-tray { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; margin-top: 6px; }
+    .forge-tile {
+      appearance: none; -webkit-appearance: none; font-family: inherit; cursor: pointer;
+      width: 56px; height: 56px; border-radius: 14px; border: 3px solid #e7e3d8; background: var(--card, #fff);
+      font-size: 28px; font-weight: 900; color: var(--ink); text-transform: lowercase;
+      box-shadow: 0 3px 0 rgba(0,0,0,0.12); touch-action: manipulation; transition: transform 0.1s;
+    }
+    .forge-tile:active { transform: scale(0.92); }
+    .forge-tile.used { opacity: 0.25; pointer-events: none; }
+    .forge-tile.wrong { animation: wiggle 0.36s; border-color: #ff9f9f; }
+    .forge-tile.hint { border-color: var(--accent, #ff9f43); animation: pulse 0.9s infinite; }
+    .panel.forge-done { max-width: 340px; text-align: center; }
+
     /* Reader Level — the reading rank badge + its little level card. */
     .chip.reader-lv { background: linear-gradient(160deg, #fff6de, #ffe4a8); border: 2px solid var(--accent, #ff9f43); font-weight: 900; cursor: pointer; color: #7a5a1e; }
     .chip.reader-lv:active { transform: scale(0.94); }
