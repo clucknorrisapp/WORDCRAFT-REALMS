@@ -365,5 +365,17 @@
   {"text":"do","g":["d","o"],"heart":true},
   {"text":"for","g":["f","or"],"heart":true},
   {"text":"he","g":["h","e"],"heart":true},
-  {"text":"she","g":["sh","e"],"heart":true}
+  {"text":"she","g":["sh","e"],"heart":true},
+  {"text":"of","g":["o","f"],"heart":true},
+  {"text":"are","g":["a","r","e"],"heart":true},
+  {"text":"have","g":["h","a","v","e"],"heart":true},
+  {"text":"they","g":["th","ey"],"heart":true},
+  {"text":"come","g":["c","o","m","e"],"heart":true},
+  {"text":"some","g":["s","o","m","e"],"heart":true},
+  {"text":"be","g":["b","e"],"heart":true},
+  {"text":"what","g":["wh","a","t"],"heart":true},
+  {"text":"all","g":["a","ll"],"heart":true},
+  {"text":"one","g":["o","n","e"],"heart":true},
+  {"text":"there","g":["th","e","r","e"],"heart":true},
+  {"text":"here","g":["h","e","r","e"],"heart":true}
 ]

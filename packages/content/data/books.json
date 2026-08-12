@@ -1,5 +1,19 @@
 [
   {
+    "id": "come-and-see",
+    "title": "Come and See",
+    "cover": "🐣",
+    "reward": "egg",
+    "pages": [
+      "Come here! We have a hen.",
+      "The hen is on a big log.",
+      "What is in the shed? Come and see!",
+      "Some eggs are here. They are red!",
+      "We have some eggs. What fun!",
+      "We are all here. Come and see them!"
+    ]
+  },
+  {
     "id": "pig-in-mud",
     "title": "Pig in the Mud",
     "cover": "🐷",
