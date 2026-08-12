@@ -388,6 +388,25 @@
     .friend-name { font-size: 13px; font-weight: 900; color: #5b4632; margin-top: 1px; letter-spacing: 0.5px; }
     .friend-hint { font-size: 10px; color: #8a7b63; margin-top: 1px; }
     .friend.got .friend-hint { color: var(--good, #2ecc71); font-weight: 800; }
+    /* A tamed friend is a tappable button (name it / grow its bond). */
+    button.friend { appearance: none; -webkit-appearance: none; font-family: inherit; cursor: pointer; }
+    button.friend:active { transform: scale(0.95); }
+    .friend-hearts { font-size: 10px; line-height: 1; margin-top: 2px; letter-spacing: -1px; }
+
+    /* Pet care card — name your friend, then feed it daily to fill its hearts. */
+    .panel.pet-card { max-width: 340px; text-align: center; }
+    .pet-face { font-size: 64px; line-height: 1.1; }
+    .pet-name { font-size: 15px; font-weight: 900; color: #5b4632; letter-spacing: 1px; }
+    .pet-nick { font-size: 22px; font-weight: 900; color: var(--accent, #ff9f43); letter-spacing: 1px; margin: 2px 0; }
+    .pet-hearts { font-size: 26px; line-height: 1; margin: 6px 0; letter-spacing: 1px; }
+    .pet-best { font-size: 15px; font-weight: 900; color: var(--accent, #ff9f43); margin: 2px 0 6px; }
+    .pet-fed { color: #8a7b63; font-weight: 700; }
+    .pet-names { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin: 8px 0; }
+    .name-card { appearance: none; -webkit-appearance: none; font-family: inherit; cursor: pointer;
+      background: #fff8ec; border: 2px solid #ecdcbf; border-radius: 12px; padding: 8px 14px;
+      font-size: 20px; font-weight: 900; color: #5b4632; letter-spacing: 1px; text-transform: lowercase; }
+    .name-card:active { transform: scale(0.94); }
+    .feed-btn { background: var(--good, #2ecc71); }
 
     /* Daily gift button pulses gold while a fresh word-of-the-day waits. */
     .round.gift.gift-ready { animation: gift-pulse 1.4s ease-in-out infinite; }

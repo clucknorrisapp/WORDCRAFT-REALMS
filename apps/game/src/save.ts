@@ -49,6 +49,7 @@ export function freshSave(): SaveData {
     furnaceCharge: 0,
     coachDone: false,
     dragonColorsOwned: [],
+    petCare: {},
     taught: [...curriculum.initialTaught],
     evidence: [],
     events: [],

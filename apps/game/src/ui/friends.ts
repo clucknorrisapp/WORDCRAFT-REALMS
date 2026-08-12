@@ -5,6 +5,7 @@
 import type { Services } from '../services';
 import { hudMenuTray, el, openLayer } from './dom';
 import { CREATURES, readableCreatures } from './creatures';
+import { openPetCard, petCareOf } from './petcare';
 
 export function mountFriendsButton(services: Services): void {
   const btn = el('button', 'btn ghost round', '🐾');
@@ -23,15 +24,31 @@ export function openFriends(services: Services): void {
 
   const readable = new Set(readableCreatures(services).map((c) => c.id));
   const grid = el('div', 'friends-grid');
-  for (const c of CREATURES) {
-    const got = tamed.has(c.id);
-    const wild = !got && readable.has(c.id);
-    const cell = el('div', 'friend' + (got ? ' got' : wild ? ' wild' : ' locked'));
-    cell.appendChild(el('div', 'friend-emoji', got ? c.emoji : wild ? '❓' : '🔒'));
-    cell.appendChild(el('div', 'friend-name', got || wild ? c.name.toUpperCase() : '???'));
-    cell.appendChild(el('div', 'friend-hint', got ? 'Friend! ✓' : wild ? 'Read to tame' : 'New sounds…'));
-    grid.appendChild(cell);
-  }
+  // Repaint the grid in place so a pet named/fed on the card above reflects the
+  // instant that card closes (nick + bond hearts) — no stale "Tap to name!".
+  const paintGrid = (): void => {
+    grid.replaceChildren();
+    for (const c of CREATURES) {
+      const got = tamed.has(c.id);
+      const wild = !got && readable.has(c.id);
+      // A tamed friend is a button — tap to name it and grow its bond by reading.
+      const cell = el(got ? 'button' : 'div', 'friend' + (got ? ' got' : wild ? ' wild' : ' locked'));
+      cell.appendChild(el('div', 'friend-emoji', got ? c.emoji : wild ? '❓' : '🔒'));
+      const care = got ? petCareOf(services, c.id) : undefined;
+      cell.appendChild(el('div', 'friend-name', care ? care.nick.toUpperCase() : got || wild ? c.name.toUpperCase() : '???'));
+      if (care) {
+        // Show the bond as hearts so the collection goal is visible at a glance.
+        const hearts = el('div', 'friend-hearts');
+        for (let i = 0; i < 5; i++) hearts.appendChild(el('span', 'heart', i < care.bond ? '❤️' : '🤍'));
+        cell.appendChild(hearts);
+      } else {
+        cell.appendChild(el('div', 'friend-hint', got ? 'Tap to name!' : wild ? 'Read to tame' : 'New sounds…'));
+      }
+      if (got) cell.addEventListener('click', () => openPetCard(services, c, paintGrid));
+      grid.appendChild(cell);
+    }
+  };
+  paintGrid();
   panel.appendChild(grid);
 
   const close = el('button', 'btn', 'Close');

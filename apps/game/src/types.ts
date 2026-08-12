@@ -50,6 +50,15 @@ export interface ActiveBlueprint {
   filled: boolean[]; // aligned to the blueprint's shape order
 }
 
+/** A tamed creature the child has adopted as a named pet. Both the name and the
+ *  feedings are reading moments — the nick is a word the child read, and each
+ *  bond heart was earned by reading a food word (once per day). */
+export interface PetCare {
+  nick: string; // the decodable word the child read to name this pet
+  bond: number; // 0–5 hearts, grown one per daily feed
+  fedOn: string; // YYYY-MM-DD of the last feed (the daily-feed cooldown)
+}
+
 export interface SaveData {
   v: 1;
   childId: string;
@@ -95,6 +104,7 @@ export interface SaveData {
   furnaceCharge: number; // ore the furnace machine has smelted over time, waiting to be read out
   coachDone: boolean; // the one-time "tap to walk" first-run coach has been shown + cleared
   dragonColorsOwned: string[]; // dragon-colour cosmetics bought at the Trading Post (gems spent)
+  petCare: Record<string, PetCare>; // tamed-creature id → the name + bond the child gave it
   taught: SkillId[];
   evidence: Evidence[];
   events: GameEvent[];
