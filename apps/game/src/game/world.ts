@@ -2123,13 +2123,20 @@ export class WorldScene extends Phaser.Scene {
   }
 
   private teleport(x: number, y: number): void {
-    this.cameras.main.fadeOut(220, 20, 18, 40);
-    this.cameras.main.once('camerafadeoutcomplete', () => {
+    const cam = this.cameras.main;
+    cam.fadeOut(220, 20, 18, 40);
+    // Reposition on the SCENE CLOCK, not the camera's 'camerafadeoutcomplete'
+    // event. That event can silently fail to fire — an interrupted or
+    // re-triggered fade leaves the camera stuck fully-faded (black) with the
+    // player never moved: the child taps the cave exit (or a map pin) and is
+    // trapped on a black screen, a hard fail state. A scene timer always fires
+    // while the game runs, so the jump — hidden under the fade — is guaranteed.
+    this.time.delayedCall(230, () => {
       this.player.setPosition(x, y);
       this.dragon.setPosition(x - 50, y + 6);
       this.moveTarget = null;
       this.pending = null;
-      this.cameras.main.fadeIn(240, 20, 18, 40);
+      cam.fadeIn(240, 20, 18, 40);
     });
   }
 
